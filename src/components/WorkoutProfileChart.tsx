@@ -26,16 +26,16 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
     return (
       <div
         onClick={onOpenWorkoutModal}
-        className={`w-full rounded-xl bg-[#111622]/90 border border-[#232D42] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all ${
-          isCompact ? 'p-2.5 h-20' : 'p-4 h-32 md:h-40'
+        className={`w-full rounded-2xl bg-[#111622]/90 border border-[#232D42] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all ${
+          isCompact ? 'p-3 min-h-[90px] flex-1' : 'p-6 min-h-[140px] md:min-h-[180px]'
         }`}
       >
-        <div className="flex items-center gap-1.5 text-xs text-[#00E5A3] font-bold">
-          <Dumbbell className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 text-sm md:text-base text-[#00E5A3] font-bold">
+          <Dumbbell className="w-4 h-4" />
           <span>Tap to Select Workout (.zwo)</span>
         </div>
-        <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
-          Free Ride Mode Active • Tap to load interval profile
+        <p className="text-xs text-slate-400 mt-1">
+          Free Ride Mode Active • Tap to load interval profile & auto-control ERG resistance
         </p>
       </div>
     );
@@ -43,7 +43,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
 
   const totalDuration = Math.max(1, workout.totalDurationSeconds);
 
-  // Determine max power scale (at least 120% FTP, or higher if high intervals exist)
+  // Determine max power scale
   const maxPowerPercent = useMemo(() => {
     let max = 1.25;
     workout.intervals.forEach((inv) => {
@@ -52,8 +52,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
     return max * 1.1; // Add 10% headroom
   }, [workout]);
 
-  // Compute SVG polygons/rectangles for each interval
-  const chartHeight = 120; // SVG coordinate units
+  const chartHeight = 130;
   const chartWidth = 1000;
 
   const getX = (sec: number) => (sec / totalDuration) * chartWidth;
@@ -77,47 +76,43 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
 
   return (
     <div
-      className={`w-full rounded-xl bg-[#111622]/95 border border-[#232D42] shadow-lg backdrop-blur-md ${
-        isCompact ? 'p-2 sm:p-2.5' : 'p-4'
+      className={`w-full rounded-2xl bg-[#111622]/95 border border-[#232D42] shadow-lg backdrop-blur-md flex flex-col justify-between ${
+        isCompact ? 'p-2.5 sm:p-3 flex-1 min-h-[110px]' : 'p-4 md:p-5'
       }`}
     >
       {/* Workout Header Info */}
-      <div
-        className={`flex items-center justify-between text-xs leading-none ${
-          isCompact ? 'mb-1.5' : 'mb-3'
-        }`}
-      >
+      <div className="flex items-center justify-between text-xs sm:text-sm leading-none mb-2">
         <div
           onClick={onOpenWorkoutModal}
-          className="flex items-center gap-1.5 cursor-pointer hover:text-[#00E5A3] transition-colors overflow-hidden"
+          className="flex items-center gap-2 cursor-pointer hover:text-[#00E5A3] transition-colors min-w-0"
           title="Tap to change workout"
         >
-          <Dumbbell className="w-3 h-3 text-[#00E5A3] shrink-0" />
-          <span className="font-bold text-slate-100 truncate max-w-[150px] sm:max-w-xs md:max-w-md">
+          <Dumbbell className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
+          <span className="font-black text-slate-100 truncate max-w-[180px] sm:max-w-xs md:max-w-md">
             {workout.title}
           </span>
-          <span className="text-slate-400 text-[10px] shrink-0">
+          <span className="text-slate-400 text-xs shrink-0">
             • {Math.floor(workout.totalDurationSeconds / 60)}m
           </span>
-          <span className="text-[#00E5A3] font-semibold text-[10px] shrink-0">
+          <span className="text-[#00E5A3] font-semibold text-xs shrink-0">
             • TSS {workout.estimatedTss}
           </span>
-          <span className="text-amber-400 font-semibold text-[10px] shrink-0">
+          <span className="text-amber-400 font-semibold text-xs shrink-0">
             • IF {workout.intensityFactor}
           </span>
         </div>
 
         {/* FTP threshold line indicator */}
-        <div className="flex items-center gap-1 text-[10px] text-slate-400 shrink-0">
-          <div className="w-2.5 h-0.5 bg-yellow-400/80" />
-          <span>{ftp}W</span>
+        <div className="flex items-center gap-1.5 text-xs text-slate-400 shrink-0">
+          <div className="w-3 h-0.5 bg-yellow-400/80" />
+          <span className="font-mono">{ftp}W</span>
         </div>
       </div>
 
       {/* SVG Chart */}
       <div
-        className={`relative w-full overflow-hidden rounded-lg bg-slate-950/80 border border-[#232D42]/80 ${
-          isCompact ? 'h-16 sm:h-20' : 'h-32 md:h-40'
+        className={`relative w-full overflow-hidden rounded-xl bg-slate-950/80 border border-[#232D42]/80 flex-1 ${
+          isCompact ? 'min-h-[70px] sm:min-h-[90px]' : 'h-36 md:h-52 lg:h-64'
         }`}
       >
         <svg
@@ -171,9 +166,9 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
                 <polygon
                   points={points}
                   fill={color}
-                  fillOpacity={isActive ? 0.9 : 0.45}
+                  fillOpacity={isActive ? 0.92 : 0.5}
                   stroke={isActive ? '#ffffff' : color}
-                  strokeWidth={isActive ? 2 : 0.8}
+                  strokeWidth={isActive ? 2.5 : 1}
                 />
 
                 {/* If active, glow highlight */}
@@ -181,7 +176,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
                   <polygon
                     points={points}
                     fill={color}
-                    fillOpacity={0.25}
+                    fillOpacity={0.3}
                   />
                 )}
               </g>
@@ -195,7 +190,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
             width={scrubberX}
             height={chartHeight}
             fill="#ffffff"
-            fillOpacity="0.08"
+            fillOpacity="0.1"
           />
 
           {/* Scrubber / Current Position Line */}
@@ -205,12 +200,12 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
             x2={scrubberX}
             y2={chartHeight}
             stroke="#ffffff"
-            strokeWidth="2.5"
+            strokeWidth="3"
           />
           <circle
             cx={scrubberX}
-            cy="5"
-            r="4"
+            cy="6"
+            r="4.5"
             fill="#00E5A3"
             stroke="#ffffff"
             strokeWidth="1.5"
@@ -219,11 +214,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
       </div>
 
       {/* Timeline labels */}
-      <div
-        className={`flex justify-between items-center text-[10px] text-slate-400 font-mono leading-none ${
-          isCompact ? 'mt-1' : 'mt-2'
-        }`}
-      >
+      <div className="flex justify-between items-center text-[10px] sm:text-xs text-slate-400 font-mono leading-none mt-1.5">
         <span>00:00</span>
         <span>
           {Math.floor(workout.totalDurationSeconds / 120)}:00

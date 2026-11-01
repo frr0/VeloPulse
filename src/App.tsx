@@ -138,8 +138,10 @@ function MainApp() {
       />
 
       <main
-        className={`flex-1 max-w-7xl w-full mx-auto ${
-          currentTab === 'ride' ? 'p-2 sm:p-4' : 'px-4 sm:px-6 lg:px-8 py-6 sm:py-8'
+        className={`flex-1 w-full mx-auto flex flex-col ${
+          currentTab === 'ride'
+            ? 'p-2 sm:p-4 md:p-6 max-w-full'
+            : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8'
         }`}
       >
         {currentTab === 'dashboard' && (
