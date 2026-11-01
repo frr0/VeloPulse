@@ -4,8 +4,8 @@ import { SessionSummary } from '../../types';
 export function generateFitFile(summary: SessionSummary): Uint8Array {
   const encoder = new Encoder();
 
-  const startTime = summary.startTime || new Date();
-  const endTime = summary.endTime || new Date();
+  const startTime = summary.startTime instanceof Date ? summary.startTime : new Date(summary.startTime || Date.now());
+  const endTime = summary.endTime instanceof Date ? summary.endTime : new Date(summary.endTime || Date.now());
 
   // 1. File ID Message
   encoder.onMesg(Profile.MesgNum.FILE_ID, {
@@ -26,30 +26,31 @@ export function generateFitFile(summary: SessionSummary): Uint8Array {
   // 3. Record Messages (one per recorded second)
   if (summary.samples && summary.samples.length > 0) {
     summary.samples.forEach((sample) => {
+      const ts = sample.timestamp instanceof Date ? sample.timestamp : new Date(sample.timestamp);
       const recordMesg: Record<string, any> = {
-        timestamp: sample.timestamp,
-        distance: Number(sample.distanceMeters.toFixed(1)),
-        speed: Number(sample.speedMps.toFixed(2)),
-        power: Math.round(sample.power),
+        timestamp: ts,
+        distance: Number((sample.distanceMeters || 0).toFixed(1)),
+        speed: Number((sample.speedMps || 0).toFixed(2)),
+        power: Math.round(sample.power || 0),
       };
 
-      if (sample.heartRate > 0) {
+      if (sample.heartRate && sample.heartRate > 0) {
         recordMesg.heartRate = Math.round(sample.heartRate);
       }
 
-      if (sample.cadence > 0) {
+      if (sample.cadence && sample.cadence > 0) {
         recordMesg.cadence = Math.round(sample.cadence);
       }
 
       encoder.onMesg(Profile.MesgNum.RECORD, recordMesg as any);
     });
   } else {
-    // If no samples (e.g. immediate stop), write at least 1 record
+    // If no samples (e.g. stopped before 1s), write at least 1 record
     encoder.onMesg(Profile.MesgNum.RECORD, {
       timestamp: startTime,
-      distance: 0,
-      speed: 0,
-      power: 0,
+      distance: Number((summary.totalDistanceMeters || 0).toFixed(1)),
+      speed: Number(((summary.avgSpeedKmh || 0) / 3.6).toFixed(2)),
+      power: Math.round(summary.avgPowerWatts || 0),
     } as any);
   }
 
@@ -64,19 +65,19 @@ export function generateFitFile(summary: SessionSummary): Uint8Array {
   encoder.onMesg(Profile.MesgNum.LAP, {
     timestamp: endTime,
     startTime: startTime,
-    totalElapsedTime: summary.totalElapsedTimeSeconds,
-    totalTimerTime: summary.totalTimerTimeSeconds,
-    totalDistance: Number(summary.totalDistanceMeters.toFixed(1)),
-    avgSpeed: Number((summary.avgSpeedKmh / 3.6).toFixed(2)),
-    maxSpeed: Number((summary.maxSpeedKmh / 3.6).toFixed(2)),
-    avgPower: Math.round(summary.avgPowerWatts),
-    maxPower: Math.round(summary.maxPowerWatts),
+    totalElapsedTime: Number(summary.totalElapsedTimeSeconds || 1),
+    totalTimerTime: Number(summary.totalTimerTimeSeconds || 1),
+    totalDistance: Number((summary.totalDistanceMeters || 0).toFixed(1)),
+    avgSpeed: Number(((summary.avgSpeedKmh || 0) / 3.6).toFixed(2)),
+    maxSpeed: Number(((summary.maxSpeedKmh || 0) / 3.6).toFixed(2)),
+    avgPower: Math.round(summary.avgPowerWatts || 0),
+    maxPower: Math.round(summary.maxPowerWatts || 0),
     avgHeartRate: Math.round(summary.avgHeartRateBpm) || undefined,
     maxHeartRate: Math.round(summary.maxHeartRateBpm) || undefined,
     avgCadence: Math.round(summary.avgCadenceRpm) || undefined,
     maxCadence: Math.round(summary.maxCadenceRpm) || undefined,
-    totalWork: Math.round(summary.totalWorkKj * 1000), // Joules in FIT
-    totalCalories: Math.round(summary.totalCaloriesKcal),
+    totalWork: Math.round((summary.totalWorkKj || 0) * 1000), // Joules in FIT
+    totalCalories: Math.round(summary.totalCaloriesKcal || 0),
   } as any);
 
   // 6. Session Message
@@ -85,20 +86,20 @@ export function generateFitFile(summary: SessionSummary): Uint8Array {
     startTime: startTime,
     sport: 'cycling',
     subSport: 'indoorCycling',
-    totalElapsedTime: summary.totalElapsedTimeSeconds,
-    totalTimerTime: summary.totalTimerTimeSeconds,
-    totalDistance: Number(summary.totalDistanceMeters.toFixed(1)),
-    avgSpeed: Number((summary.avgSpeedKmh / 3.6).toFixed(2)),
-    maxSpeed: Number((summary.maxSpeedKmh / 3.6).toFixed(2)),
-    avgPower: Math.round(summary.avgPowerWatts),
-    maxPower: Math.round(summary.maxPowerWatts),
+    totalElapsedTime: Number(summary.totalElapsedTimeSeconds || 1),
+    totalTimerTime: Number(summary.totalTimerTimeSeconds || 1),
+    totalDistance: Number((summary.totalDistanceMeters || 0).toFixed(1)),
+    avgSpeed: Number(((summary.avgSpeedKmh || 0) / 3.6).toFixed(2)),
+    maxSpeed: Number(((summary.maxSpeedKmh || 0) / 3.6).toFixed(2)),
+    avgPower: Math.round(summary.avgPowerWatts || 0),
+    maxPower: Math.round(summary.maxPowerWatts || 0),
     normalizedPower: Math.round(summary.normalizedPowerWatts) || undefined,
     avgHeartRate: Math.round(summary.avgHeartRateBpm) || undefined,
     maxHeartRate: Math.round(summary.maxHeartRateBpm) || undefined,
     avgCadence: Math.round(summary.avgCadenceRpm) || undefined,
     maxCadence: Math.round(summary.maxCadenceRpm) || undefined,
-    totalWork: Math.round(summary.totalWorkKj * 1000), // Joules
-    totalCalories: Math.round(summary.totalCaloriesKcal),
+    totalWork: Math.round((summary.totalWorkKj || 0) * 1000), // Joules
+    totalCalories: Math.round(summary.totalCaloriesKcal || 0),
     trainingStressScore: summary.trainingStressScore || undefined,
     intensityFactor: summary.intensityFactor || undefined,
   } as any);
@@ -106,7 +107,7 @@ export function generateFitFile(summary: SessionSummary): Uint8Array {
   // 7. Activity Message
   encoder.onMesg(Profile.MesgNum.ACTIVITY, {
     timestamp: endTime,
-    totalTimerTime: summary.totalTimerTimeSeconds,
+    totalTimerTime: Number(summary.totalTimerTimeSeconds || 1),
     numSessions: 1,
     type: 'manual',
   } as any);
@@ -128,9 +129,9 @@ export function createFitFileInfo(summary: SessionSummary, customFilename?: stri
   const blobUrl = URL.createObjectURL(blob);
 
   const pad = (n: number) => String(n).padStart(2, '0');
-  const d = summary.startTime || new Date();
+  const d = summary.startTime instanceof Date ? summary.startTime : new Date(summary.startTime || Date.now());
   const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
-  const filename = customFilename || `VeloTrain_${dateStr}.fit`;
+  const filename = customFilename || `VeloPulse_${dateStr}.fit`;
 
   let binary = '';
   const len = fitData.byteLength;
@@ -168,4 +169,3 @@ export function downloadFitFile(summary: SessionSummary, customFilename?: string
 
   return { filename, blobUrl };
 }
-

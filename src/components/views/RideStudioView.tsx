@@ -7,7 +7,7 @@ import { WorkoutModal } from '../WorkoutModal';
 import { SettingsModal } from '../SettingsModal';
 import { SessionSummaryModal } from '../SessionSummaryModal';
 import { FitDownloadCard } from '../FitDownloadCard';
-import { createFitFileInfo } from '../../services/fit/fitGenerator';
+import { createFitFileInfo, downloadFitFile } from '../../services/fit/fitGenerator';
 import { Capacitor } from '@capacitor/core';
 
 import {
@@ -294,14 +294,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
     workoutEngineRef.current.resume();
   };
 
-  const handleFinishSession = () => {
-    setSessionStatus('idle');
-    workoutEngineRef.current.finish();
-
-    const samples = samplesRef.current;
-    const startTime = sessionStartTimeRef.current || new Date();
-    const endTime = new Date();
-    const totalTimerTime = sessionSecondsRef.current;
+  const createCurrentSessionSummary = (samples: TelemetrySample[], startTime: Date, endTime: Date): SessionSummary => {
+    const totalTimerTime = Math.max(sessionSecondsRef.current, samples.length);
     const totalElapsedTime = Math.max(
       totalTimerTime,
       Math.round((endTime.getTime() - startTime.getTime()) / 1000)
@@ -337,11 +331,11 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
       if (spdKmh > maxSpeedKmh) maxSpeedKmh = spdKmh;
     });
 
-    const avgPower = samples.length > 0 ? Math.round(sumPower / samples.length) : 0;
-    const avgCadence = cadenceCount > 0 ? Math.round(sumCadence / cadenceCount) : 0;
-    const avgHeartRate = hrCount > 0 ? Math.round(sumHr / hrCount) : 0;
+    const avgPower = samples.length > 0 ? Math.round(sumPower / samples.length) : Math.round(telemetry.power);
+    const avgCadence = cadenceCount > 0 ? Math.round(sumCadence / cadenceCount) : Math.round(telemetry.cadence);
+    const avgHeartRate = hrCount > 0 ? Math.round(sumHr / hrCount) : Math.round(telemetry.heartRate);
     const avgSpeedKmh =
-      totalTimerTime > 0 ? Number(((telemetry.distanceMeters / totalTimerTime) * 3.6).toFixed(1)) : 0;
+      totalTimerTime > 0 ? Number(((telemetry.distanceMeters / totalTimerTime) * 3.6).toFixed(1)) : telemetry.speedKmh;
 
     let normalizedPower = avgPower;
     if (power30sHistoryRef.current.length >= 30) {
@@ -365,27 +359,38 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         ? Math.round((totalTimerTime * normalizedPower * intensityFactor) / (settings.ftp * 36))
         : 0;
 
-    const summary: SessionSummary = {
+    return {
       startTime,
       endTime,
-      totalElapsedTimeSeconds: totalElapsedTime,
-      totalTimerTimeSeconds: totalTimerTime,
+      totalElapsedTimeSeconds: Math.max(1, totalElapsedTime),
+      totalTimerTimeSeconds: Math.max(1, totalTimerTime),
       totalDistanceMeters: telemetry.distanceMeters,
       avgPowerWatts: avgPower,
-      maxPowerWatts: maxPower,
+      maxPowerWatts: Math.max(maxPower, telemetry.power),
       normalizedPowerWatts: normalizedPower,
       avgCadenceRpm: avgCadence,
-      maxCadenceRpm: maxCadence,
+      maxCadenceRpm: Math.max(maxCadence, telemetry.cadence),
       avgHeartRateBpm: avgHeartRate,
-      maxHeartRateBpm: maxHr,
+      maxHeartRateBpm: Math.max(maxHr, telemetry.heartRate),
       avgSpeedKmh,
-      maxSpeedKmh: Number(maxSpeedKmh.toFixed(1)),
+      maxSpeedKmh: Number(Math.max(maxSpeedKmh, telemetry.speedKmh).toFixed(1)),
       totalWorkKj: telemetry.workKj,
       totalCaloriesKcal: telemetry.calories,
       trainingStressScore,
       intensityFactor,
       samples,
     };
+  };
+
+  const handleFinishSession = () => {
+    setSessionStatus('idle');
+    workoutEngineRef.current.finish();
+
+    const samples = [...samplesRef.current];
+    const startTime = sessionStartTimeRef.current || (samples.length > 0 ? new Date(samples[0].timestamp) : new Date());
+    const endTime = new Date();
+
+    const summary = createCurrentSessionSummary(samples, startTime, endTime);
 
     setSessionSummary(summary);
     try {
@@ -403,8 +408,19 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   };
 
   const handleExportFit = () => {
-    let summaryToExport = sessionSummary;
-    if (!summaryToExport) {
+    const samples = [...samplesRef.current];
+    const startTime = sessionStartTimeRef.current || (samples.length > 0 ? new Date(samples[0].timestamp) : null);
+    const endTime = new Date();
+
+    let summaryToExport: SessionSummary;
+
+    // Accurately package all training data collected from the start (even if only seconds/minutes long):
+    if (samples.length > 0 || sessionSecondsRef.current > 0 || sessionStatus === 'running' || sessionStatus === 'paused') {
+      const effectiveStartTime = startTime || new Date(endTime.getTime() - Math.max(1, sessionSecondsRef.current) * 1000);
+      summaryToExport = createCurrentSessionSummary(samples, effectiveStartTime, endTime);
+    } else if (sessionSummary) {
+      summaryToExport = sessionSummary;
+    } else {
       const saved = localStorage.getItem('velopulse_last_summary');
       if (saved) {
         try {
@@ -414,42 +430,21 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           summaryToExport = parsed;
         } catch (e) {
           console.warn('Failed parsing saved summary', e);
+          summaryToExport = createCurrentSessionSummary([], new Date(), new Date());
         }
+      } else {
+        summaryToExport = createCurrentSessionSummary([], new Date(), new Date());
       }
-    }
-
-    if (!summaryToExport) {
-      const now = new Date();
-      const fifteenMinsAgo = new Date(now.getTime() - 15 * 60 * 1000);
-      summaryToExport = {
-        startTime: fifteenMinsAgo,
-        endTime: now,
-        totalElapsedTimeSeconds: 900,
-        totalTimerTimeSeconds: 900,
-        totalDistanceMeters: 7500,
-        avgPowerWatts: Math.round(settings.ftp * 0.75),
-        maxPowerWatts: Math.round(settings.ftp * 1.15),
-        normalizedPowerWatts: Math.round(settings.ftp * 0.78),
-        avgCadenceRpm: 88,
-        maxCadenceRpm: 104,
-        avgHeartRateBpm: 145,
-        maxHeartRateBpm: 168,
-        avgSpeedKmh: 30.0,
-        maxSpeedKmh: 37.5,
-        totalWorkKj: 170,
-        totalCaloriesKcal: 178,
-        trainingStressScore: 16,
-        intensityFactor: 0.78,
-        samples: [],
-      };
     }
 
     setSessionSummary(summaryToExport);
     try {
       const fileInfo = createFitFileInfo(summaryToExport);
       setFitFileInfo(fileInfo);
+      // Trigger instant direct download of the .fit file
+      downloadFitFile(summaryToExport, fileInfo.filename);
     } catch (err) {
-      console.error('Failed to generate FIT file:', err);
+      console.error('Failed to generate/download FIT file:', err);
     }
   };
 

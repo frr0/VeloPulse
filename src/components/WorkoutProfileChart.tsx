@@ -26,8 +26,8 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
     return (
       <div
         onClick={onOpenWorkoutModal}
-        className={`w-full rounded-2xl bg-[#111622]/90 border border-[#232D42] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all ${
-          isCompact ? 'p-3 min-h-[90px] flex-1' : 'p-6 min-h-[140px] md:min-h-[180px]'
+        className={`w-full rounded-2xl bg-[#111622]/90 border border-[#232D42] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all shrink-0 ${
+          isCompact ? 'p-3 h-36' : 'p-6 h-40 md:h-48'
         }`}
       >
         <div className="flex items-center gap-2 text-sm md:text-base text-[#00E5A3] font-bold">
@@ -43,22 +43,25 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
 
   const totalDuration = Math.max(1, workout.totalDurationSeconds);
 
-  // Determine max power scale
+  // Dynamic power scale: adapt directly to workout's peak effort so bars fill vertical height
   const maxPowerPercent = useMemo(() => {
-    let max = 1.25;
+    let max = 0.5;
     workout.intervals.forEach((inv) => {
       max = Math.max(max, inv.powerHigh, inv.powerLow, inv.power);
     });
-    return max * 1.1; // Add 10% headroom
+    return Math.max(max * 1.05, 1.02);
   }, [workout]);
 
-  const chartHeight = 130;
+  const chartHeight = 160;
   const chartWidth = 1000;
+  const padTop = 8;
+  const yBase = chartHeight;
+  const drawHeight = yBase - padTop;
 
   const getX = (sec: number) => (sec / totalDuration) * chartWidth;
   const getY = (powerRatio: number) => {
     const fraction = Math.min(1, Math.max(0, powerRatio / maxPowerPercent));
-    return chartHeight - fraction * (chartHeight - 14);
+    return yBase - fraction * drawHeight;
   };
 
   const getZoneColor = (powerRatio: number): string => {
@@ -72,52 +75,54 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
     return POWER_ZONES_CONFIG[6].color;
   };
 
-  const scrubberX = getX(Math.min(currentSecond, totalDuration));
+  const scrubberX = Math.max(0, Math.min(chartWidth, getX(currentSecond)));
+
+  const formatMmSs = (totalSec: number) => {
+    const m = Math.floor(totalSec / 60);
+    const s = Math.floor(totalSec % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
 
   return (
     <div
-      className={`w-full rounded-2xl bg-[#111622]/95 border border-[#232D42] shadow-lg backdrop-blur-md flex flex-col justify-between ${
-        isCompact ? 'p-2.5 sm:p-3 flex-1 min-h-[110px]' : 'p-4 md:p-5'
+      className={`w-full rounded-2xl bg-[#111622]/95 border border-[#232D42] shadow-lg backdrop-blur-md flex flex-col overflow-hidden shrink-0 ${
+        isCompact ? 'h-36 sm:h-40' : 'h-44 md:h-48'
       }`}
     >
       {/* Workout Header Info */}
-      <div className="flex items-center justify-between text-xs sm:text-sm leading-none mb-2">
+      <div className="px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm leading-none gap-2 min-w-0 bg-[#111622] border-b border-[#232D42]/50 shrink-0">
         <div
           onClick={onOpenWorkoutModal}
-          className="flex items-center gap-2 cursor-pointer hover:text-[#00E5A3] transition-colors min-w-0"
+          className="flex items-center gap-1.5 cursor-pointer hover:text-[#00E5A3] transition-colors min-w-0 truncate"
           title="Tap to change workout"
         >
           <Dumbbell className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
-          <span className="font-black text-slate-100 truncate max-w-[180px] sm:max-w-xs md:max-w-md">
+          <span className="font-black text-slate-100 truncate">
             {workout.title}
           </span>
           <span className="text-slate-400 text-xs shrink-0">
             • {Math.floor(workout.totalDurationSeconds / 60)}m
           </span>
-          <span className="text-[#00E5A3] font-semibold text-xs shrink-0">
+          <span className="text-[#00E5A3] font-semibold text-xs shrink-0 hidden xs:inline sm:inline">
             • TSS {workout.estimatedTss}
           </span>
-          <span className="text-amber-400 font-semibold text-xs shrink-0">
+          <span className="text-amber-400 font-semibold text-xs shrink-0 hidden sm:inline">
             • IF {workout.intensityFactor}
           </span>
         </div>
 
         {/* FTP threshold line indicator */}
         <div className="flex items-center gap-1.5 text-xs text-slate-400 shrink-0">
-          <div className="w-3 h-0.5 bg-yellow-400/80" />
-          <span className="font-mono">{ftp}W</span>
+          <div className="w-2.5 h-0.5 bg-yellow-400/80 rounded-full" />
+          <span className="font-mono text-yellow-400/90 font-bold">{ftp}W</span>
         </div>
       </div>
 
-      {/* SVG Chart */}
-      <div
-        className={`relative w-full overflow-hidden rounded-xl bg-slate-950/80 border border-[#232D42]/80 flex-1 ${
-          isCompact ? 'min-h-[70px] sm:min-h-[90px]' : 'h-36 md:h-52 lg:h-64'
-        }`}
-      >
+      {/* SVG Chart - Edge-to-edge full width & vertical fill with zero dead margins */}
+      <div className="relative w-full flex-1 overflow-hidden bg-slate-950/70 min-h-0">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="w-full h-full preserve-3d"
+          className="w-full h-full block"
           preserveAspectRatio="none"
         >
           {/* Subtle grid lines */}
@@ -129,8 +134,21 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
             stroke="#facc15"
             strokeDasharray="4 4"
             strokeWidth="1.2"
-            opacity="0.4"
+            opacity="0.45"
           />
+          <text
+            x={chartWidth - 8}
+            y={getY(1.0) - 4}
+            textAnchor="end"
+            fill="#facc15"
+            fontSize="9"
+            opacity="0.6"
+            fontFamily="monospace"
+            fontWeight="bold"
+          >
+            FTP (100%)
+          </text>
+
           <line
             x1="0"
             y1={getY(0.75)}
@@ -142,13 +160,12 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
             opacity="0.25"
           />
 
-          {/* Intervals polygons */}
+          {/* Intervals polygons (spanning full width from 0 to chartWidth) */}
           {workout.intervals.map((inv, idx) => {
             const x1 = getX(inv.startSecond);
             const x2 = getX(inv.endSecond);
             const y1 = getY(inv.powerLow);
             const y2 = getY(inv.powerHigh);
-            const yBase = chartHeight;
 
             const avgPowerRatio = (inv.powerLow + inv.powerHigh) / 2;
             const color = getZoneColor(avgPowerRatio);
@@ -166,12 +183,12 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
                 <polygon
                   points={points}
                   fill={color}
-                  fillOpacity={isActive ? 0.92 : 0.5}
+                  fillOpacity={isActive ? 0.94 : 0.55}
                   stroke={isActive ? '#ffffff' : color}
                   strokeWidth={isActive ? 2.5 : 1}
                 />
 
-                {/* If active, glow highlight */}
+                {/* If active, highlight overlay */}
                 {isActive && (
                   <polygon
                     points={points}
@@ -190,7 +207,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
             width={scrubberX}
             height={chartHeight}
             fill="#ffffff"
-            fillOpacity="0.1"
+            fillOpacity="0.08"
           />
 
           {/* Scrubber / Current Position Line */}
@@ -200,7 +217,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
             x2={scrubberX}
             y2={chartHeight}
             stroke="#ffffff"
-            strokeWidth="3"
+            strokeWidth="2.5"
           />
           <circle
             cx={scrubberX}
@@ -213,16 +230,11 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
         </svg>
       </div>
 
-      {/* Timeline labels */}
-      <div className="flex justify-between items-center text-[10px] sm:text-xs text-slate-400 font-mono leading-none mt-1.5">
+      {/* Timeline labels - Clean integrated footer */}
+      <div className="px-3.5 py-1 sm:px-4 sm:py-1.5 flex justify-between items-center text-[10px] sm:text-xs text-slate-400 font-mono leading-none bg-[#111622] border-t border-[#232D42]/50 shrink-0">
         <span>00:00</span>
-        <span>
-          {Math.floor(workout.totalDurationSeconds / 120)}:00
-        </span>
-        <span>
-          {Math.floor(workout.totalDurationSeconds / 60)}:
-          {String(workout.totalDurationSeconds % 60).padStart(2, '0')}
-        </span>
+        <span>{formatMmSs(totalDuration / 2)}</span>
+        <span>{formatMmSs(totalDuration)}</span>
       </div>
     </div>
   );

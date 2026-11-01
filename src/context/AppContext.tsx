@@ -4,6 +4,7 @@ import {
   getActivities,
   getAthleteProfile,
   getCalendarEvents,
+  getPowerCurves,
   getWellnessHistory,
   IntervalsApiError,
 } from '../services/intervals/api';
@@ -50,6 +51,7 @@ const STORAGE_KEYS = {
   WELLNESS: 'intervals_pulse_wellness',
   ACTIVITIES: 'intervals_pulse_activities',
   EVENTS: 'intervals_pulse_events',
+  POWER_CURVE: 'intervals_pulse_power_curve',
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -58,6 +60,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [wellness, setWellness] = useState<Wellness[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [powerCurve, setPowerCurve] = useState<PowerCurvePoint[]>(MOCK_POWER_CURVE);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,9 +75,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const cachedWellness = localStorage.getItem(STORAGE_KEYS.WELLNESS);
       const cachedActivities = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
       const cachedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
+      const cachedPowerCurve = localStorage.getItem(STORAGE_KEYS.POWER_CURVE);
 
       if (savedSettings) {
         setUseImperial(JSON.parse(savedSettings).useImperial);
+      }
+
+      if (cachedPowerCurve) {
+        try {
+          setPowerCurve(JSON.parse(cachedPowerCurve));
+        } catch {
+          // ignore
+        }
       }
 
       if (savedAuth) {
@@ -107,15 +119,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setWellness(MOCK_WELLNESS);
         setActivities(MOCK_ACTIVITIES);
         setEvents(MOCK_CALENDAR_EVENTS);
+        setPowerCurve(MOCK_POWER_CURVE);
         return;
       }
 
-      const [fetchedAthlete, fetchedWellness, fetchedActivities, fetchedEvents] =
+      const [fetchedAthlete, fetchedWellness, fetchedActivities, fetchedEvents, fetchedPowerCurve] =
         await Promise.all([
           getAthleteProfile(auth.apiKey, auth.athleteId),
           getWellnessHistory(auth.apiKey, auth.athleteId),
           getActivities(auth.apiKey, auth.athleteId),
           getCalendarEvents(auth.apiKey, auth.athleteId),
+          getPowerCurves(auth.apiKey, auth.athleteId, athlete?.ftp || 250, athlete?.weight || 70),
         ]);
 
       setAthlete(fetchedAthlete);
@@ -127,6 +141,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.WELLNESS, JSON.stringify(fetchedWellness));
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(fetchedActivities));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(fetchedEvents));
+
+      if (fetchedPowerCurve && fetchedPowerCurve.length > 0) {
+        setPowerCurve(fetchedPowerCurve);
+        localStorage.setItem(STORAGE_KEYS.POWER_CURVE, JSON.stringify(fetchedPowerCurve));
+      } else if (fetchedAthlete) {
+        const derived = derivePowerCurve(fetchedAthlete.ftp || 250, fetchedAthlete.weight || 70);
+        setPowerCurve(derived);
+        localStorage.setItem(STORAGE_KEYS.POWER_CURVE, JSON.stringify(derived));
+      }
     } catch (err: any) {
       console.error('Fetch error:', err);
       if (err instanceof IntervalsApiError) {
@@ -195,11 +218,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.WELLNESS);
     localStorage.removeItem(STORAGE_KEYS.ACTIVITIES);
     localStorage.removeItem(STORAGE_KEYS.EVENTS);
+    localStorage.removeItem(STORAGE_KEYS.POWER_CURVE);
     setCredentials(null);
     setAthlete(null);
     setWellness([]);
     setActivities([]);
     setEvents([]);
+    setPowerCurve(MOCK_POWER_CURVE);
     setError(null);
   };
 
@@ -252,12 +277,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [activities]);
 
-  const powerCurve = useMemo(() => {
-    if (credentials?.isDemo || !athlete) {
-      return MOCK_POWER_CURVE;
+  // If athlete FTP/weight changes and no API power curve is present yet, update derived model
+  useEffect(() => {
+    if (athlete && !credentials?.isDemo) {
+      const cached = localStorage.getItem(STORAGE_KEYS.POWER_CURVE);
+      if (!cached) {
+        const derived = derivePowerCurve(athlete.ftp || 250, athlete.weight || 70);
+        setPowerCurve(derived);
+      }
     }
-    return derivePowerCurve(athlete.ftp || 295, athlete.weight || 68.5);
-  }, [credentials, athlete]);
+  }, [athlete?.ftp, athlete?.weight]);
 
   return (
     <AppContext.Provider
