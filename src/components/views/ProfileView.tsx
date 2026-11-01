@@ -44,7 +44,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   return (
     <div className="space-y-6 max-w-3xl mx-auto animate-fadeIn">
       {/* Athlete Hero Card */}
-      <div className="bg-[#111622] border border-[#232D42] rounded-3xl p-6 sm:p-7 shadow-xl">
+      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-7 shadow-xl">
         <div className="flex items-center gap-5 mb-6">
           {athlete?.profile_medium ? (
             <img
@@ -53,7 +53,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-16 h-16 rounded-2xl object-cover border-2 border-[#00E5A3]"
             />
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-[#1A2234] border border-[#232D42] flex items-center justify-center text-[#00E5A3] font-black text-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-[#2F3037] border border-[#383941] flex items-center justify-center text-[#00E5A3] font-black text-2xl">
               {displayName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -65,14 +65,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {[athlete.city, athlete.country].filter(Boolean).join(', ')}
               </span>
             )}
-            <span className="inline-block mt-2 bg-[#1A2234] px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="inline-block mt-2 bg-[#2F3037] px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
               Athlete ID: {athlete?.id || credentials?.athleteId || '0'}
             </span>
           </div>
         </div>
 
         {/* Baselines Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#1A2234] rounded-2xl border border-white/5 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#2F3037] rounded-2xl border border-white/5 text-center">
           <div>
             <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
               <Zap className="w-3 h-3 text-[#FC5200]" />
@@ -118,7 +118,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Smart Trainer & Physics Settings */}
-      <div className="bg-[#111622] border border-[#232D42] rounded-3xl p-6 shadow-xl space-y-4">
+      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
             <Gauge className="w-4 h-4 text-[#00E5A3]" />
@@ -127,14 +127,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
-              className="px-3 py-1.5 rounded-xl bg-[#1A2234] border border-[#232D42] text-xs font-bold text-[#00E5A3] hover:bg-[#25324C] transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-[#00E5A3] hover:bg-[#3E4049] transition-colors"
             >
               Configure Parameters
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#1A2234] rounded-2xl border border-white/5 text-center text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#2F3037] rounded-2xl border border-white/5 text-center text-xs">
           <div>
             <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Bike Weight</span>
             <span className="font-bold text-white text-sm">{settings?.bikeWeightKg ?? 9} kg</span>
@@ -177,7 +177,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Preferences & Units */}
-      <div className="bg-[#111622] border border-[#232D42] rounded-3xl p-6 shadow-xl space-y-5">
+      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 shadow-xl space-y-5">
         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
           Preferences & Intervals.icu Sync
         </h3>
@@ -191,7 +191,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <button
             onClick={toggleUnits}
-            className="px-3.5 py-1.5 rounded-xl bg-[#1A2234] border border-[#232D42] text-xs font-bold text-[#00E5A3] hover:bg-[#25324C] transition-colors"
+            className="px-3.5 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-[#00E5A3] hover:bg-[#3E4049] transition-colors"
           >
             Switch to {useImperial ? 'Metric' : 'Imperial'}
           </button>
@@ -221,7 +221,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             onClick={refreshData}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1A2234] border border-[#232D42] text-xs font-bold text-white hover:bg-[#25324C] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-white hover:bg-[#3E4049] transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#00E5A3]' : ''}`} />
             <span>Sync Now</span>

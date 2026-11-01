@@ -46,10 +46,22 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
   const p20m = data.find((d) => d.secs === 1200);
   const p1h = data.find((d) => d.secs === 3600);
 
+  const getPointWatts = (p?: PowerCurvePoint) => {
+    if (!p) return null;
+    const val = mode === 'season' && p.seasonWatts ? p.seasonWatts : p.watts;
+    return val > 0 ? val : null;
+  };
+
+  const getPointWkg = (p?: PowerCurvePoint) => {
+    if (!p) return null;
+    const val = mode === 'season' && p.seasonWkg ? p.seasonWkg : p.wkg;
+    return val > 0 ? val : null;
+  };
+
   const ftpWkg = weight > 0 ? (ftp / weight).toFixed(1) : '4.3';
 
   return (
-    <div className="bg-[#111622] rounded-2xl p-5 border border-[#232D42] shadow-xl">
+    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
@@ -69,7 +81,7 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
         {/* Toggle Switches */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Watts vs W/kg */}
-          <div className="flex items-center bg-[#1A2234] p-1 rounded-xl border border-[#232D42]">
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
             <button
               onClick={() => setMetric('watts')}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
@@ -93,12 +105,12 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
           </div>
 
           {/* Recent vs Season */}
-          <div className="flex items-center bg-[#1A2234] p-1 rounded-xl border border-[#232D42]">
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
             <button
               onClick={() => setMode('recent')}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 mode === 'recent'
-                  ? 'bg-[#26334D] text-white shadow'
+                  ? 'bg-[#3E4049] text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -108,7 +120,7 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
               onClick={() => setMode('season')}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 mode === 'season'
-                  ? 'bg-[#26334D] text-white shadow'
+                  ? 'bg-[#3E4049] text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -120,63 +132,93 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
 
       {/* Benchmark Summary Pills */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-5">
-        <div className="bg-[#151C2C] p-3 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             5s Sprint
           </span>
           <span className="text-lg font-black text-white mt-0.5 block">
-            {p5s?.watts ?? 980} <span className="text-xs font-semibold text-slate-400">W</span>
+            {getPointWatts(p5s) !== null ? (
+              <>
+                {getPointWatts(p5s)} <span className="text-xs font-semibold text-slate-400">W</span>
+              </>
+            ) : (
+              '--'
+            )}
           </span>
           <span className="text-[11px] font-semibold text-[#FC5200]">
-            {p5s?.wkg ?? 14.3} W/kg
+            {getPointWkg(p5s) !== null ? `${getPointWkg(p5s)} W/kg` : '--'}
           </span>
         </div>
 
-        <div className="bg-[#151C2C] p-3 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             1m Anaerobic
           </span>
           <span className="text-lg font-black text-white mt-0.5 block">
-            {p1m?.watts ?? 530} <span className="text-xs font-semibold text-slate-400">W</span>
+            {getPointWatts(p1m) !== null ? (
+              <>
+                {getPointWatts(p1m)} <span className="text-xs font-semibold text-slate-400">W</span>
+              </>
+            ) : (
+              '--'
+            )}
           </span>
           <span className="text-[11px] font-semibold text-[#FC5200]">
-            {p1m?.wkg ?? 7.7} W/kg
+            {getPointWkg(p1m) !== null ? `${getPointWkg(p1m)} W/kg` : '--'}
           </span>
         </div>
 
-        <div className="bg-[#151C2C] p-3 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             5m VO2 Max
           </span>
           <span className="text-lg font-black text-white mt-0.5 block">
-            {p5m?.watts ?? 385} <span className="text-xs font-semibold text-slate-400">W</span>
+            {getPointWatts(p5m) !== null ? (
+              <>
+                {getPointWatts(p5m)} <span className="text-xs font-semibold text-slate-400">W</span>
+              </>
+            ) : (
+              '--'
+            )}
           </span>
           <span className="text-[11px] font-semibold text-[#38BDF8]">
-            {p5m?.wkg ?? 5.6} W/kg
+            {getPointWkg(p5m) !== null ? `${getPointWkg(p5m)} W/kg` : '--'}
           </span>
         </div>
 
-        <div className="bg-[#151C2C] p-3 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             20m Threshold
           </span>
           <span className="text-lg font-black text-white mt-0.5 block">
-            {p20m?.watts ?? 310} <span className="text-xs font-semibold text-slate-400">W</span>
+            {getPointWatts(p20m) !== null ? (
+              <>
+                {getPointWatts(p20m)} <span className="text-xs font-semibold text-slate-400">W</span>
+              </>
+            ) : (
+              '--'
+            )}
           </span>
           <span className="text-[11px] font-semibold text-[#00E5A3]">
-            {p20m?.wkg ?? 4.5} W/kg
+            {getPointWkg(p20m) !== null ? `${getPointWkg(p20m)} W/kg` : '--'}
           </span>
         </div>
 
-        <div className="bg-[#151C2C] p-3 rounded-xl border border-white/5 col-span-2 sm:col-span-1">
+        <div className="bg-[#26272D] p-3 rounded-xl border border-white/5 col-span-2 sm:col-span-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             60m Hour
           </span>
           <span className="text-lg font-black text-white mt-0.5 block">
-            {p1h?.watts ?? 285} <span className="text-xs font-semibold text-slate-400">W</span>
+            {getPointWatts(p1h) !== null ? (
+              <>
+                {getPointWatts(p1h)} <span className="text-xs font-semibold text-slate-400">W</span>
+              </>
+            ) : (
+              '--'
+            )}
           </span>
           <span className="text-[11px] font-semibold text-[#A855F7]">
-            {p1h?.wkg ?? 4.2} W/kg
+            {getPointWkg(p1h) !== null ? `${getPointWkg(p1h)} W/kg` : '--'}
           </span>
         </div>
       </div>
@@ -196,20 +238,20 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#232D42" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
             <XAxis
               dataKey="label"
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
             />
             <YAxis
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
               unit={metric === 'watts' ? 'W' : ''}
             />
 
@@ -231,7 +273,7 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({
                 if (active && payload && payload.length) {
                   const d = payload[0].payload as PowerCurvePoint;
                   return (
-                    <div className="bg-[#1A2234] border border-[#232D42] p-3 rounded-xl shadow-2xl text-xs">
+                    <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
                       <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-1.5 mb-1.5">
                         <strong className="text-white text-sm">{d.label} Effort</strong>
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-slate-300">

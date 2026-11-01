@@ -42,10 +42,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       return (
         <div
           onClick={onClick}
-          className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#111622]/95 border p-2.5 sm:p-3.5 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
+          className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border p-2.5 sm:p-3.5 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
             highlight
               ? 'border-[#00E5A3]/60 shadow-[0_0_20px_-3px_rgba(0,229,163,0.35)]'
-              : 'border-[#232D42] hover:border-slate-700 shadow-md'
+              : 'border-[#383941] hover:border-slate-700 shadow-md'
           } ${onClick ? 'cursor-pointer hover:border-white/20' : ''}`}
         >
           {/* Top Header */}
@@ -93,7 +93,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             )}
 
             {footer && (
-              <div className="pt-1 border-t border-[#232D42]/80 text-[11px] sm:text-xs leading-tight text-slate-400">
+              <div className="pt-1 border-t border-[#383941]/80 text-[11px] sm:text-xs leading-tight text-slate-400">
                 {footer}
               </div>
             )}
@@ -106,10 +106,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     return (
       <div
         onClick={onClick}
-        className={`relative overflow-hidden rounded-2xl bg-[#111622]/95 border p-4 sm:p-5 lg:p-6 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
+        className={`relative overflow-hidden rounded-2xl bg-[#1F2025]/95 border p-4 sm:p-5 lg:p-6 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
           highlight
             ? 'border-[#00E5A3]/60 shadow-[0_0_25px_-5px_rgba(0,229,163,0.3)]'
-            : 'border-[#232D42] hover:border-slate-700 shadow-lg'
+            : 'border-[#383941] hover:border-slate-700 shadow-lg'
         } ${onClick ? 'cursor-pointer hover:border-white/20' : ''}`}
       >
         {/* Top Header */}
@@ -157,7 +157,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           )}
 
           {footer && (
-            <div className="pt-2 border-t border-[#232D42] text-xs font-medium">
+            <div className="pt-2 border-t border-[#383941] text-xs font-medium">
               {footer}
             </div>
           )}
@@ -170,7 +170,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-[#111622] rounded-2xl p-4 sm:p-5 border border-[#232D42] shadow-lg flex flex-col justify-between transition-all ${
+      className={`bg-[#1F2025] rounded-2xl p-4 sm:p-5 border border-[#383941] shadow-lg flex flex-col justify-between transition-all ${
         onClick ? 'cursor-pointer hover:border-[#00E5A3]/40 hover:bg-[#141C2B]' : ''
       }`}
     >

@@ -99,7 +99,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
   };
 
   return (
-    <div className="bg-[#111622] rounded-2xl p-5 border border-[#232D42] shadow-xl">
+    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
       {/* Header with Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
@@ -120,7 +120,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
 
         {/* Tab & Range Controls */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center bg-[#1A2234] p-1 rounded-xl border border-[#232D42]">
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
             <button
               onClick={() => setActiveTab('duration')}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
@@ -143,14 +143,14 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             </button>
           </div>
 
-          <div className="flex items-center bg-[#1A2234] p-1 rounded-xl border border-[#232D42]">
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
             {(['14', '30', '90'] as RangeOption[]).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   range === r
-                    ? 'bg-[#26334D] text-white shadow'
+                    ? 'bg-[#3E4049] text-white shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -163,7 +163,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
 
       {/* Hero Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Latest Night
           </span>
@@ -177,7 +177,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
           </span>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             7-Day Avg Duration
           </span>
@@ -187,7 +187,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
           <span className="text-[11px] text-slate-400 font-medium">Optimal 7h–9h target</span>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             7-Day Avg Score
           </span>
@@ -199,7 +199,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
           </span>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             7-Day Sleep Debt
           </span>
@@ -224,7 +224,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           {activeTab === 'duration' ? (
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#232D42" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
               {/* Target 7-9h optimal reference band */}
               <ReferenceArea
@@ -253,14 +253,14 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 stroke="#64748B"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: '#232D42' }}
+                axisLine={{ stroke: '#383941' }}
               />
               <YAxis
                 domain={[4, 11]}
                 stroke="#64748B"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: '#232D42' }}
+                axisLine={{ stroke: '#383941' }}
                 unit="h"
               />
 
@@ -274,7 +274,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                       score: number;
                     };
                     return (
-                      <div className="bg-[#1A2234] border border-[#232D42] p-3 rounded-xl shadow-2xl text-xs">
+                      <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
                         <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
                           {d.id}
                         </div>
@@ -315,7 +315,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             </BarChart>
           ) : (
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#232D42" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
               {/* 85% Optimal Score band */}
               <ReferenceArea
@@ -343,14 +343,14 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 stroke="#64748B"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: '#232D42' }}
+                axisLine={{ stroke: '#383941' }}
               />
               <YAxis
                 domain={[40, 100]}
                 stroke="#64748B"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: '#232D42' }}
+                axisLine={{ stroke: '#383941' }}
                 unit="%"
               />
 
@@ -363,7 +363,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                       score: number;
                     };
                     return (
-                      <div className="bg-[#1A2234] border border-[#232D42] p-3 rounded-xl shadow-2xl text-xs">
+                      <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
                         <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
                           {d.id}
                         </div>

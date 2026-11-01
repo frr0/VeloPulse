@@ -1,4 +1,6 @@
-import { Activity, Athlete, CalendarEvent, PowerCurvePoint, Wellness } from '../../types/intervals';
+import { Activity, Athlete, CalendarEvent, PowerCurvePoint, SportSettings, Wellness } from '../../types/intervals';
+import { HrZoneCustom } from '../../types';
+import { getDefaultHrZones } from '../../utils/zones';
 
 // Use Vite reverse proxy /api in development, or direct URL
 const BASE_URL = import.meta.env.DEV ? '/api/v1' : 'https://intervals.icu/api/v1';
@@ -104,6 +106,19 @@ export async function getActivityDetails(apiKey: string, activityId: string): Pr
   return request<Activity>(`/activity/${activityId}`, apiKey);
 }
 
+export async function getActivityStreams(
+  apiKey: string,
+  activityId: string,
+  types = 'latlng'
+): Promise<any> {
+  try {
+    return await request<any>(`/activity/${activityId}/streams?types=${types}`, apiKey);
+  } catch (err) {
+    console.warn(`Could not fetch streams for activity ${activityId}:`, err);
+    return null;
+  }
+}
+
 export async function getCalendarEvents(
   apiKey: string,
   athleteId = '0',
@@ -130,25 +145,17 @@ export function derivePowerCurve(ftp: number = 250, weight: number = 70): PowerC
   const f = ftp > 0 ? ftp : 250;
 
   // Realistic Critical Power & W' power duration curve modeling:
-  // 5s sprint ~2.10x FTP (season ~2.25x)
-  // 15s ~1.85x FTP (season ~1.95x)
-  // 30s ~1.55x FTP (season ~1.65x)
-  // 1m ~1.35x FTP (season ~1.42x)
-  // 2m ~1.20x FTP (season ~1.26x)
-  // 5m ~1.12x FTP (season ~1.16x)
-  // 10m ~1.06x FTP (season ~1.09x)
-  // 20m ~1.02x FTP (season ~1.05x)
-  // 1h ~0.94x FTP (season ~0.96x)
+  // Non-elite cyclists typically achieve ~78-82% of FTP in a continuous 60m ride unless performing a dedicated 1h TT.
   const steps = [
     { secs: 5, label: '5s', ratio: 2.10, seasonRatio: 2.25, cat: 'Sprint' as const },
     { secs: 15, label: '15s', ratio: 1.85, seasonRatio: 1.95, cat: 'Sprint' as const },
     { secs: 30, label: '30s', ratio: 1.55, seasonRatio: 1.65, cat: 'Anaerobic' as const },
     { secs: 60, label: '1m', ratio: 1.35, seasonRatio: 1.42, cat: 'Anaerobic' as const },
     { secs: 120, label: '2m', ratio: 1.20, seasonRatio: 1.26, cat: 'VO2 Max' as const },
-    { secs: 300, label: '5m', ratio: 1.12, seasonRatio: 1.16, cat: 'VO2 Max' as const },
-    { secs: 600, label: '10m', ratio: 1.06, seasonRatio: 1.09, cat: 'Threshold' as const },
-    { secs: 1200, label: '20m', ratio: 1.02, seasonRatio: 1.05, cat: 'Threshold' as const },
-    { secs: 3600, label: '1h', ratio: 0.94, seasonRatio: 0.96, cat: 'Endurance' as const },
+    { secs: 300, label: '5m', ratio: 1.10, seasonRatio: 1.15, cat: 'VO2 Max' as const },
+    { secs: 600, label: '10m', ratio: 1.02, seasonRatio: 1.06, cat: 'Threshold' as const },
+    { secs: 1200, label: '20m', ratio: 0.96, seasonRatio: 1.00, cat: 'Threshold' as const },
+    { secs: 3600, label: '1h', ratio: 0.78, seasonRatio: 0.82, cat: 'Endurance' as const },
   ];
 
   return steps.map((m) => {
@@ -166,11 +173,31 @@ export function derivePowerCurve(ftp: number = 250, weight: number = 70): PowerC
   });
 }
 
+function extractCurve(obj: any): { secs: number[]; watts: number[] } | null {
+  if (!obj) return null;
+  if (Array.isArray(obj.secs) && Array.isArray(obj.watts) && obj.secs.length > 0) {
+    return { secs: obj.secs, watts: obj.watts };
+  }
+  if (Array.isArray(obj.points)) {
+    const secs: number[] = [];
+    const watts: number[] = [];
+    for (const p of obj.points) {
+      if (typeof p.secs === 'number' && typeof p.watts === 'number') {
+        secs.push(p.secs);
+        watts.push(p.watts);
+      }
+    }
+    if (secs.length > 0) return { secs, watts };
+  }
+  return null;
+}
+
 export async function getPowerCurves(
   apiKey: string,
   athleteId = '0',
   defaultFtp = 250,
-  weight = 70
+  weight = 70,
+  activitiesList?: Activity[]
 ): Promise<PowerCurvePoint[]> {
   const id = athleteId.trim() || '0';
   const targetSteps = [
@@ -186,26 +213,59 @@ export async function getPowerCurves(
   ];
 
   try {
-    const data = await request<any>(`/athlete/${id}/power-curves.json?curves=42d,1y&type=Ride`, apiKey);
-    
-    let recentCurve: { secs?: number[]; watts?: number[] } | null = null;
-    let seasonCurve: { secs?: number[]; watts?: number[] } | null = null;
+    // Try multiple endpoint patterns for Intervals.icu
+    let data: any = null;
+    const endpointsToTry = [
+      `/athlete/${id}/power-curves?curves=42d,1y`,
+      `/athlete/${id}/power-curves?curves=42d,1y&type=Ride`,
+      `/athlete/${id}/power-curves?curves=1y`,
+      `/athlete/${id}/power-curves.json?curves=42d,1y`,
+    ];
 
-    if (Array.isArray(data)) {
-      recentCurve = data[0] || null;
-      seasonCurve = data[1] || data[0] || null;
-    } else if (data && typeof data === 'object') {
-      if (Array.isArray(data.curves)) {
-        recentCurve = data.curves[0];
-        seasonCurve = data.curves[1] || data.curves[0];
-      } else if (data.secs && data.watts) {
-        recentCurve = data;
-        seasonCurve = data;
+    for (const ep of endpointsToTry) {
+      try {
+        data = await request<any>(ep, apiKey);
+        if (data) break;
+      } catch {
+        // try next endpoint
       }
     }
 
-    if (recentCurve && Array.isArray(recentCurve.secs) && Array.isArray(recentCurve.watts) && recentCurve.watts.length > 0) {
-      const getWattsAtSecs = (curve: { secs?: number[]; watts?: number[] }, targetSec: number): number | null => {
+    let recentCurve: { secs: number[]; watts: number[] } | null = null;
+    let seasonCurve: { secs: number[]; watts: number[] } | null = null;
+
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        const c = extractCurve(item);
+        if (c) {
+          if (!recentCurve) recentCurve = c;
+          else if (!seasonCurve) seasonCurve = c;
+        }
+      }
+    } else if (data && typeof data === 'object') {
+      if (Array.isArray(data.curves)) {
+        for (const item of data.curves) {
+          const c = extractCurve(item);
+          if (c) {
+            if (!recentCurve) recentCurve = c;
+            else if (!seasonCurve) seasonCurve = c;
+          }
+        }
+      } else {
+        recentCurve =
+          extractCurve(data['42d']) ||
+          extractCurve(data['s0']) ||
+          extractCurve(data['1y']) ||
+          extractCurve(data);
+        seasonCurve =
+          extractCurve(data['1y']) ||
+          extractCurve(data['all']) ||
+          recentCurve;
+      }
+    }
+
+    if (recentCurve && recentCurve.watts && recentCurve.watts.length > 0) {
+      const getWattsAtSecs = (curve: { secs: number[]; watts: number[] }, targetSec: number): number | null => {
         if (!curve.secs || !curve.watts || curve.watts.length === 0) return null;
         const secs = curve.secs;
         const watts = curve.watts;
@@ -225,18 +285,41 @@ export async function getPowerCurves(
           }
         }
 
-        if (closestIdx >= 0 && minDiff <= targetSec * 0.3) {
+        // Allow closest match within 20% of target duration
+        if (closestIdx >= 0 && minDiff <= targetSec * 0.20) {
           return Math.round(watts[closestIdx]);
         }
         return null;
       };
 
+      // Check if we can find 60m power from actual activities if curve doesn't reach 1h
+      let best60mFromActivities: number | null = null;
+      if (activitiesList && activitiesList.length > 0) {
+        for (const act of activitiesList) {
+          const dur = act.moving_time || act.elapsed_time || 0;
+          if (dur >= 3500 && act.average_watts && act.average_watts > 0) {
+            if (!best60mFromActivities || act.average_watts > best60mFromActivities) {
+              best60mFromActivities = Math.round(act.average_watts);
+            }
+          }
+        }
+      }
+
       const points: PowerCurvePoint[] = [];
       let validCount = 0;
 
       for (const step of targetSteps) {
-        const recentWatts = getWattsAtSecs(recentCurve, step.secs);
-        const sWatts = seasonCurve ? getWattsAtSecs(seasonCurve, step.secs) : null;
+        let recentWatts = getWattsAtSecs(recentCurve, step.secs);
+        let sWatts = seasonCurve ? getWattsAtSecs(seasonCurve, step.secs) : null;
+
+        // If 60m is missing from recentCurve but present in seasonCurve or activities, use it
+        if (step.secs === 3600) {
+          if (!recentWatts && sWatts) recentWatts = sWatts;
+          if (!recentWatts && best60mFromActivities) {
+            recentWatts = best60mFromActivities;
+            if (!sWatts) sWatts = best60mFromActivities;
+          }
+        }
 
         if (recentWatts !== null && recentWatts > 0) {
           validCount++;
@@ -262,4 +345,72 @@ export async function getPowerCurves(
   }
 
   return derivePowerCurve(defaultFtp, weight);
+}
+
+export async function getAthleteSportSettings(
+  apiKey: string,
+  athleteId = '0',
+  sport = 'Ride'
+): Promise<SportSettings | null> {
+  const id = athleteId.trim() || '0';
+  try {
+    const data = await request<SportSettings>(`/athlete/${id}/sport-settings/${sport}`, apiKey);
+    if (data && data.hr_zones && data.hr_zones.length > 0) {
+      return data;
+    }
+  } catch {
+    // Specific endpoint fallback
+  }
+
+  try {
+    const athlete = await getAthleteProfile(apiKey, id);
+    if (athlete.sportSettings && Array.isArray(athlete.sportSettings)) {
+      const match = athlete.sportSettings.find((s) => s.types?.includes(sport) || s.id === sport);
+      if (match && match.hr_zones && match.hr_zones.length > 0) {
+        return match;
+      }
+      if (athlete.sportSettings[0]?.hr_zones?.length) {
+        return athlete.sportSettings[0];
+      }
+    }
+  } catch {
+    // Athlete profile fallback
+  }
+
+  return null;
+}
+
+export function sportSettingsToHrZones(
+  sportSettings: SportSettings | null | undefined,
+  maxHr = 190,
+  restingHr = 55
+): HrZoneCustom[] {
+  if (!sportSettings || !sportSettings.hr_zones || sportSettings.hr_zones.length === 0) {
+    return getDefaultHrZones(maxHr, restingHr);
+  }
+
+  const zoneColors = ['#94a3b8', '#38bdf8', '#4ade80', '#facc15', '#ef4444', '#fb923c', '#c084fc'];
+  const defaultNames = [
+    'Recovery',
+    'Aerobic Base',
+    'Tempo',
+    'Threshold',
+    'VO2 Max / Anaerobic',
+    'Anaerobic Capacity',
+    'Neuromuscular',
+  ];
+
+  const bounds = sportSettings.hr_zones; // Upper thresholds in BPM, e.g. [126, 148, 164, 178, 192]
+  const names = sportSettings.hr_zone_names || [];
+
+  return bounds.map((upperBpm, idx) => {
+    const minBpm = idx === 0 ? Math.round(restingHr) : bounds[idx - 1];
+    return {
+      zone: idx + 1,
+      name: names[idx] || defaultNames[idx] || `Zone ${idx + 1}`,
+      minBpm,
+      maxBpm: upperBpm,
+      color: zoneColors[idx % zoneColors.length],
+    };
+  });
 }

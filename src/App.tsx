@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ActivityModal } from './components/ActivityModal';
+import { ActivityDetailView } from './components/views/ActivityDetailView';
 import { BluetoothModal } from './components/BluetoothModal';
 import { LoginView } from './components/LoginView';
 import { Navbar, NavTab } from './components/Navbar';
@@ -20,6 +20,8 @@ import {
   UserSettings,
 } from './types';
 import { convertCalendarEventToWorkout } from './utils/workoutConverter';
+import { getDefaultHrZones } from './utils/zones';
+import { sportSettingsToHrZones } from './services/intervals/api';
 
 const DEFAULT_SETTINGS: UserSettings = {
   ftp: 250,
@@ -33,13 +35,31 @@ const DEFAULT_SETTINGS: UserSettings = {
   soundAlerts: true,
   speedSource: 'physics',
   wheelCircumferenceMm: 2105,
+  hrZones: getDefaultHrZones(190, 55),
 };
 
 function MainApp() {
   const { credentials, athlete, isLoading, useImperial } = useApp();
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  const [returnTab, setReturnTab] = useState<NavTab>('activities');
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('fitness');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+
+  const handleSelectActivity = (activity: Activity) => {
+    setReturnTab(currentTab);
+    setSelectedActivity(activity);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackFromActivity = () => {
+    setSelectedActivity(null);
+    setCurrentTab(returnTab);
+  };
+
+  const handleSelectTab = (tab: NavTab) => {
+    setSelectedActivity(null);
+    setCurrentTab(tab);
+  };
 
   // User Settings state
   const [settings, setSettings] = useState<UserSettings>(() => {
@@ -68,6 +88,16 @@ function MainApp() {
         if (athlete.restingHR && athlete.restingHR !== prev.restingHeartRate) {
           updated.restingHeartRate = athlete.restingHR;
           changed = true;
+        }
+        if (!prev.hrZones || prev.hrZones.length === 0 || athlete.sportSettings) {
+          const matchSport = athlete.sportSettings?.find((s) => s.types?.includes('Ride') || s.id === 'Ride') || athlete.sportSettings?.[0];
+          if (matchSport?.hr_zones && matchSport.hr_zones.length > 0) {
+            updated.hrZones = sportSettingsToHrZones(matchSport, updated.maxHeartRate, updated.restingHeartRate);
+            changed = true;
+          } else if (!prev.hrZones || prev.hrZones.length === 0) {
+            updated.hrZones = getDefaultHrZones(updated.maxHeartRate, updated.restingHeartRate);
+            changed = true;
+          }
         }
         if (changed) {
           localStorage.setItem('velopulse_settings', JSON.stringify(updated));
@@ -117,7 +147,7 @@ function MainApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#080A0F] gap-3">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#131316] gap-3">
         <div className="w-9 h-9 border-3 border-[#00E5A3] border-t-transparent rounded-full animate-spin" />
         <span className="text-xs font-bold text-slate-400">Loading VeloPulse...</span>
       </div>
@@ -129,64 +159,76 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080A0F] text-white flex flex-col font-sans selection:bg-[#00E5A3]/20 selection:text-[#00E5A3]">
+    <div className="min-h-screen bg-[#131316] text-white flex flex-col font-sans selection:bg-[#00E5A3]/20 selection:text-[#00E5A3]">
       <Navbar
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
+        currentTab={selectedActivity ? returnTab : currentTab}
+        onSelectTab={handleSelectTab}
         devicesState={devicesState}
         onOpenBluetooth={() => setIsBluetoothModalOpen(true)}
       />
 
       <main
         className={`flex-1 w-full mx-auto flex flex-col ${
-          currentTab === 'ride'
+          currentTab === 'ride' && !selectedActivity
             ? 'p-2 sm:p-4 md:p-6 max-w-full'
             : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8'
         }`}
       >
-        {currentTab === 'dashboard' && (
-          <DashboardView
-            onSelectActivity={setSelectedActivity}
-            onNavigateTab={setCurrentTab}
-            onNavigateAnalytics={handleNavigateToFitness}
-            onOpenBluetooth={() => setIsBluetoothModalOpen(true)}
-          />
-        )}
-
-        {currentTab === 'ride' && (
-          <RideStudioView
-            settings={settings}
-            onUpdateSettings={handleUpdateSettings}
-            bluetoothManager={bluetoothManagerRef.current}
-            devicesState={devicesState}
-            isBluetoothModalOpen={isBluetoothModalOpen}
-            setIsBluetoothModalOpen={setIsBluetoothModalOpen}
-            isSettingsModalOpen={isSettingsModalOpen}
-            setIsSettingsModalOpen={setIsSettingsModalOpen}
-            activeWorkoutFromCalendar={activeWorkoutFromCalendar}
-            onClearCalendarWorkout={() => setActiveWorkoutFromCalendar(null)}
+        {selectedActivity ? (
+          <ActivityDetailView
+            activity={selectedActivity}
+            onBack={handleBackFromActivity}
+            returnTabName={returnTab === 'dashboard' ? 'Dashboard' : 'Attività'}
             useImperial={useImperial}
-          />
-        )}
-
-        {currentTab === 'fitness' && (
-          <FitnessView key={analyticsTab} initialTab={analyticsTab} />
-        )}
-
-        {currentTab === 'activities' && (
-          <ActivitiesView onSelectActivity={setSelectedActivity} />
-        )}
-
-        {currentTab === 'plan' && (
-          <CalendarView onRideWorkout={handleRideCalendarWorkout} />
-        )}
-
-        {currentTab === 'profile' && (
-          <ProfileView
             settings={settings}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
-            onOpenBluetooth={() => setIsBluetoothModalOpen(true)}
           />
+        ) : (
+          <>
+            {currentTab === 'dashboard' && (
+              <DashboardView
+                onSelectActivity={handleSelectActivity}
+                onNavigateTab={handleSelectTab}
+                onNavigateAnalytics={handleNavigateToFitness}
+                onOpenBluetooth={() => setIsBluetoothModalOpen(true)}
+              />
+            )}
+
+            {currentTab === 'ride' && (
+              <RideStudioView
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                bluetoothManager={bluetoothManagerRef.current}
+                devicesState={devicesState}
+                isBluetoothModalOpen={isBluetoothModalOpen}
+                setIsBluetoothModalOpen={setIsBluetoothModalOpen}
+                isSettingsModalOpen={isSettingsModalOpen}
+                setIsSettingsModalOpen={setIsSettingsModalOpen}
+                activeWorkoutFromCalendar={activeWorkoutFromCalendar}
+                onClearCalendarWorkout={() => setActiveWorkoutFromCalendar(null)}
+                useImperial={useImperial}
+              />
+            )}
+
+            {currentTab === 'fitness' && (
+              <FitnessView key={analyticsTab} initialTab={analyticsTab} />
+            )}
+
+            {currentTab === 'activities' && (
+              <ActivitiesView onSelectActivity={handleSelectActivity} />
+            )}
+
+            {currentTab === 'plan' && (
+              <CalendarView onRideWorkout={handleRideCalendarWorkout} />
+            )}
+
+            {currentTab === 'profile' && (
+              <ProfileView
+                settings={settings}
+                onOpenSettings={() => setIsSettingsModalOpen(true)}
+                onOpenBluetooth={() => setIsBluetoothModalOpen(true)}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -210,13 +252,6 @@ function MainApp() {
         onClose={() => setIsSettingsModalOpen(false)}
         settings={settings}
         onSaveSettings={handleUpdateSettings}
-      />
-
-      {/* Activity Details Modal */}
-      <ActivityModal
-        activity={selectedActivity}
-        onClose={() => setSelectedActivity(null)}
-        useImperial={useImperial}
       />
     </div>
   );

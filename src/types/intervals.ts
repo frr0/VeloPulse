@@ -1,3 +1,16 @@
+export interface SportSettings {
+  id?: string;
+  types?: string[];
+  hr_zones?: number[];
+  hr_zone_names?: string[];
+  power_zones?: number[];
+  power_zone_names?: string[];
+  max_hr?: number;
+  lthr?: number;
+  ftp?: number;
+  indoor_ftp?: number;
+}
+
 export interface Athlete {
   id: string;
   name: string;
@@ -11,6 +24,7 @@ export interface Athlete {
   maxHR?: number;
   ftp?: number;
   vo2max?: number;
+  sportSettings?: SportSettings[];
 }
 
 export interface PowerCurvePoint {
@@ -84,10 +98,24 @@ export interface Activity {
   icu_joules?: number;
   icu_average_cadence?: number;
   icu_hr_zones?: number[];
+  icu_hr_zone_times?: number[];
+  icu_zone_times?: number[];
   feel?: number;
   rpe?: number;
   description?: string;
   intervals?: ActivityInterval[];
+  polyline?: string;
+  summary_polyline?: string;
+  map?: {
+    id?: string;
+    summary_polyline?: string;
+    polyline?: string;
+  };
+  start_latlng?: [number, number];
+  end_latlng?: [number, number];
+  icu_latlng?: [number, number][];
+  indoor?: boolean;
+  trainer?: boolean;
 }
 
 export interface CalendarEvent {

@@ -45,11 +45,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRideWorkout }) => 
           <p className="text-xs text-slate-400">Scheduled sessions from your Intervals.icu calendar</p>
         </div>
 
-        <div className="flex items-center bg-[#111622] p-1 rounded-xl border border-[#232D42]">
+        <div className="flex items-center bg-[#1F2025] p-1 rounded-xl border border-[#383941]">
           <button
             onClick={() => setFilterUpcoming(true)}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              filterUpcoming ? 'bg-[#1A2234] text-[#00E5A3]' : 'text-slate-400'
+              filterUpcoming ? 'bg-[#2F3037] text-[#00E5A3]' : 'text-slate-400'
             }`}
           >
             Upcoming
@@ -57,7 +57,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRideWorkout }) => 
           <button
             onClick={() => setFilterUpcoming(false)}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              !filterUpcoming ? 'bg-[#1A2234] text-[#00E5A3]' : 'text-slate-400'
+              !filterUpcoming ? 'bg-[#2F3037] text-[#00E5A3]' : 'text-slate-400'
             }`}
           >
             All ({events.length})
@@ -68,7 +68,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRideWorkout }) => 
       {/* Events List */}
       <div className="space-y-4">
         {displayedEvents.length === 0 ? (
-          <div className="bg-[#111622] rounded-2xl p-12 border border-[#232D42] text-center">
+          <div className="bg-[#1F2025] rounded-2xl p-12 border border-[#383941] text-center">
             <CalendarIcon className="w-10 h-10 text-slate-500 mx-auto mb-3" />
             <h3 className="text-base font-bold text-white">No workouts scheduled</h3>
             <p className="text-xs text-slate-400 mt-1">Connect or plan sessions in your Intervals.icu calendar.</p>
@@ -87,8 +87,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRideWorkout }) => 
             return (
               <div
                 key={ev.id}
-                className={`bg-[#111622] border rounded-2xl p-5 shadow-lg transition-all ${
-                  isToday ? 'border-[#00E5A3]/40 bg-[#141C2B]' : 'border-[#232D42]'
+                className={`bg-[#1F2025] border rounded-2xl p-5 shadow-lg transition-all ${
+                  isToday ? 'border-[#00E5A3]/40 bg-[#141C2B]' : 'border-[#383941]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
@@ -122,7 +122,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRideWorkout }) => 
                 ) : null}
 
                 {ev.description && (
-                  <div className="bg-[#1A2234] p-3 rounded-xl border border-white/5 text-xs text-slate-300 leading-relaxed mb-3">
+                  <div className="bg-[#2F3037] p-3 rounded-xl border border-white/5 text-xs text-slate-300 leading-relaxed mb-3">
                     {ev.description}
                   </div>
                 )}

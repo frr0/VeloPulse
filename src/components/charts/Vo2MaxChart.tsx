@@ -62,7 +62,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
   const classification = getClassification(latest);
 
   return (
-    <div className="bg-[#111622] rounded-2xl p-5 border border-[#232D42] shadow-xl">
+    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
@@ -87,14 +87,14 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
         </div>
 
         {/* Range Selector */}
-        <div className="flex items-center bg-[#1A2234] p-1 rounded-xl border border-[#232D42]">
+        <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
           {(['14', '30', '90', '180'] as RangeOption[]).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 range === r
-                  ? 'bg-[#26334D] text-white shadow'
+                  ? 'bg-[#3E4049] text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -106,7 +106,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
 
       {/* Hero Stats Triplet */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Current VO2 Max
@@ -124,7 +124,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
           </div>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               {range}D Progression
@@ -144,7 +144,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
           </div>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Aerobic Benchmark
@@ -171,7 +171,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#232D42" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
             {/* Superior Tier Reference Area (56+) */}
             <ReferenceArea
@@ -187,14 +187,14 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
             />
             <YAxis
               domain={[50, 60]}
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
             />
 
             <Tooltip
@@ -203,7 +203,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
                   const d = payload[0].payload as { id: string; vo2max: number };
                   const tier = getClassification(d.vo2max);
                   return (
-                    <div className="bg-[#1A2234] border border-[#232D42] p-3 rounded-xl shadow-2xl text-xs">
+                    <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
                       <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
                         {d.id}
                       </div>

@@ -15,7 +15,7 @@ function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 640,
-    backgroundColor: '#080A0F',
+    backgroundColor: '#131316',
     title: 'VeloPulse | Indoor Cycling Studio & Intervals Analytics',
     icon: path.join(__dirname, 'assets/icon.png'),
     webPreferences: {

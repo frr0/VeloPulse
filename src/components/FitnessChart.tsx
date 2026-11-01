@@ -41,7 +41,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
   const formStatus = getFormStatus(latestTsb);
 
   return (
-    <div className="bg-[#111622] rounded-2xl p-5 border border-[#232D42] shadow-xl">
+    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
       {/* Top Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
@@ -59,14 +59,14 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
         </div>
 
         {/* Range Selector */}
-        <div className="flex items-center bg-[#1A2234] p-1 rounded-xl self-start sm:self-auto border border-[#232D42]">
+        <div className="flex items-center bg-[#2F3037] p-1 rounded-xl self-start sm:self-auto border border-[#383941]">
           {(['14', '30', '90', '180', 'ALL'] as RangeOption[]).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 range === r
-                  ? 'bg-[#26334D] text-white shadow'
+                  ? 'bg-[#3E4049] text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -147,13 +147,13 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
             />
             <YAxis
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
             />
 
             <Tooltip
@@ -163,7 +163,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
                   const itemTsb = d.tsb ?? (d.ctl && d.atl ? d.ctl - d.atl : 0);
                   const st = getFormStatus(itemTsb);
                   return (
-                    <div className="bg-[#1A2234] border border-[#232D42] p-3 rounded-xl shadow-2xl text-xs">
+                    <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
                       <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
                         {d.id}
                       </div>

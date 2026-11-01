@@ -61,7 +61,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Top Grid: Recovery Ring + Fitness Triplet */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Recovery Hero Card (5 cols on lg) */}
-        <div className="lg:col-span-5 bg-[#111622] rounded-3xl p-6 sm:p-7 border border-[#232D42] shadow-xl flex flex-col items-center justify-between">
+        <div className="lg:col-span-5 bg-[#1F2025] rounded-3xl p-6 sm:p-7 border border-[#383941] shadow-xl flex flex-col items-center justify-between">
           <div className="w-full flex items-center justify-between mb-4">
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
               Daily Recovery & Readiness
@@ -96,7 +96,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="lg:col-span-7 flex flex-col justify-between gap-6">
           {/* Triplet Cards Row */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <div className="bg-[#111622] p-4 sm:p-5 rounded-2xl border border-[#38BDF8]/20 text-center shadow-lg">
+            <div className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border border-[#38BDF8]/20 text-center shadow-lg">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                 Fitness
               </span>
@@ -106,7 +106,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span className="text-[11px] font-bold text-slate-400 mt-1 block">CTL (42d)</span>
             </div>
 
-            <div className="bg-[#111622] p-4 sm:p-5 rounded-2xl border border-[#A855F7]/20 text-center shadow-lg">
+            <div className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border border-[#A855F7]/20 text-center shadow-lg">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                 Fatigue
               </span>
@@ -117,7 +117,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div
-              className="bg-[#111622] p-4 sm:p-5 rounded-2xl border text-center shadow-lg"
+              className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border text-center shadow-lg"
               style={{ borderColor: `${formStatus.color}30` }}
             >
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
@@ -139,7 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Quick Smart Trainer Launch Card */}
-          <div className="bg-gradient-to-r from-[#111622] to-[#141C2B] border border-[#00E5A3]/30 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-[#1F2025] to-[#141C2B] border border-[#00E5A3]/30 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-[#00E5A3]/10 border border-[#00E5A3]/30 flex items-center justify-center text-[#00E5A3] shrink-0">
                 <Zap className="w-6 h-6 fill-current" />
@@ -156,7 +156,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {onOpenBluetooth && (
                 <button
                   onClick={onOpenBluetooth}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#1A2234] hover:bg-[#25324C] border border-[#232D42] text-xs font-bold text-slate-300 transition-colors"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-xs font-bold text-slate-300 transition-colors"
                 >
                   <Bluetooth className="w-3.5 h-3.5 text-[#00E5A3]" />
                   <span>Sensors</span>
@@ -179,7 +179,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Today's Planned Workout Banner (if any) */}
       {todayEvent && (
-        <div className="bg-[#111622] border border-[#00B4D8]/30 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-[#1F2025] border border-[#00B4D8]/30 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Calendar className="w-4 h-4 text-[#00B4D8]" />
@@ -242,7 +242,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onSelect={onSelectActivity}
           />
         ) : (
-          <div className="bg-[#111622] rounded-2xl p-8 border border-[#232D42] text-center text-slate-400 text-sm">
+          <div className="bg-[#1F2025] rounded-2xl p-8 border border-[#383941] text-center text-slate-400 text-sm">
             No workouts logged yet.
           </div>
         )}

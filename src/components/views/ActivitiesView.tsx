@@ -88,7 +88,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({ onSelectActivity
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search activities by name..."
-            className="w-full bg-[#111622] border border-[#232D42] focus:border-[#00E5A3] focus:outline-none rounded-xl pl-10 pr-9 py-2.5 text-xs text-white placeholder-slate-500 transition-colors"
+            className="w-full bg-[#1F2025] border border-[#383941] focus:border-[#00E5A3] focus:outline-none rounded-xl pl-10 pr-9 py-2.5 text-xs text-white placeholder-slate-500 transition-colors"
           />
           {search && (
             <button
@@ -101,7 +101,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({ onSelectActivity
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 bg-[#111622] p-1 rounded-xl border border-[#232D42] overflow-x-auto">
+        <div className="flex items-center gap-1.5 bg-[#1F2025] p-1 rounded-xl border border-[#383941] overflow-x-auto">
           {[
             { id: 'ALL', label: 'All', icon: null },
             { id: 'RIDE', label: 'Cycling', icon: Bike },
@@ -117,7 +117,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({ onSelectActivity
                 onClick={() => setFilter(item.id as SportCategory)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
                   active
-                    ? 'bg-[#00E5A3] text-[#080A0F]'
+                    ? 'bg-[#00E5A3] text-[#131316]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -130,7 +130,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({ onSelectActivity
       </div>
 
       {/* Totals Summary Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#111622] p-4 rounded-2xl border border-[#232D42] text-center shadow-md">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#1F2025] p-4 rounded-2xl border border-[#383941] text-center shadow-md">
         <div>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Activities</span>
           <span className="text-xl font-black text-white">{totalCount}</span>
@@ -152,7 +152,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({ onSelectActivity
       {/* Activities Grid / List */}
       <div className="space-y-3">
         {filteredActivities.length === 0 ? (
-          <div className="bg-[#111622] rounded-2xl p-12 border border-[#232D42] text-center">
+          <div className="bg-[#1F2025] rounded-2xl p-12 border border-[#383941] text-center">
             <ActivityIcon className="w-10 h-10 text-slate-500 mx-auto mb-3" />
             <h3 className="text-base font-bold text-white">No activities found</h3>
             <p className="text-xs text-slate-400 mt-1">Try adjusting your search query or sport filter.</p>

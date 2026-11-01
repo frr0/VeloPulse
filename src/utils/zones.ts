@@ -1,4 +1,4 @@
-import { PowerZone, PowerZoneNumber, HeartRateZone } from '../types';
+import { PowerZone, PowerZoneNumber, HeartRateZone, HrZoneCustom } from '../types';
 
 export const POWER_ZONES_CONFIG: {
   zone: PowerZoneNumber;
@@ -108,8 +108,35 @@ export const HR_ZONES_CONFIG = [
   { zone: 5 as const, name: 'Anaerobic / Max', minPercent: 0.90, maxPercent: 1.00, color: '#ef4444' },
 ];
 
-export function getHeartRateZoneNumber(hr: number, maxHr: number): number {
-  if (hr <= 0 || maxHr <= 0) return 1;
+export function getDefaultHrZones(maxHr: number = 190, restingHr: number = 55): HrZoneCustom[] {
+  const safeMax = maxHr > 80 ? maxHr : 190;
+  const safeRest = restingHr > 30 && restingHr < safeMax ? restingHr : 55;
+
+  const z1Max = Math.round(safeRest + (safeMax - safeRest) * 0.40);
+  const z2Max = Math.round(safeRest + (safeMax - safeRest) * 0.60);
+  const z3Max = Math.round(safeRest + (safeMax - safeRest) * 0.75);
+  const z4Max = Math.round(safeRest + (safeMax - safeRest) * 0.90);
+
+  return [
+    { zone: 1, name: 'Recovery', minBpm: Math.round(safeRest), maxBpm: z1Max, color: '#94a3b8' },
+    { zone: 2, name: 'Aerobic Base', minBpm: z1Max, maxBpm: z2Max, color: '#38bdf8' },
+    { zone: 3, name: 'Tempo', minBpm: z2Max, maxBpm: z3Max, color: '#4ade80' },
+    { zone: 4, name: 'Threshold', minBpm: z3Max, maxBpm: z4Max, color: '#facc15' },
+    { zone: 5, name: 'Anaerobic / Max', minBpm: z4Max, maxBpm: safeMax, color: '#ef4444' },
+  ];
+}
+
+export function getHeartRateZoneNumber(hr: number, maxHr: number, customZones?: HrZoneCustom[]): number {
+  if (hr <= 0) return 1;
+  if (customZones && customZones.length > 0) {
+    for (let i = 0; i < customZones.length; i++) {
+      if (hr <= customZones[i].maxBpm) {
+        return customZones[i].zone;
+      }
+    }
+    return customZones[customZones.length - 1].zone;
+  }
+  if (maxHr <= 0) return 1;
   const ratio = hr / maxHr;
   if (ratio < 0.60) return 1;
   if (ratio < 0.70) return 2;
@@ -118,8 +145,21 @@ export function getHeartRateZoneNumber(hr: number, maxHr: number): number {
   return 5;
 }
 
-export function getHeartRateZoneInfo(hr: number, maxHr: number): HeartRateZone {
-  const zNum = getHeartRateZoneNumber(hr, maxHr);
+export function getHeartRateZoneInfo(hr: number, maxHr: number, customZones?: HrZoneCustom[]): HeartRateZone {
+  const zNum = getHeartRateZoneNumber(hr, maxHr, customZones);
+  if (customZones && customZones.length > 0) {
+    const custom = customZones.find((z) => z.zone === zNum) || customZones[0];
+    const safeMax = maxHr > 0 ? maxHr : 190;
+    return {
+      zone: Math.min(5, Math.max(1, custom.zone)) as any,
+      name: custom.name,
+      minPercent: Number((custom.minBpm / safeMax).toFixed(2)),
+      maxPercent: Number((custom.maxBpm / safeMax).toFixed(2)),
+      minBpm: custom.minBpm,
+      maxBpm: custom.maxBpm,
+      color: custom.color || '#38bdf8',
+    };
+  }
   const cfg = HR_ZONES_CONFIG.find((c) => c.zone === zNum) || HR_ZONES_CONFIG[0];
   return {
     ...cfg,

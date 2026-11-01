@@ -45,7 +45,7 @@ export const WeeklyLoadBar: React.FC<WeeklyLoadBarProps> = ({ activities }) => {
   const progressRatio = totalLoad / targetWeeklyLoad;
 
   return (
-    <div className="bg-[#111622] rounded-2xl p-5 border border-[#232D42] shadow-xl">
+    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">

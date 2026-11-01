@@ -26,7 +26,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
     return (
       <div
         onClick={onOpenWorkoutModal}
-        className={`w-full rounded-2xl bg-[#111622]/90 border border-[#232D42] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all shrink-0 ${
+        className={`w-full rounded-2xl bg-[#1F2025]/90 border border-[#383941] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all shrink-0 ${
           isCompact ? 'p-3 h-36' : 'p-6 h-40 md:h-48'
         }`}
       >
@@ -85,12 +85,12 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
 
   return (
     <div
-      className={`w-full rounded-2xl bg-[#111622]/95 border border-[#232D42] shadow-lg backdrop-blur-md flex flex-col overflow-hidden shrink-0 ${
+      className={`w-full rounded-2xl bg-[#1F2025]/95 border border-[#383941] shadow-lg backdrop-blur-md flex flex-col overflow-hidden shrink-0 ${
         isCompact ? 'h-36 sm:h-40' : 'h-44 md:h-48'
       }`}
     >
       {/* Workout Header Info */}
-      <div className="px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm leading-none gap-2 min-w-0 bg-[#111622] border-b border-[#232D42]/50 shrink-0">
+      <div className="px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm leading-none gap-2 min-w-0 bg-[#1F2025] border-b border-[#383941]/50 shrink-0">
         <div
           onClick={onOpenWorkoutModal}
           className="flex items-center gap-1.5 cursor-pointer hover:text-[#00E5A3] transition-colors min-w-0 truncate"
@@ -231,7 +231,7 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
       </div>
 
       {/* Timeline labels - Clean integrated footer */}
-      <div className="px-3.5 py-1 sm:px-4 sm:py-1.5 flex justify-between items-center text-[10px] sm:text-xs text-slate-400 font-mono leading-none bg-[#111622] border-t border-[#232D42]/50 shrink-0">
+      <div className="px-3.5 py-1 sm:px-4 sm:py-1.5 flex justify-between items-center text-[10px] sm:text-xs text-slate-400 font-mono leading-none bg-[#1F2025] border-t border-[#383941]/50 shrink-0">
         <span>00:00</span>
         <span>{formatMmSs(totalDuration / 2)}</span>
         <span>{formatMmSs(totalDuration)}</span>

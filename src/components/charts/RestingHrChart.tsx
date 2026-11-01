@@ -96,7 +96,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
   }, [chartData, defaultRHR]);
 
   return (
-    <div className="bg-[#111622] rounded-2xl p-5 border border-[#232D42] shadow-xl">
+    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
@@ -114,14 +114,14 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
         </div>
 
         {/* Range Selector */}
-        <div className="flex items-center bg-[#1A2234] p-1 rounded-xl border border-[#232D42]">
+        <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
           {(['14', '30', '90'] as RangeOption[]).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                 range === r
-                  ? 'bg-[#26334D] text-white shadow'
+                  ? 'bg-[#3E4049] text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -133,7 +133,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
 
       {/* Hero Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Latest Pulse
           </span>
@@ -144,7 +144,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
           <span className="text-[11px] text-[#00B4D8] font-semibold">Morning waking pulse</span>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             7-Day Rolling Avg
           </span>
@@ -155,7 +155,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
           <span className="text-[11px] text-slate-400 font-medium">Smoothed baseline</span>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Lowest Recorded
           </span>
@@ -166,7 +166,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
           <span className="text-[11px] text-slate-400 font-medium">Peak adaptation</span>
         </div>
 
-        <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Period Average
           </span>
@@ -189,7 +189,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#232D42" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
             {/* Optimal Range Reference Band (lowest to lowest+6) */}
             <ReferenceArea
@@ -205,14 +205,14 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
             />
             <YAxis
               domain={['dataMin - 3', 'dataMax + 4']}
               stroke="#64748B"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: '#232D42' }}
+              axisLine={{ stroke: '#383941' }}
               unit=" bpm"
             />
 
@@ -221,7 +221,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
                 if (active && payload && payload.length) {
                   const d = payload[0].payload as { id: string; restingHR: number; rhr7d: number };
                   return (
-                    <div className="bg-[#1A2234] border border-[#232D42] p-3 rounded-xl shadow-2xl text-xs">
+                    <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
                       <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
                         {d.id}
                       </div>

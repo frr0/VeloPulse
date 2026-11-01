@@ -53,7 +53,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   return (
     <div
       onClick={() => onSelect(activity)}
-      className="bg-[#111622] hover:bg-[#151C2C] border border-[#232D42] hover:border-[#384666] rounded-2xl p-5 shadow-lg cursor-pointer transition-all duration-200 group"
+      className="bg-[#1F2025] hover:bg-[#26272D] border border-[#383941] hover:border-[#384666] rounded-2xl p-5 shadow-lg cursor-pointer transition-all duration-200 group"
     >
       {/* Top Row */}
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -142,26 +142,26 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
       <div className="flex items-center justify-between mt-3 pt-1">
         <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
           {activity.total_elevation_gain ? (
-            <span className="bg-[#1A2234] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
+            <span className="bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
               +{Math.round(activity.total_elevation_gain)}m Elev
             </span>
           ) : null}
 
           {activity.icu_intensity ? (
-            <span className="inline-flex items-center gap-1 bg-[#1A2234] px-2 py-0.5 rounded text-[11px] font-medium text-amber-400">
+            <span className="inline-flex items-center gap-1 bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-amber-400">
               <Zap className="w-3 h-3" />
               IF {(activity.icu_intensity > 2 ? activity.icu_intensity / 100 : activity.icu_intensity).toFixed(2)}
             </span>
           ) : null}
 
           {activity.weighted_average_watts ? (
-            <span className="bg-[#1A2234] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
+            <span className="bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
               NP {Math.round(activity.weighted_average_watts)}W
             </span>
           ) : null}
 
           {activity.icu_joules ? (
-            <span className="inline-flex items-center gap-1 bg-[#1A2234] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
+            <span className="inline-flex items-center gap-1 bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
               <Flame className="w-3 h-3 text-amber-500" />
               {Math.round(activity.icu_joules / 1000)} kJ
             </span>

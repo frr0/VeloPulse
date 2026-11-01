@@ -206,7 +206,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
         const curTarget = workoutEngineRef.current.calculateInstantaneousTargetWatts();
         const pZone = getPowerZoneNumber(power, settings.ftp);
-        const hrZone = getHeartRateZoneInfo(heartRate, settings.maxHeartRate).zone;
+        const hrZone = getHeartRateZoneInfo(heartRate, settings.maxHeartRate, settings.hrZones).zone;
 
         setTelemetry((prev) => {
           const workKj = (prev.workKj || 0) + joules / 1000;
@@ -245,7 +245,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
       } else {
         const curTarget = workoutEngineRef.current.calculateInstantaneousTargetWatts();
         const pZone = getPowerZoneNumber(power, settings.ftp);
-        const hrZone = getHeartRateZoneInfo(heartRate, settings.maxHeartRate).zone;
+        const hrZone = getHeartRateZoneInfo(heartRate, settings.maxHeartRate, settings.hrZones).zone;
 
         setTelemetry((prev) => ({
           ...prev,
@@ -510,7 +510,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         - Rendered on Webapp / Desktop (isNative=false) as a full-width header
       */}
       {!isNative && (
-        <div className="w-full flex flex-wrap items-center justify-between gap-3 bg-[#111622] p-4 rounded-2xl border border-[#232D42]">
+        <div className="w-full flex flex-wrap items-center justify-between gap-3 bg-[#1F2025] p-4 rounded-2xl border border-[#383941]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#00E5A3]/10 border border-[#00E5A3]/30 flex items-center justify-center text-[#00E5A3]">
               <Zap className="w-5 h-5 fill-current" />
@@ -534,7 +534,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
                 currentWorkout
                   ? 'bg-[#00E5A3]/15 border-[#00E5A3]/40 text-[#00E5A3]'
-                  : 'bg-[#1A2234] border-[#232D42] text-slate-300 hover:bg-[#25324C]'
+                  : 'bg-[#2F3037] border-[#383941] text-slate-300 hover:bg-[#3E4049]'
               }`}
             >
               <Dumbbell className="w-4 h-4 text-[#00E5A3]" />
@@ -545,7 +545,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
             <button
               onClick={() => setIsBluetoothModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1A2234] hover:bg-[#25324C] border border-[#232D42] text-xs font-bold text-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-xs font-bold text-slate-200 transition-colors"
             >
               <Bluetooth className="w-4 h-4 text-[#00E5A3]" />
               <span>Sensors</span>
@@ -563,7 +563,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
             <button
               onClick={() => setIsSettingsModalOpen(true)}
               title="Studio Settings"
-              className="p-2 rounded-xl bg-[#1A2234] hover:bg-[#25324C] border border-[#232D42] text-slate-300 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-slate-300 hover:text-white transition-colors"
             >
               <SettingsIcon className="w-4 h-4" />
             </button>
@@ -603,7 +603,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
       {/* Current Interval Strip (when workout is active) */}
       {currentWorkout && engineState.currentInterval && (
-        <div className="rounded-xl sm:rounded-2xl bg-[#111622]/95 border border-[#232D42] px-3.5 py-2 flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <div className="rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border border-[#383941] px-3.5 py-2 flex items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2.5 truncate">
             <div
               className="w-3 h-7 rounded-full shrink-0"
@@ -731,7 +731,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               <span className="text-slate-400">HR Intensity</span>
               <span className="font-mono font-bold text-slate-300 truncate max-w-[120px]">
                 {telemetry.heartRate > 0
-                  ? getHeartRateZoneInfo(telemetry.heartRate, settings.maxHeartRate).name
+                  ? getHeartRateZoneInfo(telemetry.heartRate, settings.maxHeartRate, settings.hrZones).name
                   : 'Awaiting sensor'}
               </span>
             </div>
@@ -770,7 +770,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         Elapsed, Distance, Work (kJ), Calories, Remaining, FTP
       */}
       <div className="grid grid-cols-6 gap-2 sm:gap-3 w-full">
-        <div className="p-2 sm:p-3 rounded-xl bg-[#111622] border border-[#232D42] text-center">
+        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Clock className="w-3 h-3 text-[#00E5A3] hidden sm:inline" /> Elapsed
           </div>
@@ -779,7 +779,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#111622] border border-[#232D42] text-center">
+        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Compass className="w-3 h-3 text-cyan-400 hidden sm:inline" /> Distance
           </div>
@@ -788,7 +788,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#111622] border border-[#232D42] text-center">
+        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Zap className="w-3 h-3 text-amber-400 hidden sm:inline" /> Work
           </div>
@@ -797,7 +797,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#111622] border border-[#232D42] text-center">
+        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Flame className="w-3 h-3 text-orange-400 hidden sm:inline" /> Calories
           </div>
@@ -806,7 +806,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#111622] border border-[#232D42] text-center">
+        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">
             Rem.
           </div>
@@ -815,7 +815,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#111622] border border-[#232D42] text-center">
+        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">
             Rider FTP
           </div>

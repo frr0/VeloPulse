@@ -30,8 +30,8 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#080A0F] text-white selection:bg-[#00E5A3]/20">
-      <div className="w-full max-w-md bg-[#111622] border border-[#232D42] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#131316] text-white selection:bg-[#00E5A3]/20">
+      <div className="w-full max-w-md bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         {/* Glow ambient background circle */}
         <div className="absolute -top-24 -left-24 w-60 h-60 bg-[#00E5A3]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-[#FC5200]/10 rounded-full blur-3xl pointer-events-none" />
@@ -50,7 +50,7 @@ export const LoginView: React.FC = () => {
         </div>
 
         {/* API Key Guide Card */}
-        <div className="bg-[#151C2C] border border-[#232D42] rounded-2xl p-4 mb-6 text-xs text-slate-300">
+        <div className="bg-[#26272D] border border-[#383941] rounded-2xl p-4 mb-6 text-xs text-slate-300">
           <div className="flex items-center gap-2 font-bold text-[#00E5A3] mb-2 uppercase tracking-wider text-[11px]">
             <Key className="w-4 h-4" />
             Where to get your API Key:
@@ -85,7 +85,7 @@ export const LoginView: React.FC = () => {
                   if (localError) setLocalError(null);
                 }}
                 placeholder="Paste API key here..."
-                className="w-full bg-[#1A2234] border border-[#232D42] focus:border-[#00E5A3] focus:outline-none rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 transition-colors"
+                className="w-full bg-[#2F3037] border border-[#383941] focus:border-[#00E5A3] focus:outline-none rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 transition-colors"
               />
               <button
                 type="button"
@@ -111,7 +111,7 @@ export const LoginView: React.FC = () => {
               value={athleteId}
               onChange={(e) => setAthleteId(e.target.value)}
               placeholder="0 (your own athlete account)"
-              className="w-full bg-[#1A2234] border border-[#232D42] focus:border-[#00E5A3] focus:outline-none rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 transition-colors"
+              className="w-full bg-[#2F3037] border border-[#383941] focus:border-[#00E5A3] focus:outline-none rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 transition-colors"
             />
             <span className="text-[10px] text-slate-400 mt-1 block">
               Leave blank or '0' to load your personal athlete profile.
@@ -121,7 +121,7 @@ export const LoginView: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-[#00E5A3] hover:bg-[#00c98f] text-[#080A0F] font-black text-xs uppercase tracking-wider py-3.5 px-4 rounded-xl shadow-lg shadow-[#00E5A3]/20 transition-all disabled:opacity-50 mt-2"
+            className="w-full flex items-center justify-center gap-2 bg-[#00E5A3] hover:bg-[#00c98f] text-[#131316] font-black text-xs uppercase tracking-wider py-3.5 px-4 rounded-xl shadow-lg shadow-[#00E5A3]/20 transition-all disabled:opacity-50 mt-2"
           >
             {loading ? (
               <span className="inline-block animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full" />
@@ -137,9 +137,9 @@ export const LoginView: React.FC = () => {
         {/* Divider */}
         <div className="relative my-6 text-center">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#232D42]" />
+            <div className="w-full border-t border-[#383941]" />
           </div>
-          <span className="relative bg-[#111622] px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <span className="relative bg-[#1F2025] px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Or test right now
           </span>
         </div>
@@ -149,7 +149,7 @@ export const LoginView: React.FC = () => {
           type="button"
           onClick={loginDemo}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2.5 bg-[#1A2234] hover:bg-[#222E46] border border-[#232D42] text-white font-bold text-xs py-3.5 px-4 rounded-xl transition-all"
+          className="w-full flex items-center justify-center gap-2.5 bg-[#2F3037] hover:bg-[#222E46] border border-[#383941] text-white font-bold text-xs py-3.5 px-4 rounded-xl transition-all"
         >
           <Sparkles className="w-4 h-4 text-[#FC5200]" />
           <span>Launch Simulated Demo Mode</span>

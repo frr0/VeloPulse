@@ -26,11 +26,11 @@ export const Header: React.FC<HeaderProps> = ({
   ].filter(Boolean).length;
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 md:px-8 py-3">
+    <header className="sticky top-0 z-30 w-full bg-[#131316]/90 backdrop-blur-md border-b border-[#383941] px-4 md:px-8 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 text-slate-950 shadow-md shadow-cyan-500/20">
+          <div className="p-2 rounded-2xl bg-[#A8C7FA]/15 border border-[#A8C7FA]/30 text-[#A8C7FA]">
             <svg
               className="w-5 h-5 fill-current"
               viewBox="0 0 24 24"
@@ -45,9 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-base md:text-lg font-black tracking-tight text-white">
-                Velo<span className="text-cyan-400">Train</span>
+                Velo<span className="text-[#A8C7FA]">Pulse</span>
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#A8C7FA] bg-[#2F3037] px-2 py-0.5 rounded-full border border-[#A8C7FA]/20">
                 STUDIO
               </span>
             </div>
@@ -59,43 +59,43 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Trainer Pill */}
           <button
             onClick={onOpenBluetooth}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
               devicesState.trainer.connected
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-400'
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                : 'bg-[#1F2025] border-[#383941] text-[#9E9EA7] hover:text-white'
             }`}
           >
             <Zap className={`w-3.5 h-3.5 ${devicesState.trainer.connected ? 'fill-current' : ''}`} />
             <span>Trainer</span>
-            {devicesState.trainer.connected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+            {devicesState.trainer.connected && <span className="w-1.5 h-1.5 rounded-full bg-[#6DD58C] animate-pulse" />}
           </button>
 
           {/* Cadence Pill */}
           <button
             onClick={onOpenBluetooth}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
               devicesState.cadence.connected
-                ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
-                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-400'
+                ? 'bg-[#A8C7FA]/15 border-[#A8C7FA]/30 text-[#A8C7FA]'
+                : 'bg-[#1F2025] border-[#383941] text-[#9E9EA7] hover:text-white'
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
             <span>Cadence</span>
-            {devicesState.cadence.connected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+            {devicesState.cadence.connected && <span className="w-1.5 h-1.5 rounded-full bg-[#6DD58C] animate-pulse" />}
           </button>
 
           {/* HR Pill */}
           <button
             onClick={onOpenBluetooth}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
               devicesState.heartRate.connected
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-400'
+                ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                : 'bg-[#1F2025] border-[#383941] text-[#9E9EA7] hover:text-white'
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${devicesState.heartRate.connected ? 'fill-current' : ''}`} />
             <span>Heart Rate</span>
-            {devicesState.heartRate.connected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+            {devicesState.heartRate.connected && <span className="w-1.5 h-1.5 rounded-full bg-[#6DD58C] animate-pulse" />}
           </button>
         </div>
 

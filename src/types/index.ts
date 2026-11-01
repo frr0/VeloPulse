@@ -139,6 +139,14 @@ export interface SessionSummary {
   samples: TelemetrySample[];
 }
 
+export interface HrZoneCustom {
+  zone: number;
+  name: string;
+  minBpm: number;
+  maxBpm: number;
+  color?: string;
+}
+
 export interface UserSettings {
   ftp: number;                // Functional Threshold Power (Watts, default 250)
   riderWeightKg: number;      // Rider weight in kg (default 75)
@@ -151,6 +159,7 @@ export interface UserSettings {
   soundAlerts: boolean;       // Enable interval countdown beeps
   speedSource: 'physics' | 'trainer'; // Physics calculated or trainer reported
   wheelCircumferenceMm: number; // For speed sensor wheel calculation (default 2105mm - 700x25c)
+  hrZones?: HrZoneCustom[];   // Custom physiological heart rate zones
 }
 
 export * from './intervals';

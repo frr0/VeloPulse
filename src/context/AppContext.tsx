@@ -123,14 +123,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      const [fetchedAthlete, fetchedWellness, fetchedActivities, fetchedEvents, fetchedPowerCurve] =
+      const [fetchedAthlete, fetchedWellness, fetchedActivities, fetchedEvents] =
         await Promise.all([
           getAthleteProfile(auth.apiKey, auth.athleteId),
           getWellnessHistory(auth.apiKey, auth.athleteId),
           getActivities(auth.apiKey, auth.athleteId),
           getCalendarEvents(auth.apiKey, auth.athleteId),
-          getPowerCurves(auth.apiKey, auth.athleteId, athlete?.ftp || 250, athlete?.weight || 70),
         ]);
+
+      const fetchedPowerCurve = await getPowerCurves(
+        auth.apiKey,
+        auth.athleteId,
+        fetchedAthlete?.ftp || athlete?.ftp || 250,
+        fetchedAthlete?.weight || athlete?.weight || 70,
+        fetchedActivities
+      );
 
       setAthlete(fetchedAthlete);
       setWellness(fetchedWellness);

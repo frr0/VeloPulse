@@ -65,7 +65,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Category Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-[#232D42]">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-[#383941]">
         {tabOptions.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -75,8 +75,8 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
                 isActive
-                  ? 'bg-[#1A2234] text-white border-white/20 shadow-md'
-                  : 'bg-[#111622]/60 text-slate-400 border-transparent hover:text-white hover:bg-[#1A2234]/50'
+                  ? 'bg-[#2F3037] text-white border-white/20 shadow-md'
+                  : 'bg-[#1F2025]/60 text-slate-400 border-transparent hover:text-white hover:bg-[#2F3037]/50'
               }`}
             >
               <Icon
@@ -155,7 +155,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
           </div>
 
           {/* Form Zones Guide Card */}
-          <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+          <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <Info className="w-4 h-4 text-[#00B4D8]" />
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">
@@ -167,7 +167,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#00E5A3]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#00E5A3]/20">
                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black bg-[#00E5A3] text-black mb-1.5">
                   +5 to +25 TSB
                 </span>
@@ -177,7 +177,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#38BDF8]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#38BDF8]/20">
                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black bg-[#38BDF8] text-black mb-1.5">
                   -10 to -30 TSB
                 </span>
@@ -187,7 +187,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#F59E0B]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#F59E0B]/20">
                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black bg-[#F59E0B] text-black mb-1.5">
                   -30 to -40 TSB
                 </span>
@@ -197,7 +197,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#EF4444]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#EF4444]/20">
                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-black bg-[#EF4444] text-white mb-1.5">
                   &lt; -40 TSB
                 </span>
@@ -216,7 +216,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
         <div className="space-y-6">
           <PowerCurveChart data={powerCurve} ftp={ftp} weight={weight} />
 
-          <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+          <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
               Power Profiling & Energy Systems Guide
             </h4>
@@ -225,28 +225,28 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#FC5200]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#FC5200]/20">
                 <strong className="text-[#FC5200] block font-bold">5s - 15s Neuromuscular</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Phosphocreatine system for maximum sprinting, attacks, and town-sign sprints.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#38BDF8]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#38BDF8]/20">
                 <strong className="text-[#38BDF8] block font-bold">30s - 2m Anaerobic Capacity</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Glycolytic capacity for punching up short steep bergs and closing race gaps.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#A855F7]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#A855F7]/20">
                 <strong className="text-[#A855F7] block font-bold">3m - 8m Maximal Aerobic (VO2)</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Cardiac stroke volume and oxygen uptake limit. Prime benchmark of pure aerobic engine.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#00E5A3]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#00E5A3]/20">
                 <strong className="text-[#00E5A3] block font-bold">20m - 60m Functional Threshold</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Maximal lactate steady state (MLSS). The critical benchmark for TT and long climbs.
@@ -262,7 +262,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
         <div className="space-y-6">
           <HrvChart data={wellness} />
 
-          <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+          <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
               Interpreting Heart Rate Variability (rMSSD)
             </h4>
@@ -271,21 +271,21 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#00E5A3]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#00E5A3]/20">
                 <strong className="text-[#00E5A3] block font-bold">Balanced Inside Baseline</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Nervous system is responsive and recovered. Full capacity for hard intervals or heavy volume.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#F59E0B]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#F59E0B]/20">
                 <strong className="text-[#F59E0B] block font-bold">Suppressed Below Baseline</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Accumulated fatigue, poor sleep, travel, or immune defense. Scale back intensity to Zone 1/2.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#38BDF8]/20">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#38BDF8]/20">
                 <strong className="text-[#38BDF8] block font-bold">Atypically Elevated</strong>
                 <span className="text-slate-300 text-[11px] block mt-1">
                   Hyper-recovery response often following extreme strain or taper. Pair with subjective feel.
@@ -301,7 +301,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
         <div className="space-y-6">
           <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? 46} />
 
-          <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+          <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
               Resting Pulse as a Biomarker
             </h4>
@@ -317,7 +317,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
         <div className="space-y-6">
           <SleepChart data={wellness} />
 
-          <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+          <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
               Sleep Debt & Athletic Restoration
             </h4>
@@ -326,21 +326,21 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
                 <strong className="text-white block font-bold">7h 30m - 9h 00m</strong>
                 <span className="text-slate-400 text-[11px] block mt-1">
                   Target duration for endurance athletes maintaining high training loads.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
                 <strong className="text-white block font-bold">Consistent Bedtimes</strong>
                 <span className="text-slate-400 text-[11px] block mt-1">
                   Regular circadian rhythm improves sleep efficiency by up to 18%.
                 </span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-white/5">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
                 <strong className="text-white block font-bold">Sleep Debt Elimination</strong>
                 <span className="text-slate-400 text-[11px] block mt-1">
                   Keep weekly deficit under 60 minutes to maintain peak cognitive and physical reaction time.
@@ -356,7 +356,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
         <div className="space-y-6">
           <Vo2MaxChart data={wellness} currentVo2Max={vo2max} />
 
-          <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+          <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
               Aerobic Capacity Classification (ml/kg/min)
             </h4>
@@ -365,25 +365,25 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#A855F7]/30">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#A855F7]/30">
                 <span className="text-[#A855F7] font-black block">56+ ml/kg/min</span>
                 <strong className="text-white block font-bold mt-1">Superior</strong>
                 <span className="text-slate-400 text-[10px] block mt-0.5">Top 5% competitive tier</span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#00E5A3]/30">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#00E5A3]/30">
                 <span className="text-[#00E5A3] font-black block">50 - 55 ml/kg/min</span>
                 <strong className="text-white block font-bold mt-1">Excellent</strong>
                 <span className="text-slate-400 text-[10px] block mt-0.5">High amateur endurance</span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#38BDF8]/30">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#38BDF8]/30">
                 <span className="text-[#38BDF8] font-black block">44 - 49 ml/kg/min</span>
                 <strong className="text-white block font-bold mt-1">Good</strong>
                 <span className="text-slate-400 text-[10px] block mt-0.5">Above average athlete</span>
               </div>
 
-              <div className="bg-[#151C2C] p-3.5 rounded-xl border border-[#F59E0B]/30">
+              <div className="bg-[#26272D] p-3.5 rounded-xl border border-[#F59E0B]/30">
                 <span className="text-[#F59E0B] font-black block">&lt; 44 ml/kg/min</span>
                 <strong className="text-white block font-bold mt-1">Fair</strong>
                 <span className="text-slate-400 text-[10px] block mt-0.5">Baseline aerobic fitness</span>
@@ -394,7 +394,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
       )}
 
       {/* Wellness History Table */}
-      <div className="bg-[#111622] border border-[#232D42] rounded-2xl p-5 shadow-lg">
+      <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
         <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-3">
           Daily Wellness & Biometrics Log History ({sortedWellness.length} records)
         </h4>
