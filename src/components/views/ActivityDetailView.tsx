@@ -443,7 +443,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         <section
           className={`transition-all duration-200 ${
             isMapPinned
-              ? 'sticky top-[108px] lg:top-20 z-20 shadow-2xl rounded-2xl overflow-hidden'
+              ? 'sticky top-16 sm:top-20 z-20 shadow-2xl rounded-2xl overflow-hidden'
               : ''
           }`}
         >

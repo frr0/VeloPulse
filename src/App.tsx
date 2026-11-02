@@ -22,6 +22,7 @@ import {
 import { convertCalendarEventToWorkout } from './utils/workoutConverter';
 import { getDefaultHrZones } from './utils/zones';
 import { sportSettingsToHrZones } from './services/intervals/api';
+import { isAndroid } from './utils/platform';
 
 const DEFAULT_SETTINGS: UserSettings = {
   ftp: 250,
@@ -171,6 +172,8 @@ function MainApp() {
         className={`flex-1 w-full mx-auto flex flex-col max-w-7xl px-4 sm:px-6 lg:px-8 ${
           currentTab === 'ride' && !selectedActivity
             ? 'h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] py-4 sm:py-6 overflow-hidden justify-between'
+            : isAndroid()
+            ? 'pt-4 pb-24 sm:py-8'
             : 'py-6 sm:py-8'
         }`}
       >

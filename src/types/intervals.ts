@@ -86,6 +86,10 @@ export interface Wellness {
   sleepSecs?: number;
   sleepScore?: number;
   sleepQuality?: number; // 1-5
+  deepSleepSecs?: number;
+  remSleepSecs?: number;
+  lightSleepSecs?: number;
+  awakeSleepSecs?: number;
   avgSleepingHR?: number;
   soreness?: number; // 1-5
   fatigue?: number; // 1-5

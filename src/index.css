@@ -3,11 +3,14 @@
 @tailwind utilities;
 
 @layer base {
-  body {
+  html, body, #root {
     background-color: #131316;
     color: #e3e2e6;
     font-feature-settings: "tnum" on, "lnum" on;
     overflow-x: hidden;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overscroll-behavior: none;
     font-family: -apple-system, BlinkMacSystemFont, "Google Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 }

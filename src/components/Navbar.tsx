@@ -51,7 +51,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   ].filter(Boolean).length;
 
   return (
-    <header className="sticky top-0 z-30 bg-[#131316]/95 backdrop-blur-md border-b border-[#383941]">
+    <>
+      <header className="sticky top-0 z-30 bg-[#131316]/95 backdrop-blur-md border-b border-[#383941]">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           {/* Brand Logo & Name */}
@@ -255,52 +256,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Mobile / Tablet Sub-Navigation Bar */}
-        {isAndroidApp ? (
-          <div className="grid grid-cols-5 w-full py-1.5 border-t border-[#383941]/60 text-[11px] gap-1">
-            <button
-              onClick={() => onSelectTab('dashboard')}
-              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
-                currentTab === 'dashboard' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => onSelectTab('ride')}
-              className={`py-1.5 font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-all ${
-                currentTab === 'ride' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-              }`}
-            >
-              <Zap className="w-3 h-3" />
-              <span>Studio</span>
-            </button>
-            <button
-              onClick={() => onSelectTab('fitness')}
-              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
-                currentTab === 'fitness' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-              }`}
-            >
-              Fitness
-            </button>
-            <button
-              onClick={() => onSelectTab('activities')}
-              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
-                currentTab === 'activities' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-              }`}
-            >
-              Activities
-            </button>
-            <button
-              onClick={() => onSelectTab('plan')}
-              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
-                currentTab === 'plan' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-              }`}
-            >
-              Plan
-            </button>
-          </div>
-        ) : (
+        {/* Mobile / Tablet Sub-Navigation Bar (Desktop/Web & iOS) */}
+        {!isAndroidApp && (
           <div className="flex lg:hidden items-center justify-around py-2 border-t border-[#383941]/60 text-xs overflow-x-auto gap-1">
             <button
               onClick={() => onSelectTab('dashboard')}
@@ -355,5 +312,69 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
     </header>
+
+    {/* Android Bottom Navigation Bar */}
+    {isAndroidApp && (
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#131316]/95 backdrop-blur-lg border-t border-[#383941] px-2 py-1.5 shadow-2xl">
+        <div className="grid grid-cols-5 w-full gap-1">
+          <button
+            onClick={() => onSelectTab('dashboard')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+              currentTab === 'dashboard'
+                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
+                : 'text-[#9E9EA7] hover:text-white'
+            }`}
+          >
+            <Compass className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] font-bold">Today</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('ride')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+              currentTab === 'ride'
+                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
+                : 'text-[#9E9EA7] hover:text-white'
+            }`}
+          >
+            <Zap className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] font-bold">Studio</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('fitness')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+              currentTab === 'fitness'
+                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
+                : 'text-[#9E9EA7] hover:text-white'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] font-bold">Fitness</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('activities')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+              currentTab === 'activities'
+                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
+                : 'text-[#9E9EA7] hover:text-white'
+            }`}
+          >
+            <Activity className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] font-bold">Activities</span>
+          </button>
+          <button
+            onClick={() => onSelectTab('plan')}
+            className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+              currentTab === 'plan'
+                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
+                : 'text-[#9E9EA7] hover:text-white'
+            }`}
+          >
+            <Calendar className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] font-bold">Plan</span>
+          </button>
+        </div>
+      </nav>
+    )}
+  </>
   );
 };

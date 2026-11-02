@@ -835,10 +835,10 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
 
       {/*
-        3. SECONDARY STATS ROW (7 columns across the screen)
-        Elapsed, Distance, Work (kJ), Calories, Remaining, FTP, W'bal
+        3. SECONDARY STATS ROW (6 columns across the screen)
+        Elapsed, Distance, Work (kJ), Calories, Remaining, W'bal
       */}
-      <div className="grid grid-cols-3 sm:grid-cols-7 gap-1.5 sm:gap-2 w-full shrink-0">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 w-full shrink-0">
         <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Clock className="w-3 h-3 text-[#00E5A3] hidden sm:inline" /> Elapsed
@@ -884,17 +884,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           </div>
         </div>
 
+        {/* W'bal reserve replacing FTP card */}
         <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
-          <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">
-            FTP
-          </div>
-          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-yellow-400 mt-0.5">
-            {settings.ftp}W
-          </div>
-        </div>
-
-        {/* W'bal reserve embedded as a compact card in the corner */}
-        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center col-span-3 sm:col-span-1">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <BatteryMedium className={`w-3 h-3 ${wbalDisplay?.isLow ? 'text-amber-400' : 'text-sky-400'} hidden sm:inline`} /> W′bal
           </div>

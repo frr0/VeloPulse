@@ -20,12 +20,13 @@ interface SleepChartProps {
   data: Wellness[];
 }
 
-type SleepTab = 'duration' | 'score';
+type SleepTab = 'duration' | 'score' | 'stages';
 type RangeOption = '14' | '30' | '90';
 
 export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
   const [activeTab, setActiveTab] = useState<SleepTab>('duration');
   const [range, setRange] = useState<RangeOption>('30');
+  const [selectedNightIndex, setSelectedNightIndex] = useState<number | null>(null);
   const targetHours = 8.0;
 
   const chartData = useMemo(() => {
@@ -41,15 +42,84 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
     return sliced.map((item) => {
       const hours = item.sleepSecs ? item.sleepSecs / 3600 : 7.6;
       const score = item.sleepScore ?? Math.min(96, Math.max(55, Math.round((hours / 8.0) * 88)));
+      const totalSecs = item.sleepSecs ?? Math.round(hours * 3600);
+
+      // Sleep Stages calculation (Real metrics or physiological model based on score & hours)
+      // Standard human sleep distribution:
+      // Deep Sleep (Slow-wave N3): 16-24%
+      // REM Sleep: 20-25%
+      // Awake / WASO: 4-8%
+      // Light Sleep (N1-N2): 46-54%
+      const deepSecs =
+        item.deepSleepSecs ??
+        Math.round(totalSecs * Math.min(0.24, Math.max(0.14, 0.17 + (score - 60) * 0.0015)));
+      const remSecs =
+        item.remSleepSecs ??
+        Math.round(totalSecs * Math.min(0.26, Math.max(0.16, 0.20 + (score - 60) * 0.0012)));
+      const awakeSecs =
+        item.awakeSleepSecs ??
+        Math.round(totalSecs * Math.max(0.04, Math.min(0.12, 0.08 - (score - 60) * 0.001)));
+      const lightSecs =
+        item.lightSleepSecs ?? Math.max(0, totalSecs - deepSecs - remSecs);
+
+      const totalBedSecs = totalSecs + awakeSecs;
+      const deepHours = Math.round((deepSecs / 3600) * 10) / 10;
+      const remHours = Math.round((remSecs / 3600) * 10) / 10;
+      const lightHours = Math.round((lightSecs / 3600) * 10) / 10;
+      const awakeHours = Math.round((awakeSecs / 3600) * 10) / 10;
+
+      const formatSecs = (secs: number) => {
+        const h = Math.floor(secs / 3600);
+        const m = Math.round((secs % 3600) / 60);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+      };
+
       return {
         id: item.id,
         hours: Math.round(hours * 10) / 10,
         hoursFormatted: `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`,
         score,
         sleepQuality: item.sleepQuality,
+        // Sleep stages
+        stages: {
+          deep: {
+            secs: deepSecs,
+            hours: deepHours,
+            formatted: formatSecs(deepSecs),
+            percent: Math.round((deepSecs / totalBedSecs) * 100),
+          },
+          rem: {
+            secs: remSecs,
+            hours: remHours,
+            formatted: formatSecs(remSecs),
+            percent: Math.round((remSecs / totalBedSecs) * 100),
+          },
+          light: {
+            secs: lightSecs,
+            hours: lightHours,
+            formatted: formatSecs(lightSecs),
+            percent: Math.round((lightSecs / totalBedSecs) * 100),
+          },
+          awake: {
+            secs: awakeSecs,
+            hours: awakeHours,
+            formatted: formatSecs(awakeSecs),
+            percent: Math.round((awakeSecs / totalBedSecs) * 100),
+          },
+          totalBedFormatted: formatSecs(totalBedSecs),
+        },
       };
     });
   }, [data, range]);
+
+  // Selected specific night (defaults to most recent night)
+  const currentNight = useMemo(() => {
+    if (chartData.length === 0) return null;
+    if (selectedNightIndex !== null && chartData[selectedNightIndex]) {
+      return chartData[selectedNightIndex];
+    }
+    return chartData[chartData.length - 1];
+  }, [chartData, selectedNightIndex]);
 
   // Calculations for 7-day stats & sleep debt
   const { avgHours, avgScore, sleepDebtMinutes, latestHours, latestScore } = useMemo(() => {
@@ -133,7 +203,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Sleep Hours
+                Ore Sonno
               </button>
               <button
                 onClick={() => setActiveTab('score')}
@@ -143,7 +213,17 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Sleep Score %
+                Punteggio %
+              </button>
+              <button
+                onClick={() => setActiveTab('stages')}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'stages'
+                    ? 'bg-[#818CF8] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Fasi Sonno
               </button>
             </div>
 
@@ -226,187 +306,439 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
         </div>
       )}
 
-      {/* Chart Canvas */}
-      <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
-        <ResponsiveContainer width="100%" height="100%">
-          {activeTab === 'duration' ? (
-            <BarChart
-              data={chartData}
-              margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+      {/* Chart Canvas or Stages View */}
+      {activeTab === 'stages' ? (
+        <div className="space-y-3.5">
+          {/* Night selector pills scroll */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5 px-0.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Seleziona notte specifica:
+              </span>
+              <span className="text-[10px] text-[#818CF8] font-semibold">
+                {currentNight?.id}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {chartData.map((item, idx) => {
+                const isSelected =
+                  selectedNightIndex === idx ||
+                  (selectedNightIndex === null && idx === chartData.length - 1);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedNightIndex(idx)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all border ${
+                      isSelected
+                        ? 'bg-[#818CF8] text-white border-white/30 shadow'
+                        : 'bg-[#26272D] text-slate-400 border-white/5 hover:text-white'
+                    }`}
+                  >
+                    {formatDateShort(item.id)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-              {/* Target 7-9h optimal reference band */}
-              <ReferenceArea
-                y1={7.0}
-                y2={9.0}
-                fill="rgba(129, 140, 248, 0.08)"
-                strokeOpacity={0}
-              />
+          {/* Current Night Stages Breakdown Header & Stacked Progress Bar */}
+          {currentNight && (
+            <div className="bg-[#26272D] p-3.5 rounded-2xl border border-white/5 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Notte del {currentNight.id}
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-xl font-black text-white">
+                      {currentNight.hoursFormatted}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      a letto: {currentNight.stages.totalBedFormatted}
+                    </span>
+                  </div>
+                </div>
 
-              {/* 8.0h Target line */}
-              <ReferenceLine
-                y={targetHours}
-                stroke="#818CF8"
-                strokeDasharray="4 4"
-                label={{
-                  value: 'Target 8h',
-                  fill: '#818CF8',
-                  fontSize: 10,
-                  position: 'right',
-                }}
-              />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-400">Punteggio:</span>
+                  <span
+                    className="px-2.5 py-0.5 rounded-full text-xs font-black"
+                    style={{
+                      backgroundColor: `${getScoreColor(currentNight.score)}20`,
+                      color: getScoreColor(currentNight.score),
+                      border: `1px solid ${getScoreColor(currentNight.score)}40`,
+                    }}
+                  >
+                    {currentNight.score}%
+                  </span>
+                </div>
+              </div>
 
-              <XAxis
-                dataKey="id"
-                tickFormatter={(v) => formatDateShort(v)}
-                stroke="#64748B"
-                fontSize={11}
-                tickLine={false}
-                axisLine={{ stroke: '#383941' }}
-              />
-              <YAxis
-                domain={[4, 11]}
-                stroke="#64748B"
-                fontSize={11}
-                tickLine={false}
-                axisLine={{ stroke: '#383941' }}
-                unit="h"
-              />
+              {/* Stacked Proportional Stages Bar */}
+              <div>
+                <div className="h-4 w-full rounded-xl overflow-hidden flex bg-black/40 border border-white/5 shadow-inner">
+                  <div
+                    style={{ width: `${currentNight.stages.deep.percent}%` }}
+                    className="h-full bg-[#3B82F6] transition-all"
+                    title={`Profondo: ${currentNight.stages.deep.formatted} (${currentNight.stages.deep.percent}%)`}
+                  />
+                  <div
+                    style={{ width: `${currentNight.stages.rem.percent}%` }}
+                    className="h-full bg-[#A855F7] transition-all"
+                    title={`REM: ${currentNight.stages.rem.formatted} (${currentNight.stages.rem.percent}%)`}
+                  />
+                  <div
+                    style={{ width: `${currentNight.stages.light.percent}%` }}
+                    className="h-full bg-[#38BDF8] transition-all"
+                    title={`Leggero: ${currentNight.stages.light.formatted} (${currentNight.stages.light.percent}%)`}
+                  />
+                  <div
+                    style={{ width: `${currentNight.stages.awake.percent}%` }}
+                    className="h-full bg-[#F59E0B] transition-all"
+                    title={`Sveglio: ${currentNight.stages.awake.formatted} (${currentNight.stages.awake.percent}%)`}
+                  />
+                </div>
 
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const d = payload[0].payload as {
-                      id: string;
-                      hours: number;
-                      hoursFormatted: string;
-                      score: number;
-                    };
-                    return (
-                      <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
-                        <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
-                          {d.id}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between gap-4 text-[#818CF8]">
-                            <span>Sleep Duration:</span>
-                            <strong className="text-white">{d.hoursFormatted}</strong>
-                          </div>
-                          <div className="flex justify-between gap-4 text-[#00E5A3]">
-                            <span>Sleep Score:</span>
-                            <strong className="text-white">{d.score}%</strong>
-                          </div>
-                          <div className="flex justify-between gap-4 text-slate-400">
-                            <span>vs 8h Target:</span>
-                            <span
-                              style={{
-                                color: d.hours >= 8 ? '#00E5A3' : '#F59E0B',
-                              }}
-                            >
-                              {d.hours >= 8
-                                ? `+${Math.round((d.hours - 8) * 60)}m`
-                                : `-${Math.round((8 - d.hours) * 60)}m`}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
+                {/* Legend indicator underneath the bar */}
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 px-0.5">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#3B82F6]" /> Profondo
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#A855F7]" /> REM
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#38BDF8]" /> Leggero
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Sveglio
+                  </span>
+                </div>
+              </div>
 
-              <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getDurationColor(entry.hours)} />
-                ))}
-              </Bar>
-            </BarChart>
-          ) : (
-            <BarChart
-              data={chartData}
-              margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+              {/* 4 Detail Stage Cards: REM, Profondo, Leggero, Sveglio */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                {/* REM */}
+                <div className="bg-[#1F2025] p-2.5 rounded-xl border border-[#A855F7]/25">
+                  <span className="text-[9px] font-extrabold text-[#A855F7] uppercase tracking-wider block">
+                    Fase REM (Sogni)
+                  </span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-base font-black text-white">
+                      {currentNight.stages.rem.formatted}
+                    </span>
+                    <span className="text-[10px] text-[#A855F7] font-bold">
+                      {currentNight.stages.rem.percent}%
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">
+                    Memoria & focus
+                  </span>
+                </div>
 
-              {/* 85% Optimal Score band */}
-              <ReferenceArea
-                y1={85}
-                y2={100}
-                fill="rgba(0, 229, 163, 0.08)"
-                strokeOpacity={0}
-              />
+                {/* Profondo */}
+                <div className="bg-[#1F2025] p-2.5 rounded-xl border border-[#3B82F6]/25">
+                  <span className="text-[9px] font-extrabold text-[#3B82F6] uppercase tracking-wider block">
+                    Sonno Profondo
+                  </span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-base font-black text-white">
+                      {currentNight.stages.deep.formatted}
+                    </span>
+                    <span className="text-[10px] text-[#3B82F6] font-bold">
+                      {currentNight.stages.deep.percent}%
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">
+                    Recupero fisico & GH
+                  </span>
+                </div>
 
-              <ReferenceLine
-                y={70}
-                stroke="#F59E0B"
-                strokeDasharray="3 3"
-                label={{
-                  value: 'Min Good (70%)',
-                  fill: '#F59E0B',
-                  fontSize: 10,
-                  position: 'right',
-                }}
-              />
+                {/* Leggero */}
+                <div className="bg-[#1F2025] p-2.5 rounded-xl border border-[#38BDF8]/25">
+                  <span className="text-[9px] font-extrabold text-[#38BDF8] uppercase tracking-wider block">
+                    Sonno Leggero
+                  </span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-base font-black text-white">
+                      {currentNight.stages.light.formatted}
+                    </span>
+                    <span className="text-[10px] text-[#38BDF8] font-bold">
+                      {currentNight.stages.light.percent}%
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">
+                    Rilassamento NREM
+                  </span>
+                </div>
 
-              <XAxis
-                dataKey="id"
-                tickFormatter={(v) => formatDateShort(v)}
-                stroke="#64748B"
-                fontSize={10}
-                tickLine={false}
-                axisLine={{ stroke: '#383941' }}
-              />
-              <YAxis
-                domain={[40, 100]}
-                stroke="#64748B"
-                fontSize={10}
-                width={34}
-                tickLine={false}
-                axisLine={{ stroke: '#383941' }}
-                unit="%"
-              />
-
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const d = payload[0].payload as {
-                      id: string;
-                      hoursFormatted: string;
-                      score: number;
-                    };
-                    return (
-                      <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
-                        <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
-                          {d.id}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between gap-4 text-[#00E5A3]">
-                            <span>Sleep Score:</span>
-                            <strong className="text-white">{d.score}%</strong>
-                          </div>
-                          <div className="flex justify-between gap-4 text-slate-300">
-                            <span>Duration:</span>
-                            <strong className="text-white">{d.hoursFormatted}</strong>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-
-              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-score-${index}`} fill={getScoreColor(entry.score)} />
-                ))}
-              </Bar>
-            </BarChart>
+                {/* Sveglio */}
+                <div className="bg-[#1F2025] p-2.5 rounded-xl border border-[#F59E0B]/25">
+                  <span className="text-[9px] font-extrabold text-[#F59E0B] uppercase tracking-wider block">
+                    Tempo Sveglio
+                  </span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-base font-black text-white">
+                      {currentNight.stages.awake.formatted}
+                    </span>
+                    <span className="text-[10px] text-[#F59E0B] font-bold">
+                      {currentNight.stages.awake.percent}%
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">
+                    Microrisvegli normali
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
-        </ResponsiveContainer>
-      </div>
+
+          {/* Comparative Stacked Bar Chart for Stages across all days */}
+          <div className="w-full h-[180px] bg-[#1F2025] p-2 rounded-xl border border-white/5">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData.map((d) => ({
+                  id: d.id,
+                  deep: d.stages.deep.hours,
+                  rem: d.stages.rem.hours,
+                  light: d.stages.light.hours,
+                  awake: d.stages.awake.hours,
+                }))}
+                margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={(v) => formatDateShort(v)}
+                  stroke="#64748B"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={{ stroke: '#383941' }}
+                />
+                <YAxis
+                  stroke="#64748B"
+                  fontSize={10}
+                  width={34}
+                  tickLine={false}
+                  axisLine={{ stroke: '#383941' }}
+                  unit="h"
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload as {
+                        id: string;
+                        deep: number;
+                        rem: number;
+                        light: number;
+                        awake: number;
+                      };
+                      return (
+                        <div className="bg-[#2F3037] border border-[#383941] p-2.5 rounded-xl text-xs space-y-1">
+                          <div className="font-bold text-white border-b border-white/10 pb-1 mb-1">
+                            {d.id}
+                          </div>
+                          <div className="text-[#3B82F6]">Profondo: {d.deep}h</div>
+                          <div className="text-[#A855F7]">REM: {d.rem}h</div>
+                          <div className="text-[#38BDF8]">Leggero: {d.light}h</div>
+                          <div className="text-[#F59E0B]">Sveglio: {d.awake}h</div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="deep" stackId="stages" fill="#3B82F6" name="Profondo" />
+                <Bar dataKey="rem" stackId="stages" fill="#A855F7" name="REM" />
+                <Bar dataKey="light" stackId="stages" fill="#38BDF8" name="Leggero" />
+                <Bar dataKey="awake" stackId="stages" fill="#F59E0B" name="Sveglio" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      ) : (
+        <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
+          <ResponsiveContainer width="100%" height="100%">
+            {activeTab === 'duration' ? (
+              <BarChart
+                data={chartData}
+                margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+
+                {/* Target 7-9h optimal reference band */}
+                <ReferenceArea
+                  y1={7.0}
+                  y2={9.0}
+                  fill="rgba(129, 140, 248, 0.08)"
+                  strokeOpacity={0}
+                />
+
+                {/* 8.0h Target line */}
+                <ReferenceLine
+                  y={targetHours}
+                  stroke="#818CF8"
+                  strokeDasharray="4 4"
+                  label={{
+                    value: 'Target 8h',
+                    fill: '#818CF8',
+                    fontSize: 10,
+                    position: 'right',
+                  }}
+                />
+
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={(v) => formatDateShort(v)}
+                  stroke="#64748B"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={{ stroke: '#383941' }}
+                />
+                <YAxis
+                  domain={[4, 11]}
+                  stroke="#64748B"
+                  fontSize={10}
+                  width={34}
+                  tickLine={false}
+                  axisLine={{ stroke: '#383941' }}
+                  unit="h"
+                />
+
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload as {
+                        id: string;
+                        hours: number;
+                        hoursFormatted: string;
+                        score: number;
+                      };
+                      return (
+                        <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
+                          <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
+                            {d.id}
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between gap-4 text-[#818CF8]">
+                              <span>Sleep Duration:</span>
+                              <strong className="text-white">{d.hoursFormatted}</strong>
+                            </div>
+                            <div className="flex justify-between gap-4 text-[#00E5A3]">
+                              <span>Sleep Score:</span>
+                              <strong className="text-white">{d.score}%</strong>
+                            </div>
+                            <div className="flex justify-between gap-4 text-slate-400">
+                              <span>vs 8h Target:</span>
+                              <span
+                                style={{
+                                  color: d.hours >= 8 ? '#00E5A3' : '#F59E0B',
+                                }}
+                              >
+                                {d.hours >= 8
+                                  ? `+${Math.round((d.hours - 8) * 60)}m`
+                                  : `-${Math.round((8 - d.hours) * 60)}m`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+
+                <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getDurationColor(entry.hours)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : (
+              <BarChart
+                data={chartData}
+                margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+
+                {/* 85% Optimal Score band */}
+                <ReferenceArea
+                  y1={85}
+                  y2={100}
+                  fill="rgba(0, 229, 163, 0.08)"
+                  strokeOpacity={0}
+                />
+
+                <ReferenceLine
+                  y={70}
+                  stroke="#F59E0B"
+                  strokeDasharray="3 3"
+                  label={{
+                    value: 'Min Good (70%)',
+                    fill: '#F59E0B',
+                    fontSize: 10,
+                    position: 'right',
+                  }}
+                />
+
+                <XAxis
+                  dataKey="id"
+                  tickFormatter={(v) => formatDateShort(v)}
+                  stroke="#64748B"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={{ stroke: '#383941' }}
+                />
+                <YAxis
+                  domain={[40, 100]}
+                  stroke="#64748B"
+                  fontSize={10}
+                  width={34}
+                  tickLine={false}
+                  axisLine={{ stroke: '#383941' }}
+                  unit="%"
+                />
+
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload as {
+                        id: string;
+                        hoursFormatted: string;
+                        score: number;
+                      };
+                      return (
+                        <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
+                          <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
+                            {d.id}
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between gap-4 text-[#00E5A3]">
+                              <span>Sleep Score:</span>
+                              <strong className="text-white">{d.score}%</strong>
+                            </div>
+                            <div className="flex justify-between gap-4 text-slate-300">
+                              <span>Duration:</span>
+                              <strong className="text-white">{d.hoursFormatted}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+
+                <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-score-${index}`} fill={getScoreColor(entry.score)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Android Controls & Compact Stats Below Chart */}
       {isAndroidApp ? (
@@ -416,23 +748,33 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
               <button
                 onClick={() => setActiveTab('duration')}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
                   activeTab === 'duration'
                     ? 'bg-[#818CF8] text-white shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Ore Sonno
+                Ore
               </button>
               <button
                 onClick={() => setActiveTab('score')}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
                   activeTab === 'score'
                     ? 'bg-[#818CF8] text-white shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Punteggio %
+                Punti
+              </button>
+              <button
+                onClick={() => setActiveTab('stages')}
+                className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeTab === 'stages'
+                    ? 'bg-[#818CF8] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Fasi Notte
               </button>
             </div>
 
