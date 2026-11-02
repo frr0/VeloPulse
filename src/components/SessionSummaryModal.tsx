@@ -173,6 +173,23 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             </div>
           </div>
 
+          {/* Lowest W'bal of the session. Missing when the session ran without
+              an estimate of CP and W': then there is nothing to report. */}
+          {summary.wbal && (
+            <div className="p-3.5 rounded-2xl bg-slate-950/50 border border-slate-800/80 flex items-center justify-between gap-3 text-xs">
+              <span className="text-slate-400">Lowest W′bal reserve:</span>
+              <div className="flex items-center gap-4 font-bold font-mono">
+                <span className="text-sky-400">
+                  {(summary.wbal.lowestJoules / 1000).toFixed(1)} kJ
+                </span>
+                <span className="text-slate-300">
+                  {Math.round((summary.wbal.lowestJoules / summary.wbal.wPrimeJoules) * 100)}% of{' '}
+                  {(summary.wbal.wPrimeJoules / 1000).toFixed(1)} kJ
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Power Curve Sparkline */}
           {powerPoints && (
             <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
