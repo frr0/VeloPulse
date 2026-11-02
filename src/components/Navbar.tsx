@@ -2,13 +2,10 @@ import {
   Activity,
   Calendar,
   Compass,
-  LogOut,
   RefreshCw,
   TrendingUp,
   User,
   Zap,
-  Bluetooth,
-  Heart,
 } from 'lucide-react';
 import React from 'react';
 import { useApp } from '../context/AppContext';
@@ -20,35 +17,24 @@ export type NavTab = 'dashboard' | 'ride' | 'fitness' | 'activities' | 'plan' | 
 interface NavbarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
-  devicesState: BluetoothDevicesState;
-  onOpenBluetooth: () => void;
+  devicesState?: BluetoothDevicesState;
+  onOpenBluetooth?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onSelectTab,
-  devicesState,
-  onOpenBluetooth,
 }) => {
   const {
     athlete,
     credentials,
     isRefreshing,
     refreshData,
-    useImperial,
-    toggleUnits,
-    logout,
   } = useApp();
 
   const isDemo = credentials?.isDemo;
   const displayName = athlete?.firstname || athlete?.name || 'Athlete';
   const isAndroidApp = isAndroid();
-
-  const connectedSensorsCount = [
-    devicesState.trainer.connected,
-    devicesState.cadence.connected,
-    devicesState.heartRate.connected,
-  ].filter(Boolean).length;
 
   return (
     <>
@@ -155,33 +141,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Icons & Hardware Indicators */}
           <div className="flex items-center gap-2">
-            {/* Bluetooth Sensors Quick Status Pill - Hidden on Android (handled inside Studio bottom bar) */}
-            {!isAndroidApp && (
-              <button
-                onClick={onOpenBluetooth}
-                title="Bluetooth Sensors Pairing (Trainer, Cadence, HR)"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                  connectedSensorsCount > 0
-                    ? 'bg-[#00E5A3]/10 border-[#00E5A3]/40 text-[#00E5A3]'
-                    : devicesState.isSimulated
-                    ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
-                    : 'bg-[#1F2025] border-[#383941] text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Bluetooth className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {devicesState.isSimulated
-                    ? 'Sim'
-                    : connectedSensorsCount > 0
-                    ? `${connectedSensorsCount}/3 BLE`
-                    : 'Sensors'}
-                </span>
-                {connectedSensorsCount > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00E5A3] animate-pulse" />
-                )}
-              </button>
-            )}
-
             {/* Status Pill */}
             <span
               className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
@@ -196,17 +155,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isDemo ? 'Demo Mode' : 'Live API'}
             </span>
 
-            {/* Units Toggle - Hidden on Android (configured in Profile) */}
-            {!isAndroidApp && (
-              <button
-                onClick={toggleUnits}
-                title="Toggle Units (Metric / Imperial)"
-                className="bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-xs font-bold px-2.5 py-1.5 rounded-xl text-slate-300 transition-colors"
-              >
-                {useImperial ? 'MI / LBS' : 'KM / KG'}
-              </button>
-            )}
-
             {/* Sync Button */}
             <button
               onClick={refreshData}
@@ -217,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#00E5A3]' : ''}`} />
             </button>
 
-            {/* Athlete Avatar (clickable for Profile) & Logout */}
+            {/* Athlete Avatar (clickable for Profile) */}
             <div className="flex items-center gap-2 pl-2 border-l border-white/10">
               <button
                 type="button"
@@ -241,17 +189,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
               </button>
-
-              {/* Logout button - Hidden on Android (available inside Profile options) */}
-              {!isAndroidApp && (
-                <button
-                  onClick={logout}
-                  title="Disconnect Intervals.icu Account"
-                  className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
           </div>
         </div>
