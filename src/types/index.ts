@@ -117,6 +117,16 @@ export interface TelemetrySample {
   targetPower: number;
 }
 
+/**
+ * W'bal of a studio session. Present only when the session ran with an estimate
+ * of CP and W': without the estimate there is no reserve to report.
+ */
+export interface SessionWbal {
+  cpWatts: number;            // Critical power used for the session (Watts)
+  wPrimeJoules: number;       // Full reserve above CP (Joules)
+  lowestJoules: number;       // Lowest reserve reached, can be negative (Joules)
+}
+
 export interface SessionSummary {
   startTime: Date;
   endTime: Date;
@@ -136,6 +146,7 @@ export interface SessionSummary {
   totalCaloriesKcal: number;
   trainingStressScore: number;
   intensityFactor: number;
+  wbal?: SessionWbal | null; // Absent when the session had no CP estimate
   samples: TelemetrySample[];
 }
 
