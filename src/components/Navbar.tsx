@@ -4,7 +4,6 @@ import {
   Compass,
   RefreshCw,
   TrendingUp,
-  User,
   Zap,
 } from 'lucide-react';
 import React from 'react';
@@ -125,18 +124,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Calendar className="w-4 h-4" />
               <span>Training Plan</span>
             </button>
-
-            <button
-              onClick={() => onSelectTab('profile')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                currentTab === 'profile'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
-                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>Athlete</span>
-            </button>
           </nav>
 
           {/* Right Action Icons & Hardware Indicators */}
@@ -236,14 +223,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               Plan
-            </button>
-            <button
-              onClick={() => onSelectTab('profile')}
-              className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-                currentTab === 'profile' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-              }`}
-            >
-              Profile
             </button>
           </div>
         )}
