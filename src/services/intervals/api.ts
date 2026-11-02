@@ -25,6 +25,29 @@ export class IntervalsApiError extends Error {
   }
 }
 
+/**
+ * One stream (time series) of an activity, as Intervals.icu returns it.
+ * `data2` is filled only by the `latlng` stream, which splits the track in two
+ * series: the latitudes in `data` and the longitudes in `data2`.
+ */
+export interface ActivityStream {
+  type: string;
+  name?: string;
+  data?: unknown[];
+  data2?: unknown[];
+}
+
+/**
+ * Outcome of a streams request. The caller tells three cases apart:
+ * - `ok` with a stream of the wanted type: the data is there;
+ * - `ok` without that type (or with an empty list): the activity has no such
+ *   series on Intervals.icu;
+ * - `failed`: the call did not produce data, and `reason` says why.
+ */
+export type ActivityStreamsResult =
+  | { status: 'ok'; streams: ActivityStream[] }
+  | { status: 'failed'; reason: string };
+
 function getAuthHeader(apiKey: string): string {
   const cleanKey = apiKey.trim();
   return `Basic ${btoa(`API_KEY:${cleanKey}`)}`;
@@ -117,17 +140,110 @@ export async function getActivityDetails(apiKey: string, activityId: string): Pr
   return request<Activity>(`/activity/${activityId}`, apiKey);
 }
 
+function describeStreamsError(err: unknown): string {
+  if (err instanceof IntervalsApiError) {
+    if (err.status === 401 || err.status === 403) {
+      return 'Intervals.icu ha rifiutato la richiesta: controlla la chiave API.';
+    }
+    if (err.status === 404) {
+      return 'Intervals.icu non trova questa attività.';
+    }
+    return `Intervals.icu non ha risposto correttamente (HTTP ${err.status}).`;
+  }
+  return 'Non ho raggiunto Intervals.icu, oppure la risposta non era leggibile.';
+}
+
+/**
+ * Streams (time series) of an activity.
+ *
+ * Endpoint: `GET /api/v1/activity/{id}/streams?types=a,b,c`. The answer is a
+ * list of streams, one per type asked for, each with `type` and `data`. A type
+ * the activity does not have is simply missing from the list: only the types in
+ * `types` are returned, so nothing comes back unless it is asked for.
+ *
+ * The function never throws and never invents a series: a failure comes back as
+ * `status: 'failed'` with the reason, so the caller can tell it apart from an
+ * activity that has no such series.
+ */
 export async function getActivityStreams(
   apiKey: string,
   activityId: string,
-  types = 'latlng'
-): Promise<any> {
-  try {
-    return await request<any>(`/activity/${activityId}/streams?types=${types}`, apiKey);
-  } catch (err) {
-    console.warn(`Could not fetch streams for activity ${activityId}:`, err);
-    return null;
+  types: string | string[] = 'latlng'
+): Promise<ActivityStreamsResult> {
+  const wanted = (Array.isArray(types) ? types : types.split(','))
+    .map((type) => type.trim())
+    .filter((type) => type.length > 0);
+
+  if (wanted.length === 0) {
+    return { status: 'failed', reason: 'Nessuna serie richiesta a Intervals.icu.' };
   }
+
+  const params = new URLSearchParams({ types: wanted.join(',') });
+
+  let data: unknown;
+  try {
+    data = await request<unknown>(`/activity/${activityId}/streams?${params.toString()}`, apiKey);
+  } catch (err) {
+    return { status: 'failed', reason: describeStreamsError(err) };
+  }
+
+  if (!Array.isArray(data)) {
+    return {
+      status: 'failed',
+      reason: 'Intervals.icu ha risposto con le serie in un formato inatteso.',
+    };
+  }
+
+  const streams: ActivityStream[] = [];
+  for (const item of data) {
+    const obj = asRecord(item);
+    if (!obj || typeof obj.type !== 'string') continue;
+    streams.push({
+      type: obj.type,
+      name: typeof obj.name === 'string' ? obj.name : undefined,
+      data: Array.isArray(obj.data) ? obj.data : undefined,
+      data2: Array.isArray(obj.data2) ? obj.data2 : undefined,
+    });
+  }
+
+  return { status: 'ok', streams };
+}
+
+/**
+ * Coordinates of the `latlng` stream, as `[lat, lng]` pairs.
+ *
+ * Intervals.icu splits the track in two series: the latitudes in `data` and the
+ * longitudes in `data2`. Reading `data` alone gives a list of latitudes, which
+ * is not a track and draws nothing on a map.
+ *
+ * Only the points that carry both numbers are kept: no coordinate is completed
+ * or guessed.
+ */
+export function latlngStreamToCoordinates(
+  stream: ActivityStream | null | undefined
+): [number, number][] {
+  if (!stream || !Array.isArray(stream.data)) return [];
+
+  const lats = stream.data;
+  const lngs = Array.isArray(stream.data2) ? stream.data2 : null;
+  const points: [number, number][] = [];
+
+  for (let i = 0; i < lats.length; i++) {
+    const lat = lats[i];
+
+    if (lngs) {
+      const lng = lngs[i];
+      if (isFiniteNumber(lat) && isFiniteNumber(lng)) points.push([lat, lng]);
+      continue;
+    }
+
+    // Without `data2` the only usable shape is a pair already inside `data`.
+    if (Array.isArray(lat) && isFiniteNumber(lat[0]) && isFiniteNumber(lat[1])) {
+      points.push([lat[0], lat[1]]);
+    }
+  }
+
+  return points;
 }
 
 export async function getCalendarEvents(
@@ -175,20 +291,47 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return null;
 }
 
+/** Weight Intervals.icu used for a curve, in kg. null when the curve has none. */
+function curveWeightKg(obj: Record<string, unknown>): number | null {
+  return isFiniteNumber(obj.weight) && obj.weight > 0 ? obj.weight : null;
+}
+
+/** Curve id reported by Intervals.icu, for example `42d` or `s0`. */
+function readCurveId(obj: Record<string, unknown> | null): string | null {
+  if (!obj) return null;
+  for (const key of ['id', 'curve']) {
+    const value = obj[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
+}
+
 /**
- * Reads the `secs`, `watts` and `watts_per_kg` arrays of one curve of the
- * Intervals.icu response.
+ * Reads the durations and the power of one curve of the Intervals.icu response.
+ *
+ * In the answer (`DataCurve`) the durations are in `secs` and the power is in
+ * `values`. `watts` is accepted as an alternative name, because the scripting
+ * model of Intervals.icu uses that one.
+ *
  * Returns null when the object is not a curve, an empty list when the curve
  * carries no usable number. No value is ever filled in.
  */
 function parseCurveSamples(value: unknown, weightKg: number | null): PowerCurveSample[] | null {
   const obj = asRecord(value);
   if (!obj) return null;
-  if (!Array.isArray(obj.secs) || !Array.isArray(obj.watts)) return null;
+  if (!Array.isArray(obj.secs)) return null;
+
+  const watts = Array.isArray(obj.values)
+    ? obj.values
+    : Array.isArray(obj.watts)
+    ? obj.watts
+    : null;
+  if (!watts) return null;
 
   const secs = obj.secs;
-  const watts = obj.watts;
   const wkgArray = Array.isArray(obj.watts_per_kg) ? obj.watts_per_kg : null;
+  // The answer has no W/kg column: the weight of the curve is the real source.
+  const curveWeight = curveWeightKg(obj) ?? weightKg;
   const length = Math.min(secs.length, watts.length);
   const samples: PowerCurveSample[] = [];
 
@@ -207,8 +350,8 @@ function parseCurveSamples(value: unknown, weightKg: number | null): PowerCurveS
     let wkg: number | null = null;
     if (isFiniteNumber(rawWkg) && rawWkg > 0) {
       wkg = rawWkg;
-    } else if (weightKg !== null) {
-      wkg = watt / weightKg;
+    } else if (curveWeight !== null) {
+      wkg = watt / curveWeight;
     }
 
     samples.push({ secs: roundedSecs, watts: roundedWatts, wkg });
@@ -221,11 +364,16 @@ function parseCurveSamples(value: unknown, weightKg: number | null): PowerCurveS
 interface CurveEntry {
   id: string;
   samples: PowerCurveSample[];
+  /** Weight Intervals.icu used for this curve, in kg. */
+  weightKg: number | null;
 }
 
 /**
- * Finds the curves in the response. Intervals.icu can answer with a list of
- * curves, with an object that holds a list, or with a single curve.
+ * Finds the curves in the response.
+ *
+ * The documented answer is `{ "list": [ curve, ... ], "activities": { ... } }`,
+ * one entry per curve asked for in `curves`. The other shapes are kept as a
+ * fallback, so a usable curve is never thrown away.
  * Returns null when the shape is not recognised.
  */
 function collectCurves(data: unknown, weightKg: number | null): CurveEntry[] | null {
@@ -237,10 +385,10 @@ function collectCurves(data: unknown, weightKg: number | null): CurveEntry[] | n
       const samples = parseCurveSamples(item, weightKg);
       if (samples === null) continue;
       const obj = asRecord(item);
-      const rawId = obj && typeof obj.curve === 'string' && obj.curve.trim() ? obj.curve.trim() : null;
       entries.push({
-        id: rawId ?? requestedIds[entries.length] ?? `curve-${entries.length + 1}`,
+        id: readCurveId(obj) ?? requestedIds[entries.length] ?? `curve-${entries.length + 1}`,
         samples,
+        weightKg: obj ? curveWeightKg(obj) : null,
       });
     }
     return entries.length > 0 ? entries : null;
@@ -253,6 +401,11 @@ function collectCurves(data: unknown, weightKg: number | null): CurveEntry[] | n
   const obj = asRecord(data);
   if (!obj) return null;
 
+  // Documented shape of the answer.
+  if (Array.isArray(obj.list)) {
+    return fromList(obj.list);
+  }
+
   if (Array.isArray(obj.curves)) {
     return fromList(obj.curves);
   }
@@ -261,12 +414,16 @@ function collectCurves(data: unknown, weightKg: number | null): CurveEntry[] | n
   const keyed: CurveEntry[] = [];
   for (const id of requestedIds) {
     const samples = parseCurveSamples(obj[id], weightKg);
-    if (samples !== null) keyed.push({ id, samples });
+    if (samples === null) continue;
+    const curve = asRecord(obj[id]);
+    keyed.push({ id, samples, weightKg: curve ? curveWeightKg(curve) : null });
   }
   if (keyed.length > 0) return keyed;
 
   const single = parseCurveSamples(obj, weightKg);
-  if (single !== null) return [{ id: requestedIds[0], samples: single }];
+  if (single !== null) {
+    return [{ id: requestedIds[0], samples: single, weightKg: curveWeightKg(obj) }];
+  }
 
   return null;
 }
@@ -366,6 +523,11 @@ export async function getPowerCurves(
   const findCurve = (wantedId: string): CurveEntry | undefined =>
     curves.find((entry) => entry.id === wantedId);
 
+  // With no weight on the athlete profile, the weight reported on the curves is
+  // the only real source for W/kg.
+  const reportedWeightKg =
+    weightKg ?? curves.reduce<number | null>((found, entry) => found ?? entry.weightKg, null);
+
   let recent = toSeries(findCurve(RECENT_CURVE_ID));
   let season = toSeries(findCurve(SEASON_CURVE_ID));
 
@@ -379,12 +541,12 @@ export async function getPowerCurves(
   if (!recent && !season) {
     return {
       ...EMPTY_POWER_CURVE,
-      weightKg,
+      weightKg: reportedWeightKg,
       error: 'Intervals.icu has no power data in this period.',
     };
   }
 
-  return { recent, season, weightKg, simulated: false, error: null };
+  return { recent, season, weightKg: reportedWeightKg, simulated: false, error: null };
 }
 
 export async function getAthleteSportSettings(

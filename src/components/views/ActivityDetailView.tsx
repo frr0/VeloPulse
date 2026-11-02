@@ -21,7 +21,11 @@ import {
 import { Activity } from '../../types/intervals';
 import { UserSettings } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { getActivityDetails, getActivityStreams } from '../../services/intervals/api';
+import {
+  getActivityDetails,
+  getActivityStreams,
+  latlngStreamToCoordinates,
+} from '../../services/intervals/api';
 import { ActivityMap } from '../ActivityMap';
 import { getActivityRoute } from '../../utils/polyline';
 import {
@@ -53,6 +57,9 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const { credentials } = useApp();
   const [detailedActivity, setDetailedActivity] = useState<Activity>(activity);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  // Why the track is missing, when Intervals.icu could not be read. null when
+  // the call worked: in that case the activity simply has no track.
+  const [routeError, setRouteError] = useState<string | null>(null);
 
   // Keyboard shortcut: Escape to go back
   useEffect(() => {
@@ -66,22 +73,25 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   // Fetch full details and streams from Intervals.icu if available
   useEffect(() => {
     setDetailedActivity(activity);
+    setRouteError(null);
     if (!activity) return;
 
     if (credentials && !credentials.isDemo && activity.id) {
       setIsLoadingDetails(true);
       Promise.all([
         getActivityDetails(credentials.apiKey, activity.id).catch(() => null),
-        getActivityStreams(credentials.apiKey, activity.id, 'latlng').catch(() => null),
+        // getActivityStreams never rejects: a failure arrives as status 'failed'.
+        getActivityStreams(credentials.apiKey, activity.id, 'latlng'),
       ])
         .then(([full, streams]) => {
+          setRouteError(streams.status === 'failed' ? streams.reason : null);
           setDetailedActivity((prev) => {
             const next = { ...prev, ...(full || {}) };
-            if (streams && Array.isArray(streams)) {
-              const latlngStream = streams.find((s: any) => s.type === 'latlng');
-              if (latlngStream && Array.isArray(latlngStream.data)) {
-                next.icu_latlng = latlngStream.data;
-              }
+            if (streams.status === 'ok') {
+              const track = latlngStreamToCoordinates(
+                streams.streams.find((stream) => stream.type === 'latlng')
+              );
+              if (track.length > 1) next.icu_latlng = track;
             }
             return next;
           });
@@ -228,6 +238,16 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
             <p className="text-xs sm:text-sm text-slate-400 max-w-md">
               Scarico la traccia GPS dell&apos;attività.
             </p>
+          </div>
+        ) : routeError ? (
+          <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#26272D] border border-white/5 flex items-center justify-center mb-3">
+              <MapPinOff className="w-7 h-7 text-[#F28B82]" />
+            </div>
+            <h4 className="text-base font-bold text-white mb-1">
+              Non ho potuto leggere i dati da Intervals.icu
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md">{routeError}</p>
           </div>
         ) : (
           <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
