@@ -142,7 +142,10 @@ export interface WbalPoint {
 }
 
 /**
- * W'bal over time: how much of the reserve above CP is left, instant by instant.
+ * One step of the W'bal model: the reserve after riding `powerWatts` for
+ * `dtSecs` seconds. This is the only place where the formula lives, so the live
+ * reserve of the studio and the curve of a recorded activity cannot drift
+ * apart.
  *
  * Formula: the differential model of Skiba, P. F., Fulford, J., Clarke, D. C.,
  * Vanhatalo, A., & Jones, A. M. (2015). Intramuscular determinants of the
@@ -165,6 +168,41 @@ export interface WbalPoint {
  * past the capacity the model estimated, and hiding it would be a made up
  * number. The upper bound stays at W', because the reserve never grows past
  * full.
+ *
+ * A step the model cannot read returns the reserve unchanged: a missing power
+ * value, a step of zero or negative time, a CP or W' that is not a positive
+ * number. The reserve stands still instead of taking an invented value.
+ */
+export function advanceWbal(
+  balanceJoules: number,
+  powerWatts: number,
+  dtSecs: number,
+  cpWatts: number,
+  wPrimeJoules: number
+): number {
+  if (!Number.isFinite(balanceJoules)) return balanceJoules;
+  if (!Number.isFinite(powerWatts)) return balanceJoules;
+  if (!Number.isFinite(dtSecs) || dtSecs <= 0) return balanceJoules;
+  if (!Number.isFinite(cpWatts) || cpWatts <= 0) return balanceJoules;
+  if (!Number.isFinite(wPrimeJoules) || wPrimeJoules <= 0) return balanceJoules;
+
+  let balance = balanceJoules;
+  if (powerWatts > cpWatts) {
+    balance -= (powerWatts - cpWatts) * dtSecs;
+  } else {
+    balance += (cpWatts - powerWatts) * ((wPrimeJoules - balance) / wPrimeJoules) * dtSecs;
+  }
+
+  // A long step of the Euler integration could overshoot a full reserve.
+  if (balance > wPrimeJoules) return wPrimeJoules;
+  return balance;
+}
+
+/**
+ * W'bal over time: how much of the reserve above CP is left, instant by instant.
+ *
+ * Every step goes through `advanceWbal`, which carries the formula and its
+ * citation: the differential model of Skiba et al. (2015).
  *
  * Samples without a power value produce a null point: the gap stays a gap and
  * the reserve does not move.
@@ -208,13 +246,7 @@ export function computeWbalSeries(
     if (!Number.isFinite(dt) || dt <= 0) dt = 0;
 
     if (dt > 0) {
-      if (power > cpWatts) {
-        balance -= (power - cpWatts) * dt;
-      } else {
-        balance += (cpWatts - power) * ((wPrimeJoules - balance) / wPrimeJoules) * dt;
-      }
-      // A long step of the Euler integration could overshoot a full reserve.
-      if (balance > wPrimeJoules) balance = wPrimeJoules;
+      balance = advanceWbal(balance, power, dt, cpWatts, wPrimeJoules);
     }
 
     points.push({ t, joules: balance });

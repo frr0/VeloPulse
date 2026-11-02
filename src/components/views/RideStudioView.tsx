@@ -15,6 +15,7 @@ import {
   ParsedWorkout,
   SessionStatus,
   SessionSummary,
+  SessionWbal,
   TelemetryData,
   TelemetrySample,
   UserSettings,
@@ -25,6 +26,14 @@ import { CyclingPhysicsEngine } from '../../services/physics/speedCalculator';
 import { WorkoutEngine, WorkoutEngineState } from '../../services/workout/workoutEngine';
 import { getPowerZoneInfo, getPowerZoneNumber, getHeartRateZoneInfo } from '../../utils/zones';
 import { SAMPLE_WORKOUTS, parseZwoWorkout } from '../../services/workout/zwoParser';
+import { useApp } from '../../context/AppContext';
+import {
+  CriticalPowerResult,
+  CriticalPowerUnavailableReason,
+  WBAL_LOW_FRACTION,
+  advanceWbal,
+  estimateCriticalPower,
+} from '../../utils/criticalPower';
 import {
   Zap,
   Activity,
@@ -37,7 +46,28 @@ import {
   Dumbbell,
   Settings as SettingsIcon,
   Download,
+  BatteryMedium,
 } from 'lucide-react';
+
+/**
+ * Why there is no CP estimate, in one short line for the cockpit. The studio
+ * writes in English, like the rest of this screen.
+ */
+const CP_UNAVAILABLE_TEXT: Record<CriticalPowerUnavailableReason, string> = {
+  'no-curve': 'Intervals.icu returned no power curve for this athlete.',
+  'durations-missing': 'your power curve needs two efforts between 2 and 20 minutes.',
+  'durations-too-close': 'the durations of your power curve are too close together.',
+  'model-not-applicable':
+    'your power curve between 2 and 20 minutes does not fit the critical power model.',
+};
+
+/** Live W'bal of the session: the reserve now, and the lowest reached so far. */
+interface LiveWbal {
+  /** Reserve left, in joules. Negative when the athlete went past W'. */
+  joules: number;
+  /** Lowest reserve of the session, in joules. */
+  lowestJoules: number;
+}
 
 interface RideStudioViewProps {
   settings: UserSettings;
@@ -67,6 +97,14 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   useImperial = false,
 }) => {
   const isNative = Capacitor.isNativePlatform();
+  const { powerCurve } = useApp();
+
+  // CP and W' estimated on the power curve the app already downloaded. Without
+  // the estimate the studio shows no reserve: it never derives CP from the FTP.
+  const criticalPower = useMemo<CriticalPowerResult>(() => {
+    const curve = powerCurve.recent ?? powerCurve.season;
+    return estimateCriticalPower(curve?.samples ?? null, curve?.label ?? '');
+  }, [powerCurve]);
 
   // Services instances (refs so they persist across renders)
   const physicsEngineRef = useRef<CyclingPhysicsEngine>(new CyclingPhysicsEngine(settings));
@@ -108,8 +146,15 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
     workKj: 0,
   });
 
+  // Live W'bal: the reserve moves only in the 1-second loop, so the ref carries
+  // it between ticks and the state only feeds the card.
+  const [liveWbal, setLiveWbal] = useState<LiveWbal | null>(null);
+  const liveWbalRef = useRef<LiveWbal | null>(null);
+  const criticalPowerRef = useRef<CriticalPowerResult>(criticalPower);
+
   // Session recording state
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('idle');
+  const sessionStatusRef = useRef<SessionStatus>('idle');
   const sessionStartTimeRef = useRef<Date | null>(null);
   const sessionSecondsRef = useRef<number>(0);
   const samplesRef = useRef<TelemetrySample[]>([]);
@@ -163,6 +208,38 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
     }
   }, [activeWorkoutFromCalendar]);
 
+  // The 1-second loop and the session handlers read the status from the ref, so
+  // a new estimate does not restart the loop.
+  useEffect(() => {
+    sessionStatusRef.current = sessionStatus;
+  }, [sessionStatus]);
+
+  // A new estimate of CP and W' arrives when the power curve is downloaded again.
+  useEffect(() => {
+    criticalPowerRef.current = criticalPower;
+
+    if (criticalPower.status !== 'ok') {
+      liveWbalRef.current = null;
+      setLiveWbal(null);
+      return;
+    }
+
+    const fullJoules = criticalPower.estimate.wPrimeJoules;
+    const current = liveWbalRef.current;
+    const next: LiveWbal =
+      current === null || sessionStatusRef.current === 'idle'
+        ? { joules: fullJoules, lowestJoules: fullJoules }
+        : // During a session the reserve keeps its value, but never stays above
+          // a full reserve that just got smaller.
+          {
+            joules: Math.min(current.joules, fullJoules),
+            lowestJoules: Math.min(current.lowestJoules, fullJoules),
+          };
+
+    liveWbalRef.current = next;
+    setLiveWbal(next);
+  }, [criticalPower]);
+
   // Update physics engine and workout engine when settings change
   useEffect(() => {
     physicsEngineRef.current.updateSettings(settings);
@@ -200,6 +277,26 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
         const dt = 1;
         const joules = power * dt;
+
+        // W'bal of this second. The reserve moves only while the session runs:
+        // on pause this branch does not run and the reserve stands still.
+        const cp = criticalPowerRef.current;
+        const prevWbal = liveWbalRef.current;
+        if (cp.status === 'ok' && prevWbal !== null) {
+          const wbalJoules = advanceWbal(
+            prevWbal.joules,
+            power,
+            dt,
+            cp.estimate.cpWatts,
+            cp.estimate.wPrimeJoules
+          );
+          const nextWbal: LiveWbal = {
+            joules: wbalJoules,
+            lowestJoules: Math.min(prevWbal.lowestJoules, wbalJoules),
+          };
+          liveWbalRef.current = nextWbal;
+          setLiveWbal(nextWbal);
+        }
 
         sessionSecondsRef.current += 1;
         const currentElapsedSeconds = sessionSecondsRef.current;
@@ -271,6 +368,16 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
     power30sHistoryRef.current = [];
     physicsEngineRef.current.reset(0);
     setFitFileInfo(null);
+
+    // A new session starts with a full reserve, or with no reserve at all when
+    // there is no estimate of CP and W'.
+    const cp = criticalPowerRef.current;
+    const freshWbal: LiveWbal | null =
+      cp.status === 'ok'
+        ? { joules: cp.estimate.wPrimeJoules, lowestJoules: cp.estimate.wPrimeJoules }
+        : null;
+    liveWbalRef.current = freshWbal;
+    setLiveWbal(freshWbal);
 
     setTelemetry((prev) => ({
       ...prev,
@@ -352,6 +459,19 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
       }
     }
 
+    // The lowest reserve of the session, read from the refs so the value is the
+    // live one even when the workout engine closes the session by itself.
+    const cp = criticalPowerRef.current;
+    const wbal = liveWbalRef.current;
+    const sessionWbal: SessionWbal | null =
+      cp.status === 'ok' && wbal !== null
+        ? {
+            cpWatts: cp.estimate.cpWatts,
+            wPrimeJoules: cp.estimate.wPrimeJoules,
+            lowestJoules: Math.round(wbal.lowestJoules),
+          }
+        : null;
+
     const intensityFactor =
       settings.ftp > 0 ? Number((normalizedPower / settings.ftp).toFixed(2)) : 0;
     const trainingStressScore =
@@ -378,6 +498,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
       totalCaloriesKcal: telemetry.calories,
       trainingStressScore,
       intensityFactor,
+      wbal: sessionWbal,
       samples,
     };
   };
@@ -478,6 +599,22 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   const currentPowerZone = useMemo(() => {
     return getPowerZoneInfo(telemetry.power, settings.ftp);
   }, [telemetry.power, settings.ftp]);
+
+  // Everything the W'bal card shows. Null means there is nothing to show: with
+  // no estimate the card gives way to a single line that says why.
+  const wbalDisplay = useMemo(() => {
+    if (criticalPower.status !== 'ok' || liveWbal === null) return null;
+    const fullJoules = criticalPower.estimate.wPrimeJoules;
+    return {
+      kilojoules: liveWbal.joules / 1000,
+      percent: (liveWbal.joules / fullJoules) * 100,
+      fullKilojoules: fullJoules / 1000,
+      lowestKilojoules: liveWbal.lowestJoules / 1000,
+      lowestPercent: (liveWbal.lowestJoules / fullJoules) * 100,
+      isLow: liveWbal.joules < fullJoules * WBAL_LOW_FRACTION,
+      cpWatts: criticalPower.estimate.cpWatts,
+    };
+  }, [criticalPower, liveWbal]);
 
   const powerGaugePercent = useMemo(() => {
     const target = telemetry.targetPower || settings.ftp;
@@ -765,7 +902,54 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         />
       </div>
 
-      {/* 
+      {/*
+        W'BAL RESERVE: the energy left above CP, live
+        - One card in the style of the other metrics: kilojoules, and the share
+          of the full reserve; under a quarter it turns amber, in place, so no
+          other number is covered and the layout does not move
+        - No estimate of CP and W': one line that says so, and no number
+      */}
+      {wbalDisplay ? (
+        <MetricCard
+          variant="hud"
+          isSmall
+          label="W′bal Reserve"
+          value={wbalDisplay.kilojoules.toFixed(1)}
+          unit="kJ"
+          icon={<BatteryMedium className="w-4 h-4" />}
+          accentColor={wbalDisplay.isLow ? '#FB923C' : '#38BDF8'}
+          subValue={
+            <span className="font-mono text-[11px] sm:text-sm text-slate-400">
+              {Math.round(wbalDisplay.percent)}% of {wbalDisplay.fullKilojoules.toFixed(1)} kJ
+              {wbalDisplay.isLow && (
+                <strong className="ml-1.5 text-orange-400 uppercase">Low</strong>
+              )}
+            </span>
+          }
+          gaugePercent={wbalDisplay.percent}
+          gaugeColor={wbalDisplay.isLow ? '#FB923C' : '#38BDF8'}
+          footer={
+            <div className="flex items-center justify-between gap-2 text-[11px] sm:text-sm">
+              <span className="text-slate-400 truncate">Lowest • CP {wbalDisplay.cpWatts} W</span>
+              <span className="font-mono font-bold text-slate-300 shrink-0">
+                {wbalDisplay.lowestKilojoules.toFixed(1)} kJ ({Math.round(wbalDisplay.lowestPercent)}%)
+              </span>
+            </div>
+          }
+        />
+      ) : (
+        <div className="py-1.5 px-3 rounded-xl bg-[#1F2025] border border-[#383941] text-[11px] sm:text-xs text-slate-400 flex items-center gap-2">
+          <BatteryMedium className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+          <span className="min-w-0">
+            <strong className="text-slate-300">W′bal reserve needs a CP estimate:</strong>{' '}
+            {criticalPower.status === 'unavailable'
+              ? CP_UNAVAILABLE_TEXT[criticalPower.reason]
+              : 'the estimate of CP and W′ is not ready yet.'}
+          </span>
+        </div>
+      )}
+
+      {/*
         3. SECONDARY STATS ROW (6 columns across the screen)
         Elapsed, Distance, Work (kJ), Calories, Remaining, FTP
       */}
