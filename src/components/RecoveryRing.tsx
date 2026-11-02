@@ -76,18 +76,21 @@ export const RecoveryRing: React.FC<RecoveryRingProps> = ({
       {/* Center Metrics */}
       <div className="z-10 flex flex-col items-center justify-center text-center px-2">
         <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">Recovery</span>
-        <span className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: colorStart }}>
+        <span
+          className={`font-black tracking-tight ${size < 170 ? 'text-3xl' : 'text-4xl sm:text-5xl'}`}
+          style={{ color: colorStart }}
+        >
           {clampedScore}%
         </span>
         <span
-          className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider mt-1"
+          className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider mt-0.5"
           style={{ backgroundColor: badgeBg, color: colorStart }}
         >
           {statusText}
         </span>
 
         {(restingHR !== undefined || hrv !== undefined) && (
-          <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
+          <div className={`flex items-center gap-1.5 mt-1 text-slate-400 ${size < 170 ? 'text-[10px]' : 'text-xs'}`}>
             {restingHR !== undefined && (
               <span>HR <strong className="text-white font-bold">{restingHR}</strong></span>
             )}

@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { Wellness } from '../../types/intervals';
 import { formatDateShort } from '../../utils/formatters';
+import { isAndroid } from '../../utils/platform';
 
 interface SleepChartProps {
   data: Wellness[];
@@ -98,132 +99,141 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
     return '#EF4444';
   };
 
+  const isAndroidApp = isAndroid();
+
   return (
-    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
-      {/* Header with Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Sleep & Recovery
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/30">
               {activeTab === 'duration' ? 'Duration & Sleep Debt' : 'Sleep Quality Score'}
             </span>
           </div>
-          <h3 className="text-base font-bold text-white mt-0.5">
+          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             {activeTab === 'duration'
               ? 'Nightly Sleep Duration vs 8-Hour Target'
               : 'Restoration & Physiological Sleep Quality %'}
           </h3>
         </div>
 
-        {/* Tab & Range Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
-            <button
-              onClick={() => setActiveTab('duration')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                activeTab === 'duration'
-                  ? 'bg-[#818CF8] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Sleep Hours
-            </button>
-            <button
-              onClick={() => setActiveTab('score')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                activeTab === 'score'
-                  ? 'bg-[#818CF8] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Sleep Score %
-            </button>
-          </div>
-
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
-            {(['14', '30', '90'] as RangeOption[]).map((r) => (
+        {/* Tab & Range Controls (Desktop / Web only in header) */}
+        {!isAndroidApp && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
               <button
-                key={r}
-                onClick={() => setRange(r)}
+                onClick={() => setActiveTab('duration')}
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                  range === r
-                    ? 'bg-[#3E4049] text-white shadow'
+                  activeTab === 'duration'
+                    ? 'bg-[#818CF8] text-white shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {r}D
+                Sleep Hours
               </button>
-            ))}
+              <button
+                onClick={() => setActiveTab('score')}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === 'score'
+                    ? 'bg-[#818CF8] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Sleep Score %
+              </button>
+            </div>
+
+            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+              {(['14', '30', '90'] as RangeOption[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    range === r
+                      ? 'bg-[#3E4049] text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {r}D
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Hero Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Latest Night
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-white">
-              {activeTab === 'duration' ? latestHours : `${latestScore}%`}
+      {/* Hero Stats (Desktop / Web only in header) */}
+      {!isAndroidApp && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Latest Night
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-white">
+                {activeTab === 'duration' ? latestHours : `${latestScore}%`}
+              </span>
+            </div>
+            <span className="text-[11px] text-[#818CF8] font-semibold">
+              {activeTab === 'duration' ? `${latestScore}% Quality` : latestHours}
             </span>
           </div>
-          <span className="text-[11px] text-[#818CF8] font-semibold">
-            {activeTab === 'duration' ? `${latestScore}% Quality` : latestHours}
-          </span>
-        </div>
 
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            7-Day Avg Duration
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-[#00E5A3]">{avgHours}</span>
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              7-Day Avg Duration
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-[#00E5A3]">{avgHours}</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">Optimal 7h–9h target</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Optimal 7h–9h target</span>
-        </div>
 
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            7-Day Avg Score
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-[#38BDF8]">{avgScore}%</span>
-          </div>
-          <span className="text-[11px] text-slate-400 font-medium">
-            {avgScore >= 80 ? 'Optimal recovery' : 'Good recovery'}
-          </span>
-        </div>
-
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            7-Day Sleep Debt
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span
-              className="text-2xl font-black"
-              style={{ color: sleepDebtMinutes >= 0 ? '#00E5A3' : '#F59E0B' }}
-            >
-              {sleepDebtMinutes >= 0
-                ? `+${sleepDebtMinutes}m`
-                : `${sleepDebtMinutes}m`}
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              7-Day Avg Score
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-[#38BDF8]">{avgScore}%</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              {avgScore >= 80 ? 'Optimal recovery' : 'Good recovery'}
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">
-            {sleepDebtMinutes >= 0 ? 'Surplus ahead of target' : 'Minor deficit'}
-          </span>
+
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              7-Day Sleep Debt
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span
+                className="text-2xl font-black"
+                style={{ color: sleepDebtMinutes >= 0 ? '#00E5A3' : '#F59E0B' }}
+              >
+                {sleepDebtMinutes >= 0
+                  ? `+${sleepDebtMinutes}m`
+                  : `${sleepDebtMinutes}m`}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              {sleepDebtMinutes >= 0 ? 'Surplus ahead of target' : 'Minor deficit'}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Chart Canvas */}
-      <div className="w-full h-[280px]">
+      <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
         <ResponsiveContainer width="100%" height="100%">
           {activeTab === 'duration' ? (
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
               {/* Target 7-9h optimal reference band */}
@@ -314,7 +324,10 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
               </Bar>
             </BarChart>
           ) : (
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
               {/* 85% Optimal Score band */}
@@ -341,14 +354,15 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 dataKey="id"
                 tickFormatter={(v) => formatDateShort(v)}
                 stroke="#64748B"
-                fontSize={11}
+                fontSize={10}
                 tickLine={false}
                 axisLine={{ stroke: '#383941' }}
               />
               <YAxis
                 domain={[40, 100]}
                 stroke="#64748B"
-                fontSize={11}
+                fontSize={10}
+                width={34}
                 tickLine={false}
                 axisLine={{ stroke: '#383941' }}
                 unit="%"
@@ -394,27 +408,129 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Legend & Guidance Footer */}
-      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#00E5A3]" />
-            <span>Optimal (85%+)</span>
+      {/* Android Controls & Compact Stats Below Chart */}
+      {isAndroidApp ? (
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2.5">
+          {/* Controls: Mode Switcher & Range Selector */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+              <button
+                onClick={() => setActiveTab('duration')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeTab === 'duration'
+                    ? 'bg-[#818CF8] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Ore Sonno
+              </button>
+              <button
+                onClick={() => setActiveTab('score')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeTab === 'score'
+                    ? 'bg-[#818CF8] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Punteggio %
+              </button>
+            </div>
+
+            <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+              {(['14', '30', '90'] as RangeOption[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    range === r
+                      ? 'bg-[#3E4049] text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {r}D
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
-            <span>Good (70–84%)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
-            <span>Fair (&lt;70%)</span>
+
+          {/* Compact Hero Stats Below Chart */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Latest Night
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-white">
+                  {activeTab === 'duration' ? latestHours : `${latestScore}%`}
+                </span>
+              </div>
+              <span className="text-[10px] text-[#818CF8] font-semibold truncate block">
+                {activeTab === 'duration' ? `${latestScore}% Quality` : latestHours}
+              </span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                7-Day Avg Duration
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-[#00E5A3]">{avgHours}</span>
+              </div>
+              <span className="text-[10px] text-slate-400">Target 7–9h</span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                7-Day Avg Score
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-[#38BDF8]">{avgScore}%</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium">
+                {avgScore >= 80 ? 'Optimal' : 'Good'}
+              </span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                7-Day Sleep Debt
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span
+                  className="text-lg font-black"
+                  style={{ color: sleepDebtMinutes >= 0 ? '#00E5A3' : '#F59E0B' }}
+                >
+                  {sleepDebtMinutes >= 0 ? `+${sleepDebtMinutes}m` : `${sleepDebtMinutes}m`}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 truncate block">
+                {sleepDebtMinutes >= 0 ? 'Surplus' : 'Deficit'}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-slate-500 text-[11px]">
-          <Moon className="w-3.5 h-3.5 text-[#818CF8]" />
-          <span>Consistent sleep schedule builds durability</span>
+      ) : (
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#00E5A3]" />
+              <span>Optimal (85%+)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
+              <span>Good (70–84%)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+              <span>Fair (&lt;70%)</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-slate-500 text-[11px]">
+            <Moon className="w-3.5 h-3.5 text-[#818CF8]" />
+            <span>Consistent sleep schedule builds durability</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

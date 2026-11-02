@@ -13,6 +13,7 @@ import {
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { BluetoothDevicesState } from '../types';
+import { isAndroid } from '../utils/platform';
 
 export type NavTab = 'dashboard' | 'ride' | 'fitness' | 'activities' | 'plan' | 'profile';
 
@@ -41,6 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isDemo = credentials?.isDemo;
   const displayName = athlete?.firstname || athlete?.name || 'Athlete';
+  const isAndroidApp = isAndroid();
 
   const connectedSensorsCount = [
     devicesState.trainer.connected,
@@ -152,30 +154,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Icons & Hardware Indicators */}
           <div className="flex items-center gap-2">
-            {/* Bluetooth Sensors Quick Status Pill */}
-            <button
-              onClick={onOpenBluetooth}
-              title="Bluetooth Sensors Pairing (Trainer, Cadence, HR)"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                connectedSensorsCount > 0
-                  ? 'bg-[#00E5A3]/10 border-[#00E5A3]/40 text-[#00E5A3]'
-                  : devicesState.isSimulated
-                  ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
-                  : 'bg-[#1F2025] border-[#383941] text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Bluetooth className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {devicesState.isSimulated
-                  ? 'Sim'
-                  : connectedSensorsCount > 0
-                  ? `${connectedSensorsCount}/3 BLE`
-                  : 'Sensors'}
-              </span>
-              {connectedSensorsCount > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00E5A3] animate-pulse" />
-              )}
-            </button>
+            {/* Bluetooth Sensors Quick Status Pill - Hidden on Android (handled inside Studio bottom bar) */}
+            {!isAndroidApp && (
+              <button
+                onClick={onOpenBluetooth}
+                title="Bluetooth Sensors Pairing (Trainer, Cadence, HR)"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                  connectedSensorsCount > 0
+                    ? 'bg-[#00E5A3]/10 border-[#00E5A3]/40 text-[#00E5A3]'
+                    : devicesState.isSimulated
+                    ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
+                    : 'bg-[#1F2025] border-[#383941] text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Bluetooth className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {devicesState.isSimulated
+                    ? 'Sim'
+                    : connectedSensorsCount > 0
+                    ? `${connectedSensorsCount}/3 BLE`
+                    : 'Sensors'}
+                </span>
+                {connectedSensorsCount > 0 && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00E5A3] animate-pulse" />
+                )}
+              </button>
+            )}
 
             {/* Status Pill */}
             <span
@@ -191,14 +195,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isDemo ? 'Demo Mode' : 'Live API'}
             </span>
 
-            {/* Units Toggle */}
-            <button
-              onClick={toggleUnits}
-              title="Toggle Units (Metric / Imperial)"
-              className="bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-xs font-bold px-2.5 py-1.5 rounded-xl text-slate-300 transition-colors"
-            >
-              {useImperial ? 'MI / LBS' : 'KM / KG'}
-            </button>
+            {/* Units Toggle - Hidden on Android (configured in Profile) */}
+            {!isAndroidApp && (
+              <button
+                onClick={toggleUnits}
+                title="Toggle Units (Metric / Imperial)"
+                className="bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-xs font-bold px-2.5 py-1.5 rounded-xl text-slate-300 transition-colors"
+              >
+                {useImperial ? 'MI / LBS' : 'KM / KG'}
+              </button>
+            )}
 
             {/* Sync Button */}
             <button
@@ -210,83 +216,143 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#00E5A3]' : ''}`} />
             </button>
 
-            {/* Athlete Avatar & Logout */}
+            {/* Athlete Avatar (clickable for Profile) & Logout */}
             <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-              {athlete?.profile_medium ? (
-                <img
-                  src={athlete.profile_medium}
-                  alt={displayName}
-                  className="w-8 h-8 rounded-full border border-[#00E5A3] object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[#2F3037] border border-[#383941] flex items-center justify-center text-[#00E5A3] font-bold text-xs">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
-
               <button
-                onClick={logout}
-                title="Disconnect Intervals.icu Account"
-                className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 transition-colors"
+                type="button"
+                onClick={() => onSelectTab('profile')}
+                title="Vai al profilo atleta"
+                className={`rounded-full transition-all cursor-pointer ${
+                  currentTab === 'profile'
+                    ? 'ring-2 ring-[#00E5A3] ring-offset-2 ring-offset-[#131316]'
+                    : 'hover:opacity-85'
+                }`}
               >
-                <LogOut className="w-3.5 h-3.5" />
+                {athlete?.profile_medium ? (
+                  <img
+                    src={athlete.profile_medium}
+                    alt={displayName}
+                    className="w-8 h-8 rounded-full border border-[#00E5A3] object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#2F3037] border border-[#383941] flex items-center justify-center text-[#00E5A3] font-bold text-xs">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </button>
+
+              {/* Logout button - Hidden on Android (available inside Profile options) */}
+              {!isAndroidApp && (
+                <button
+                  onClick={logout}
+                  title="Disconnect Intervals.icu Account"
+                  className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Mobile / Tablet Sub-Navigation Bar */}
-        <div className="flex lg:hidden items-center justify-around py-2 border-t border-[#383941]/60 text-xs overflow-x-auto gap-1">
-          <button
-            onClick={() => onSelectTab('dashboard')}
-            className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-              currentTab === 'dashboard' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-            }`}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => onSelectTab('ride')}
-            className={`px-3 py-1.5 font-bold rounded-full shrink-0 flex items-center gap-1 transition-all ${
-              currentTab === 'ride' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Studio</span>
-          </button>
-          <button
-            onClick={() => onSelectTab('fitness')}
-            className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-              currentTab === 'fitness' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-            }`}
-          >
-            Fitness
-          </button>
-          <button
-            onClick={() => onSelectTab('activities')}
-            className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-              currentTab === 'activities' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-            }`}
-          >
-            Activities
-          </button>
-          <button
-            onClick={() => onSelectTab('plan')}
-            className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-              currentTab === 'plan' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-            }`}
-          >
-            Plan
-          </button>
-          <button
-            onClick={() => onSelectTab('profile')}
-            className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-              currentTab === 'profile' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
-            }`}
-          >
-            Profile
-          </button>
-        </div>
+        {isAndroidApp ? (
+          <div className="grid grid-cols-5 w-full py-1.5 border-t border-[#383941]/60 text-[11px] gap-1">
+            <button
+              onClick={() => onSelectTab('dashboard')}
+              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
+                currentTab === 'dashboard' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => onSelectTab('ride')}
+              className={`py-1.5 font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-all ${
+                currentTab === 'ride' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              <Zap className="w-3 h-3" />
+              <span>Studio</span>
+            </button>
+            <button
+              onClick={() => onSelectTab('fitness')}
+              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
+                currentTab === 'fitness' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Fitness
+            </button>
+            <button
+              onClick={() => onSelectTab('activities')}
+              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
+                currentTab === 'activities' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Activities
+            </button>
+            <button
+              onClick={() => onSelectTab('plan')}
+              className={`py-1.5 font-bold rounded-xl text-center transition-all ${
+                currentTab === 'plan' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Plan
+            </button>
+          </div>
+        ) : (
+          <div className="flex lg:hidden items-center justify-around py-2 border-t border-[#383941]/60 text-xs overflow-x-auto gap-1">
+            <button
+              onClick={() => onSelectTab('dashboard')}
+              className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
+                currentTab === 'dashboard' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => onSelectTab('ride')}
+              className={`px-3 py-1.5 font-bold rounded-full shrink-0 flex items-center gap-1 transition-all ${
+                currentTab === 'ride' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Studio</span>
+            </button>
+            <button
+              onClick={() => onSelectTab('fitness')}
+              className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
+                currentTab === 'fitness' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Fitness
+            </button>
+            <button
+              onClick={() => onSelectTab('activities')}
+              className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
+                currentTab === 'activities' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Activities
+            </button>
+            <button
+              onClick={() => onSelectTab('plan')}
+              className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
+                currentTab === 'plan' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Plan
+            </button>
+            <button
+              onClick={() => onSelectTab('profile')}
+              className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
+                currentTab === 'profile' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+              }`}
+            >
+              Profile
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

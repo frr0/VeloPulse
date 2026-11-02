@@ -17,6 +17,7 @@ import {
   CriticalPowerUnavailableReason,
   estimateCriticalPower,
 } from '../../utils/criticalPower';
+import { isAndroid } from '../../utils/platform';
 
 interface PowerCurveChartProps {
   data: PowerCurveData;
@@ -172,14 +173,15 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
     activeMetric === 'watts' ? `${Math.round(value)}` : value.toFixed(1);
 
   const unitLabel = activeMetric === 'watts' ? 'W' : 'W/kg';
+  const isAndroidApp = isAndroid();
 
   return (
-    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
+    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-2.5">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Power Duration Curve
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FC5200]/20 text-[#FC5200] border border-[#FC5200]/30">
@@ -191,172 +193,180 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
               </span>
             )}
           </div>
-          <h3 className="text-base font-bold text-white mt-0.5">
+          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             Mean Maximal Power across Critical Durations
           </h3>
         </div>
 
-        {/* Toggle Switches */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Watts vs W/kg */}
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
-            <button
-              onClick={() => setMetric('watts')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                activeMetric === 'watts'
-                  ? 'bg-[#FC5200] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Watts (W)
-            </button>
-            <button
-              onClick={() => setMetric('wkg')}
-              disabled={!hasWkg}
-              title={hasWkg ? undefined : 'Add your weight on Intervals.icu to see W/kg'}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                activeMetric === 'wkg'
-                  ? 'bg-[#FC5200] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              } ${hasWkg ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
-            >
-              W/kg
-            </button>
-          </div>
-
-          {/* Recent vs Season */}
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
-            <button
-              onClick={() => setMode('recent')}
-              disabled={!hasRecent}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                activeMode === 'recent'
-                  ? 'bg-[#3E4049] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              } ${hasRecent ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
-            >
-              {recentLabel}
-            </button>
-            <button
-              onClick={() => setMode('season')}
-              disabled={!hasSeason}
-              title={hasSeason ? undefined : 'Intervals.icu returned no season curve'}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                activeMode === 'season'
-                  ? 'bg-[#3E4049] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              } ${hasSeason ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
-            >
-              {seasonLabel}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Benchmark Summary Pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-5">
-        {BENCHMARKS.map((benchmark, index) => {
-          const reading = readings[index];
-          return (
-            <div
-              key={benchmark.secs}
-              className={`bg-[#26272D] p-3 rounded-xl border border-white/5 ${
-                index === BENCHMARKS.length - 1 ? 'col-span-2 sm:col-span-1' : ''
-              }`}
-            >
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                {benchmark.title}
-              </span>
-              <span className="text-lg font-black text-white mt-0.5 block">
-                {reading ? (
-                  <>
-                    {reading.interpolated ? '~' : ''}
-                    {reading.watts} <span className="text-xs font-semibold text-slate-400">W</span>
-                  </>
-                ) : (
-                  '--'
-                )}
-              </span>
-              <span className="text-[11px] font-semibold" style={{ color: benchmark.color }}>
-                {reading && reading.wkg !== null
-                  ? `${reading.interpolated ? '~' : ''}${reading.wkg.toFixed(1)} W/kg`
-                  : '--'}
-              </span>
+        {/* Toggle Switches (Desktop / Web only in header) */}
+        {!isAndroidApp && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Watts vs W/kg */}
+            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+              <button
+                onClick={() => setMetric('watts')}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeMetric === 'watts'
+                    ? 'bg-[#FC5200] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Watts (W)
+              </button>
+              <button
+                onClick={() => setMetric('wkg')}
+                disabled={!hasWkg}
+                title={hasWkg ? undefined : 'Add your weight on Intervals.icu to see W/kg'}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeMetric === 'wkg'
+                    ? 'bg-[#FC5200] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                } ${hasWkg ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
+              >
+                W/kg
+              </button>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Critical power model: estimates shown next to the profile FTP, never
-          replacing it. */}
-      <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 mb-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Critical Power Model
-            </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30">
-              Estimates
-            </span>
-          </div>
-          {criticalPower.status === 'ok' && (
-            <span className="text-[10px] text-slate-500">
-              Fitted on {criticalPower.estimate.durationsSecs.length} durations between 2 and 20 min
-              of the {criticalPower.estimate.sourceLabel} curve
-            </span>
-          )}
-        </div>
-
-        {criticalPower.status === 'ok' ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                CP (estimated)
-              </span>
-              <span className="text-lg sm:text-xl font-black text-[#00E5A3]">
-                {criticalPower.estimate.cpWatts}{' '}
-                <span className="text-xs font-semibold text-slate-400">W</span>
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                W&prime; (estimated)
-              </span>
-              <span className="text-lg sm:text-xl font-black text-[#A855F7]">
-                {(criticalPower.estimate.wPrimeJoules / 1000).toFixed(1)}{' '}
-                <span className="text-xs font-semibold text-slate-400">kJ</span>
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                FTP (profile)
-              </span>
-              <span className="text-lg sm:text-xl font-black text-white">
-                {ftp !== null ? (
-                  <>
-                    {ftp} <span className="text-xs font-semibold text-slate-400">W</span>
-                  </>
-                ) : (
-                  '--'
-                )}
-              </span>
+            {/* Recent vs Season */}
+            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+              <button
+                onClick={() => setMode('recent')}
+                disabled={!hasRecent}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeMode === 'recent'
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                } ${hasRecent ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
+              >
+                {recentLabel}
+              </button>
+              <button
+                onClick={() => setMode('season')}
+                disabled={!hasSeason}
+                title={hasSeason ? undefined : 'Intervals.icu returned no season curve'}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  activeMode === 'season'
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                } ${hasSeason ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
+              >
+                {seasonLabel}
+              </button>
             </div>
           </div>
-        ) : (
-          <p className="text-xs text-slate-400">{CP_UNAVAILABLE_TEXT[criticalPower.reason]}</p>
         )}
-
-        <p className="mt-2 text-[11px] text-slate-500">
-          Two-parameter critical power model (P = CP + W&prime;/t), fitted on your Intervals.icu
-          curve. These are estimates: they do not replace the FTP on your profile.
-        </p>
       </div>
+
+      {/* Benchmark Summary Pills (Desktop / Web only in header) */}
+      {!isAndroidApp && (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-5">
+          {BENCHMARKS.map((benchmark, index) => {
+            const reading = readings[index];
+            return (
+              <div
+                key={benchmark.secs}
+                className={`bg-[#26272D] p-3 rounded-xl border border-white/5 ${
+                  index === BENCHMARKS.length - 1 ? 'col-span-2 sm:col-span-1' : ''
+                }`}
+              >
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {benchmark.title}
+                </span>
+                <span className="text-lg font-black text-white mt-0.5 block">
+                  {reading ? (
+                    <>
+                      {reading.interpolated ? '~' : ''}
+                      {reading.watts} <span className="text-xs font-semibold text-slate-400">W</span>
+                    </>
+                  ) : (
+                    '--'
+                  )}
+                </span>
+                <span className="text-[11px] font-semibold" style={{ color: benchmark.color }}>
+                  {reading && reading.wkg !== null
+                    ? `${reading.interpolated ? '~' : ''}${reading.wkg.toFixed(1)} W/kg`
+                    : '--'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Critical power model (Desktop / Web only in header) */}
+      {!isAndroidApp && (
+        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 mb-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Critical Power Model
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30">
+                Estimates
+              </span>
+            </div>
+            {criticalPower.status === 'ok' && (
+              <span className="text-[10px] text-slate-500">
+                Fitted on {criticalPower.estimate.durationsSecs.length} durations between 2 and 20 min
+                of the {criticalPower.estimate.sourceLabel} curve
+              </span>
+            )}
+          </div>
+
+          {criticalPower.status === 'ok' ? (
+            <div className="grid grid-cols-3 gap-2.5">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  CP (estimated)
+                </span>
+                <span className="text-lg sm:text-xl font-black text-[#00E5A3]">
+                  {criticalPower.estimate.cpWatts}{' '}
+                  <span className="text-xs font-semibold text-slate-400">W</span>
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  W&prime; (estimated)
+                </span>
+                <span className="text-lg sm:text-xl font-black text-[#A855F7]">
+                  {(criticalPower.estimate.wPrimeJoules / 1000).toFixed(1)}{' '}
+                  <span className="text-xs font-semibold text-slate-400">kJ</span>
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  FTP (profile)
+                </span>
+                <span className="text-lg sm:text-xl font-black text-white">
+                  {ftp !== null ? (
+                    <>
+                      {ftp} <span className="text-xs font-semibold text-slate-400">W</span>
+                    </>
+                  ) : (
+                    '--'
+                  )}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400">{CP_UNAVAILABLE_TEXT[criticalPower.reason]}</p>
+          )}
+
+          <p className="mt-2 text-[11px] text-slate-500">
+            Two-parameter critical power model (P = CP + W&prime;/t), fitted on your Intervals.icu
+            curve. These are estimates: they do not replace the FTP on your profile.
+          </p>
+        </div>
+      )}
 
       {/* Chart Canvas */}
-      <div className="w-full h-[280px]">
+      <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
         {hasChartData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartRows} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart
+              data={chartRows}
+              margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="powerOrange" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#FC5200" stopOpacity={0.35} />
@@ -480,18 +490,121 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
         )}
       </div>
 
-      {/* Footer Info */}
-      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Zap className="w-3.5 h-3.5 text-[#FC5200]" />
-          <span>
-            Functional Threshold Power:{' '}
-            <strong className="text-white">{ftp !== null ? `${ftp} W` : '--'}</strong>
-            {ftpWkg !== null ? ` (${ftpWkg.toFixed(1)} W/kg)` : ''}
-          </span>
+      {/* Android Controls & Compact Stats Below Chart */}
+      {isAndroidApp ? (
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2.5">
+          {/* Controls: Metric Switcher & Mode Selector */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+              <button
+                onClick={() => setMetric('watts')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeMetric === 'watts'
+                    ? 'bg-[#FC5200] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Watts (W)
+              </button>
+              <button
+                onClick={() => setMetric('wkg')}
+                disabled={!hasWkg}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeMetric === 'wkg'
+                    ? 'bg-[#FC5200] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                } ${hasWkg ? '' : 'opacity-40 cursor-not-allowed'}`}
+              >
+                W/kg
+              </button>
+            </div>
+
+            <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+              <button
+                onClick={() => setMode('recent')}
+                disabled={!hasRecent}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeMode === 'recent'
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                } ${hasRecent ? '' : 'opacity-40 cursor-not-allowed'}`}
+              >
+                {recentLabel}
+              </button>
+              <button
+                onClick={() => setMode('season')}
+                disabled={!hasSeason}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  activeMode === 'season'
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                } ${hasSeason ? '' : 'opacity-40 cursor-not-allowed'}`}
+              >
+                {seasonLabel}
+              </button>
+            </div>
+          </div>
+
+          {/* Compact Benchmark Pills Below Chart */}
+          <div className="grid grid-cols-5 gap-1.5">
+            {BENCHMARKS.map((benchmark, index) => {
+              const reading = readings[index];
+              return (
+                <div
+                  key={benchmark.secs}
+                  className="bg-[#26272D] p-1.5 rounded-xl border border-white/5 text-center"
+                >
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">
+                    {benchmark.title}
+                  </span>
+                  <span className="text-xs font-black text-white mt-0.5 block truncate">
+                    {reading ? `${reading.watts}W` : '--'}
+                  </span>
+                  <span className="text-[9px] font-bold block truncate" style={{ color: benchmark.color }}>
+                    {reading && reading.wkg !== null ? `${reading.wkg.toFixed(1)}` : '--'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Compact CP & FTP Row */}
+          {criticalPower.status === 'ok' && (
+            <div className="grid grid-cols-3 gap-2 p-2 bg-[#26272D] rounded-xl border border-white/5 text-center">
+              <div>
+                <span className="text-[8px] font-bold text-slate-400 uppercase block">CP Model</span>
+                <span className="text-sm font-black text-[#00E5A3]">
+                  {criticalPower.estimate.cpWatts}W
+                </span>
+              </div>
+              <div>
+                <span className="text-[8px] font-bold text-slate-400 uppercase block">W&prime; Energy</span>
+                <span className="text-sm font-black text-[#A855F7]">
+                  {(criticalPower.estimate.wPrimeJoules / 1000).toFixed(1)}kJ
+                </span>
+              </div>
+              <div>
+                <span className="text-[8px] font-bold text-slate-400 uppercase block">FTP Profile</span>
+                <span className="text-sm font-black text-white">
+                  {ftp !== null ? `${ftp}W` : '--'}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
-        <span className="text-slate-500 text-[11px]">{footerNote}</span>
-      </div>
+      ) : (
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-[#FC5200]" />
+            <span>
+              Functional Threshold Power:{' '}
+              <strong className="text-white">{ftp !== null ? `${ftp} W` : '--'}</strong>
+              {ftpWkg !== null ? ` (${ftpWkg.toFixed(1)} W/kg)` : ''}
+            </span>
+          </div>
+          <span className="text-slate-500 text-[11px]">{footerNote}</span>
+        </div>
+      )}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { Wellness } from '../../types/intervals';
 import { formatDateShort } from '../../utils/formatters';
+import { isAndroid } from '../../utils/platform';
 
 interface Vo2MaxChartProps {
   data: Wellness[];
@@ -60,14 +61,15 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
   };
 
   const classification = getClassification(latest);
+  const isAndroidApp = isAndroid();
 
   return (
-    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
+    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Aerobic Capacity
             </span>
             <span
@@ -81,89 +83,96 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               {classification.tier} ({classification.desc})
             </span>
           </div>
-          <h3 className="text-base font-bold text-white mt-0.5">
+          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             VO2 Max Progression & Aerobic Fitness Trend
           </h3>
         </div>
 
-        {/* Range Selector */}
-        <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
-          {(['14', '30', '90', '180'] as RangeOption[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                range === r
-                  ? 'bg-[#3E4049] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {r}D
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Hero Stats Triplet */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Current VO2 Max
-            </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-white">{latest.toFixed(1)}</span>
-              <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
-            </div>
-          </div>
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: `${classification.color}15`, color: classification.color }}
-          >
-            <Award className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {range}D Progression
-            </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span
-                className="text-2xl font-black"
-                style={{ color: change >= 0 ? '#00E5A3' : '#EF4444' }}
+        {/* Range Selector (Desktop / Web only in header) */}
+        {!isAndroidApp && (
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+            {(['14', '30', '90', '180'] as RangeOption[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  range === r
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                {change >= 0 ? `+${change.toFixed(1)}` : change.toFixed(1)}
-              </span>
-              <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
-            </div>
+                {r}D
+              </button>
+            ))}
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#00E5A3]/15 text-[#00E5A3] flex items-center justify-center">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Aerobic Benchmark
-            </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#A855F7]">Top 5%</span>
-              <span className="text-xs text-slate-400 font-bold">Age Group</span>
-            </div>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-[#A855F7]/15 text-[#A855F7] flex items-center justify-center">
-            <Flame className="w-5 h-5" />
-          </div>
-        </div>
+        )}
       </div>
+
+      {/* Hero Stats Triplet (Desktop / Web only in header) */}
+      {!isAndroidApp && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Current VO2 Max
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-2xl font-black text-white">{latest.toFixed(1)}</span>
+                <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+              </div>
+            </div>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${classification.color}15`, color: classification.color }}
+            >
+              <Award className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {range}D Progression
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span
+                  className="text-2xl font-black"
+                  style={{ color: change >= 0 ? '#00E5A3' : '#EF4444' }}
+                >
+                  {change >= 0 ? `+${change.toFixed(1)}` : change.toFixed(1)}
+                </span>
+                <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-[#00E5A3]/15 text-[#00E5A3] flex items-center justify-center">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Aerobic Benchmark
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-2xl font-black text-[#A855F7]">Top 5%</span>
+                <span className="text-xs text-slate-400 font-bold">Age Group</span>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-[#A855F7]/15 text-[#A855F7] flex items-center justify-center">
+              <Flame className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chart Canvas */}
-      <div className="w-full h-[280px]">
+      <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart
+            data={chartData}
+            margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="vo2Purple" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#A855F7" stopOpacity={0.4} />
@@ -185,14 +194,15 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               dataKey="id"
               tickFormatter={(v) => formatDateShort(v)}
               stroke="#64748B"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />
             <YAxis
               domain={[50, 60]}
               stroke="#64748B"
-              fontSize={11}
+              fontSize={10}
+              width={34}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />
@@ -233,16 +243,86 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
         </ResponsiveContainer>
       </div>
 
-      {/* Aerobic Classification Guide Footer */}
-      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Info className="w-3.5 h-3.5 text-[#A855F7]" />
-          <span>
-            Superior zone (&gt;56): <strong className="text-white">Elite aerobic capacity</strong>
+      {/* Android Controls & Compact Stats Below Chart */}
+      {isAndroidApp ? (
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2.5">
+          {/* Controls: Range Selector */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Periodo:
+            </span>
+            <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+              {(['14', '30', '90', '180'] as RangeOption[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    range === r
+                      ? 'bg-[#3E4049] text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {r}D
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Compact Hero Stats Below Chart */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Current
+              </span>
+              <div className="flex items-baseline justify-center gap-1 mt-0.5">
+                <span className="text-lg font-black text-white">{latest.toFixed(1)}</span>
+                <span className="text-[9px] text-slate-400">ml/kg</span>
+              </div>
+              <span className="text-[9px] font-bold block truncate" style={{ color: classification.color }}>
+                {classification.tier}
+              </span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Progression
+              </span>
+              <div className="flex items-baseline justify-center gap-1 mt-0.5">
+                <span
+                  className="text-lg font-black"
+                  style={{ color: change >= 0 ? '#00E5A3' : '#EF4444' }}
+                >
+                  {change >= 0 ? `+${change.toFixed(1)}` : change.toFixed(1)}
+                </span>
+                <span className="text-[9px] text-slate-400">ml/kg</span>
+              </div>
+              <span className="text-[9px] text-slate-400">{range}d Delta</span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Benchmark
+              </span>
+              <div className="flex items-baseline justify-center gap-1 mt-0.5">
+                <span className="text-lg font-black text-[#A855F7]">Top 5%</span>
+              </div>
+              <span className="text-[9px] text-slate-400">Age Group</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Info className="w-3.5 h-3.5 text-[#A855F7]" />
+            <span>
+              Superior zone (&gt;56): <strong className="text-white">Elite aerobic capacity</strong>
+            </span>
+          </div>
+          <span className="text-slate-500 text-[11px]">
+            Calculated from maximal aerobic power (W) & body mass
           </span>
         </div>
-        <span className="text-slate-500 text-[11px]">Calculated from maximal aerobic power (W) & body mass</span>
-      </div>
+      )}
     </div>
   );
 };

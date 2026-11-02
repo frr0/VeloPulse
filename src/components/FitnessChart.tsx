@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { Wellness } from '../types/intervals';
 import { formatDateShort, getFormStatus } from '../utils/formatters';
+import { isAndroid } from '../utils/platform';
 
 interface FitnessChartProps {
   data: Wellness[];
@@ -39,97 +40,108 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
   const latest = chartData[chartData.length - 1];
   const latestTsb = latest?.tsb ?? (latest?.ctl && latest?.atl ? latest.ctl - latest.atl : 0);
   const formStatus = getFormStatus(latestTsb);
+  const isAndroidApp = isAndroid();
 
   return (
-    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
-      {/* Top Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+      {/* Top Header */}
+      <div className="flex items-center justify-between gap-3 mb-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Fitness & Form
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: formStatus.badgeBg, color: formStatus.color }}>
+            <span
+              className="px-2 py-0.5 rounded text-[10px] font-bold"
+              style={{ backgroundColor: formStatus.badgeBg, color: formStatus.color }}
+            >
               {formStatus.label}
             </span>
           </div>
-          <h3 className="text-base font-bold text-white mt-0.5">
+          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             Chronic Training Load (CTL) vs Acute Fatigue (ATL)
           </h3>
         </div>
 
-        {/* Range Selector */}
-        <div className="flex items-center bg-[#2F3037] p-1 rounded-xl self-start sm:self-auto border border-[#383941]">
-          {(['14', '30', '90', '180', 'ALL'] as RangeOption[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                range === r
-                  ? 'bg-[#3E4049] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {r === 'ALL' ? 'ALL' : `${r}D`}
-            </button>
-          ))}
+        {/* Range Selector (hidden on Android header, placed below) */}
+        {!isAndroidApp && (
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl self-start sm:self-auto border border-[#383941]">
+            {(['14', '30', '90', '180', 'ALL'] as RangeOption[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  range === r
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {r === 'ALL' ? 'ALL' : `${r}D`}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Legend & Toggle Controls (hidden on Android header, placed below) */}
+      {!isAndroidApp && (
+        <div className="flex items-center gap-4 sm:gap-6 text-xs mb-3 flex-wrap">
+          <button
+            onClick={() => setShowCtl(!showCtl)}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
+              showCtl
+                ? 'border-[#38BDF8]/40 bg-[#38BDF8]/10 text-white'
+                : 'border-transparent text-slate-500 opacity-60'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
+            <span className="font-semibold">Fitness (CTL)</span>
+            {latest?.ctl !== undefined && (
+              <span className="text-slate-400 font-bold ml-1">{Math.round(latest.ctl)}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowAtl(!showAtl)}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
+              showAtl
+                ? 'border-[#A855F7]/40 bg-[#A855F7]/10 text-white'
+                : 'border-transparent text-slate-500 opacity-60'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-[#A855F7]" />
+            <span className="font-semibold">Fatigue (ATL)</span>
+            {latest?.atl !== undefined && (
+              <span className="text-slate-400 font-bold ml-1">{Math.round(latest.atl)}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowTsb(!showTsb)}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
+              showTsb
+                ? 'border-[#00E5A3]/40 bg-[#00E5A3]/10 text-white'
+                : 'border-transparent text-slate-500 opacity-60'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-[#00E5A3]" />
+            <span className="font-semibold">Form (TSB)</span>
+            {latestTsb !== undefined && (
+              <span className="font-bold ml-1" style={{ color: formStatus.color }}>
+                {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
+              </span>
+            )}
+          </button>
         </div>
-      </div>
-
-      {/* Legend & Toggle Controls */}
-      <div className="flex items-center gap-4 sm:gap-6 text-xs mb-3 flex-wrap">
-        <button
-          onClick={() => setShowCtl(!showCtl)}
-          className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
-            showCtl
-              ? 'border-[#38BDF8]/40 bg-[#38BDF8]/10 text-white'
-              : 'border-transparent text-slate-500 opacity-60'
-          }`}
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
-          <span className="font-semibold">Fitness (CTL)</span>
-          {latest?.ctl !== undefined && (
-            <span className="text-slate-400 font-bold ml-1">{Math.round(latest.ctl)}</span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setShowAtl(!showAtl)}
-          className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
-            showAtl
-              ? 'border-[#A855F7]/40 bg-[#A855F7]/10 text-white'
-              : 'border-transparent text-slate-500 opacity-60'
-          }`}
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-[#A855F7]" />
-          <span className="font-semibold">Fatigue (ATL)</span>
-          {latest?.atl !== undefined && (
-            <span className="text-slate-400 font-bold ml-1">{Math.round(latest.atl)}</span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setShowTsb(!showTsb)}
-          className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
-            showTsb
-              ? 'border-[#00E5A3]/40 bg-[#00E5A3]/10 text-white'
-              : 'border-transparent text-slate-500 opacity-60'
-          }`}
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-[#00E5A3]" />
-          <span className="font-semibold">Form (TSB)</span>
-          {latestTsb !== undefined && (
-            <span className="font-bold ml-1" style={{ color: formStatus.color }}>
-              {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
-            </span>
-          )}
-        </button>
-      </div>
+      )}
 
       {/* Chart Canvas */}
-      <div className="w-full h-[280px]">
+      <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+          >
             {/* Zero Form baseline */}
             <ReferenceLine y={0} stroke="rgba(255, 255, 255, 0.25)" strokeDasharray="3 3" />
 
@@ -145,13 +157,14 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
               dataKey="id"
               tickFormatter={(v) => formatDateShort(v)}
               stroke="#64748B"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />
             <YAxis
               stroke="#64748B"
-              fontSize={11}
+              fontSize={10}
+              width={34}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />
@@ -239,14 +252,132 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
         </ResponsiveContainer>
       </div>
 
-      {/* Form Interpretation Guide Footer */}
-      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: formStatus.color }} />
-          <span>Current Zone: <strong className="text-white">{formStatus.label}</strong> ({formStatus.description})</span>
+      {/* Form Interpretation Guide Footer & Android Controls Below Chart */}
+      {isAndroidApp ? (
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-3">
+          {/* Android Controls Row: Range Selector & Line Toggles */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Periodo:
+              </span>
+              <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+                {(['14', '30', '90', '180', 'ALL'] as RangeOption[]).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRange(r)}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      range === r
+                        ? 'bg-[#3E4049] text-white shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {r === 'ALL' ? 'ALL' : `${r}D`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-1 text-[11px]">
+              <button
+                onClick={() => setShowCtl(!showCtl)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl border transition-all ${
+                  showCtl
+                    ? 'border-[#38BDF8]/40 bg-[#38BDF8]/10 text-white'
+                    : 'border-transparent text-slate-500 opacity-60'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-[#38BDF8]" />
+                <span className="font-bold">CTL</span>
+                {latest?.ctl !== undefined && (
+                  <span className="text-slate-300 ml-0.5">{Math.round(latest.ctl)}</span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowAtl(!showAtl)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl border transition-all ${
+                  showAtl
+                    ? 'border-[#A855F7]/40 bg-[#A855F7]/10 text-white'
+                    : 'border-transparent text-slate-500 opacity-60'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-[#A855F7]" />
+                <span className="font-bold">ATL</span>
+                {latest?.atl !== undefined && (
+                  <span className="text-slate-300 ml-0.5">{Math.round(latest.atl)}</span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowTsb(!showTsb)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl border transition-all ${
+                  showTsb
+                    ? 'border-[#00E5A3]/40 bg-[#00E5A3]/10 text-white'
+                    : 'border-transparent text-slate-500 opacity-60'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-[#00E5A3]" />
+                <span className="font-bold">TSB</span>
+                {latestTsb !== undefined && (
+                  <span className="ml-0.5" style={{ color: formStatus.color }}>
+                    {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Android Compact Value Cards Below Chart */}
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="bg-[#26272D] p-2 rounded-xl border border-[#38BDF8]/20 text-center">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Fitness (CTL)
+              </span>
+              <span className="text-lg font-black text-[#38BDF8] block">
+                {latest?.ctl !== undefined ? Math.round(latest.ctl) : '--'}
+              </span>
+              <span className="text-[9px] text-slate-400">42d Rolling</span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-[#A855F7]/20 text-center">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Fatigue (ATL)
+              </span>
+              <span className="text-lg font-black text-[#A855F7] block">
+                {latest?.atl !== undefined ? Math.round(latest.atl) : '--'}
+              </span>
+              <span className="text-[9px] text-slate-400">7d Acute</span>
+            </div>
+
+            <div
+              className="bg-[#26272D] p-2 rounded-xl border text-center"
+              style={{ borderColor: `${formStatus.color}30` }}
+            >
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Form (TSB)
+              </span>
+              <span className="text-lg font-black block" style={{ color: formStatus.color }}>
+                {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
+              </span>
+              <span className="text-[9px] capitalize" style={{ color: formStatus.color }}>
+                {formStatus.label}
+              </span>
+            </div>
+          </div>
         </div>
-        <span className="text-slate-500 text-[11px]">Hover or tap on points for daily breakdown</span>
-      </div>
+      ) : (
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: formStatus.color }} />
+            <span>
+              Current Zone: <strong className="text-white">{formStatus.label}</strong> (
+              {formStatus.description})
+            </span>
+          </div>
+          <span className="text-slate-500 text-[11px]">Hover or tap on points for daily breakdown</span>
+        </div>
+      )}
     </div>
   );
 };

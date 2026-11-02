@@ -20,6 +20,7 @@ import { PowerCurveChart } from '../charts/PowerCurveChart';
 import { RestingHrChart } from '../charts/RestingHrChart';
 import { SleepChart } from '../charts/SleepChart';
 import { Vo2MaxChart } from '../charts/Vo2MaxChart';
+import { isAndroid } from '../../utils/platform';
 
 export type AnalyticsTab =
   | 'all'
@@ -70,6 +71,21 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
     { id: 'vo2max' as const, label: 'VO2 Max', icon: Award, color: '#A855F7' },
     { id: 'all' as const, label: 'All Graphs', icon: Layers, color: '#FFFFFF' },
   ];
+
+  const isAndroidApp = isAndroid();
+
+  if (isAndroidApp) {
+    return (
+      <div className="space-y-4 animate-fadeIn">
+        <FitnessChart data={wellness} />
+        <PowerCurveChart data={powerCurve} ftp={ftp} isLoading={isPowerCurveLoading} />
+        <Vo2MaxChart data={wellness} currentVo2Max={vo2max} />
+        <HrvChart data={wellness} />
+        <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? 46} />
+        <SleepChart data={wellness} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">

@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { Wellness } from '../../types/intervals';
 import { formatDateShort } from '../../utils/formatters';
+import { isAndroid } from '../../utils/platform';
 
 interface RestingHrChartProps {
   data: Wellness[];
@@ -95,93 +96,102 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
     };
   }, [chartData, defaultRHR]);
 
+  const isAndroidApp = isAndroid();
+
   return (
-    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
+    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Cardiovascular Efficiency
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#00B4D8]/20 text-[#00B4D8] border border-[#00B4D8]/30">
               Resting Heart Rate
             </span>
           </div>
-          <h3 className="text-base font-bold text-white mt-0.5">
+          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             Daily Resting Pulse & 7-Day Baseline Trend
           </h3>
         </div>
 
-        {/* Range Selector */}
-        <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
-          {(['14', '30', '90'] as RangeOption[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                range === r
-                  ? 'bg-[#3E4049] text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {r}D
-            </button>
-          ))}
-        </div>
+        {/* Range Selector (hidden on Android header, placed below) */}
+        {!isAndroidApp && (
+          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+            {(['14', '30', '90'] as RangeOption[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  range === r
+                    ? 'bg-[#3E4049] text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {r}D
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Hero Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Latest Pulse
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-white">{latestRhr}</span>
-            <span className="text-xs text-slate-400 font-bold">bpm</span>
+      {/* Hero Stats (hidden on Android header, placed below) */}
+      {!isAndroidApp && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Latest Pulse
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-white">{latestRhr}</span>
+              <span className="text-xs text-slate-400 font-bold">bpm</span>
+            </div>
+            <span className="text-[11px] text-[#00B4D8] font-semibold">Morning waking pulse</span>
           </div>
-          <span className="text-[11px] text-[#00B4D8] font-semibold">Morning waking pulse</span>
-        </div>
 
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            7-Day Rolling Avg
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-[#00B4D8]">{avg7d}</span>
-            <span className="text-xs text-slate-400 font-bold">bpm</span>
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              7-Day Rolling Avg
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-[#00B4D8]">{avg7d}</span>
+              <span className="text-xs text-slate-400 font-bold">bpm</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">Smoothed baseline</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Smoothed baseline</span>
-        </div>
 
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Lowest Recorded
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-[#00E5A3]">{lowestRhr}</span>
-            <span className="text-xs text-slate-400 font-bold">bpm</span>
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Lowest Recorded
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-[#00E5A3]">{lowestRhr}</span>
+              <span className="text-xs text-slate-400 font-bold">bpm</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">Peak adaptation</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Peak adaptation</span>
-        </div>
 
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Period Average
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-2xl font-black text-white">{overallAvg}</span>
-            <span className="text-xs text-slate-400 font-bold">bpm</span>
+          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Period Average
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-white">{overallAvg}</span>
+              <span className="text-xs text-slate-400 font-bold">bpm</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">{range}-day mean</span>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">{range}-day mean</span>
         </div>
-      </div>
+      )}
 
       {/* Chart Canvas */}
-      <div className="w-full h-[280px]">
+      <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart
+            data={chartData}
+            margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="rhrCyan" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#00B4D8" stopOpacity={0.35} />
@@ -203,17 +213,17 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               dataKey="id"
               tickFormatter={(v) => formatDateShort(v)}
               stroke="#64748B"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />
             <YAxis
-              domain={['dataMin - 3', 'dataMax + 4']}
+              domain={['dataMin - 5', 'dataMax + 5']}
               stroke="#64748B"
-              fontSize={11}
+              fontSize={10}
+              width={34}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
-              unit=" bpm"
             />
 
             <Tooltip
@@ -264,22 +274,99 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
         </ResponsiveContainer>
       </div>
 
-      {/* Footer Insight */}
-      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Activity className="w-3.5 h-3.5 text-[#00B4D8]" />
-          <span>
-            {rhrAlert ? (
-              <strong style={{ color: rhrAlert.color }}>
-                {rhrAlert.title}: {rhrAlert.message}
-              </strong>
-            ) : (
-              <span>Resting pulse is steady within optimal baseline range ({lowestRhr}–{lowestRhr + 6} bpm)</span>
-            )}
+      {/* Android Controls & Compact Stats Below Chart */}
+      {isAndroidApp ? (
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2.5">
+          {/* Controls: Range Selector */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Periodo:
+            </span>
+            <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
+              {(['14', '30', '90'] as RangeOption[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    range === r
+                      ? 'bg-[#3E4049] text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {r}D
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Compact Hero Stats Below Chart */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Latest Pulse
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-white">{latestRhr}</span>
+                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+              </div>
+              <span className="text-[10px] text-[#00B4D8] font-semibold">Morning</span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                7-Day Avg
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-[#00B4D8]">{avg7d}</span>
+                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium">Smoothed</span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Lowest
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-[#00E5A3]">{lowestRhr}</span>
+                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+              </div>
+              <span className="text-[10px] text-slate-400">Adaptation</span>
+            </div>
+
+            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Period Mean
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg font-black text-white">{overallAvg}</span>
+                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+              </div>
+              <span className="text-[10px] text-slate-400">{range}d Avg</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5 text-[#00B4D8]" />
+            <span>
+              {rhrAlert ? (
+                <strong style={{ color: rhrAlert.color }}>
+                  {rhrAlert.title}: {rhrAlert.message}
+                </strong>
+              ) : (
+                <span>
+                  Resting pulse is steady within optimal baseline range ({lowestRhr}–{lowestRhr + 6} bpm)
+                </span>
+              )}
+            </span>
+          </div>
+          <span className="text-slate-500 text-[11px]">
+            Lower values correlate with aerobic adaptation
           </span>
         </div>
-        <span className="text-slate-500 text-[11px]">Lower values correlate with aerobic adaptation</span>
-      </div>
+      )}
     </div>
   );
 };

@@ -275,11 +275,11 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
       className="relative bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl transition-all w-full rounded-3xl"
     >
       {/* Top Map Header Bar / Badge */}
-      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025] border border-[#383941] shadow-xl text-xs font-semibold text-white">
-          <Navigation className="w-3.5 h-3.5 text-[#00E5A3]" />
-          <span>Traccia Percorso GPS</span>
-          <span className="text-slate-400 font-mono text-[11px] border-l border-white/10 pl-2">
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2 max-w-[45%] sm:max-w-none">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#1F2025]/95 backdrop-blur-md border border-[#383941] shadow-xl text-xs font-semibold text-white truncate">
+          <Navigation className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
+          <span className="hidden sm:inline">Traccia Percorso GPS</span>
+          <span className="text-slate-300 font-mono text-[11px] sm:border-l sm:border-white/10 sm:pl-2 truncate">
             {formatDistance(activity.distance, useImperial)}
             {activity.total_elevation_gain ? ` • +${formatElevation(activity.total_elevation_gain, useImperial)}` : ''}
           </span>
@@ -287,7 +287,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
       </div>
 
       {/* Floating Controls: Layer Selector + Recenter + Close */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1 sm:gap-1.5 justify-end">
         {/* Map Layer Mode Selector (Mappa, Satellite, OSM) */}
         <div className="flex items-center bg-[#1F2025] border border-[#383941] rounded-xl p-1 shadow-xl text-xs">
           <button

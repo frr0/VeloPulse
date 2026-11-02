@@ -440,7 +440,13 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
 
       {/* Interactive GPS Map: sticky during scroll, dismissible with X */}
       {hasRoute && !isMapClosed && (
-        <section className={`transition-all duration-200 ${isMapPinned ? 'sticky top-20 z-20 shadow-2xl rounded-2xl overflow-hidden' : ''}`}>
+        <section
+          className={`transition-all duration-200 ${
+            isMapPinned
+              ? 'sticky top-[108px] lg:top-20 z-20 shadow-2xl rounded-2xl overflow-hidden'
+              : ''
+          }`}
+        >
           <ActivityMap
             activity={currentAct}
             coordinates={route}
