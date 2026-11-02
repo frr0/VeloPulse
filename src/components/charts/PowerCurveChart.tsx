@@ -12,12 +12,28 @@ import {
 } from 'recharts';
 import { powerAtSecs } from '../../services/intervals/api';
 import { PowerCurveData, PowerCurveReading, PowerCurveSeries } from '../../types/intervals';
+import {
+  CriticalPowerResult,
+  CriticalPowerUnavailableReason,
+  estimateCriticalPower,
+} from '../../utils/criticalPower';
 
 interface PowerCurveChartProps {
   data: PowerCurveData;
   ftp: number | null;
   isLoading?: boolean;
 }
+
+/** Why the critical power model has no estimate, in the language of this view. */
+const CP_UNAVAILABLE_TEXT: Record<CriticalPowerUnavailableReason, string> = {
+  'no-curve': 'Intervals.icu returned no power curve, so CP and W′ cannot be estimated.',
+  'durations-missing':
+    'The critical power model needs at least two efforts between 2 and 20 minutes: your curve does not cover them.',
+  'durations-too-close':
+    'The durations of your curve are too close together to fit the critical power model.',
+  'model-not-applicable':
+    'Your curve between 2 and 20 minutes does not fit the critical power model, so no estimate is shown.',
+};
 
 type PowerMetric = 'watts' | 'wkg';
 type ComparisonMode = 'recent' | 'season';
@@ -118,6 +134,13 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
       BENCHMARKS.map((benchmark) =>
         activeSeries ? powerAtSecs(activeSeries.samples, benchmark.secs) : null
       ),
+    [activeSeries]
+  );
+
+  // CP and W' fitted on the curve the user is looking at: switching between the
+  // recent and the season curve re-fits the model on that curve.
+  const criticalPower = useMemo<CriticalPowerResult>(
+    () => estimateCriticalPower(activeSeries?.samples ?? null, activeSeries?.label ?? ''),
     [activeSeries]
   );
 
@@ -262,6 +285,71 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
             </div>
           );
         })}
+      </div>
+
+      {/* Critical power model: estimates shown next to the profile FTP, never
+          replacing it. */}
+      <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 mb-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Critical Power Model
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30">
+              Estimates
+            </span>
+          </div>
+          {criticalPower.status === 'ok' && (
+            <span className="text-[10px] text-slate-500">
+              Fitted on {criticalPower.estimate.durationsSecs.length} durations between 2 and 20 min
+              of the {criticalPower.estimate.sourceLabel} curve
+            </span>
+          )}
+        </div>
+
+        {criticalPower.status === 'ok' ? (
+          <div className="grid grid-cols-3 gap-2.5">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                CP (estimated)
+              </span>
+              <span className="text-lg sm:text-xl font-black text-[#00E5A3]">
+                {criticalPower.estimate.cpWatts}{' '}
+                <span className="text-xs font-semibold text-slate-400">W</span>
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                W&prime; (estimated)
+              </span>
+              <span className="text-lg sm:text-xl font-black text-[#A855F7]">
+                {(criticalPower.estimate.wPrimeJoules / 1000).toFixed(1)}{' '}
+                <span className="text-xs font-semibold text-slate-400">kJ</span>
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                FTP (profile)
+              </span>
+              <span className="text-lg sm:text-xl font-black text-white">
+                {ftp !== null ? (
+                  <>
+                    {ftp} <span className="text-xs font-semibold text-slate-400">W</span>
+                  </>
+                ) : (
+                  '--'
+                )}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400">{CP_UNAVAILABLE_TEXT[criticalPower.reason]}</p>
+        )}
+
+        <p className="mt-2 text-[11px] text-slate-500">
+          Two-parameter critical power model (P = CP + W&prime;/t), fitted on your Intervals.icu
+          curve. These are estimates: they do not replace the FTP on your profile.
+        </p>
       </div>
 
       {/* Chart Canvas */}
