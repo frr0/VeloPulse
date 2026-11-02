@@ -171,7 +171,9 @@ function MainApp() {
       <main
         className={`flex-1 w-full mx-auto flex flex-col max-w-7xl px-4 sm:px-6 lg:px-8 ${
           currentTab === 'ride' && !selectedActivity
-            ? 'h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] py-4 sm:py-6 overflow-hidden justify-between'
+            ? isAndroid()
+              ? 'pt-4 pb-24 sm:py-8'
+              : 'min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] py-4 sm:py-6 lg:overflow-hidden justify-between'
             : isAndroid()
             ? 'pt-4 pb-24 sm:py-8'
             : 'py-6 sm:py-8'

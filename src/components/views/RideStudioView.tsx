@@ -640,7 +640,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   const distUnit = useImperial ? 'mi' : 'km';
 
   return (
-    <div className="flex-1 min-h-0 w-full flex flex-col justify-start gap-2.5 sm:gap-3 animate-fadeIn select-none overflow-hidden h-full">
+    <div className="flex-1 min-h-0 w-full flex flex-col justify-start gap-2.5 sm:gap-3 animate-fadeIn select-none lg:overflow-hidden h-full">
       {/* Simulation banner if active */}
       {devicesState.isSimulated && (
         <div className="py-1.5 px-3 rounded-xl bg-purple-950/70 border border-purple-800/80 text-purple-200 text-xs flex items-center justify-between shadow-sm">
