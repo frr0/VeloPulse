@@ -27,15 +27,51 @@ export interface Athlete {
   sportSettings?: SportSettings[];
 }
 
-export interface PowerCurvePoint {
+/** One point of a mean maximal power curve, exactly as Intervals.icu reports it. */
+export interface PowerCurveSample {
   secs: number;
-  label: string;
   watts: number;
-  wkg: number;
-  seasonWatts?: number;
-  seasonWkg?: number;
-  category: 'Sprint' | 'Anaerobic' | 'VO2 Max' | 'Threshold' | 'Endurance';
+  /** W/kg from the API (watts_per_kg) or from the athlete weight. null when the weight is unknown. */
+  wkg: number | null;
 }
+
+/** A single curve (for example the last 42 days, or the current season). */
+export interface PowerCurveSeries {
+  /** Value of the `curves` parameter that produced this series, for example `42d` or `s0`. */
+  id: string;
+  /** Label shown to the user, for example `Recent 42D`. */
+  label: string;
+  /** Samples sorted by ascending duration. */
+  samples: PowerCurveSample[];
+}
+
+/** Power curves of an athlete, plus the reason why they are missing. */
+export interface PowerCurveData {
+  recent: PowerCurveSeries | null;
+  season: PowerCurveSeries | null;
+  /** Weight used for the W/kg fallback, in kg. null when Intervals.icu has no weight. */
+  weightKg: number | null;
+  /** true only for the demo login: the numbers are simulated, not measured. */
+  simulated: boolean;
+  /** Why the curves are empty, in plain English. null when there is data. */
+  error: string | null;
+}
+
+/** A reading at one requested duration: exact value, or interpolated between two samples. */
+export interface PowerCurveReading {
+  secs: number;
+  watts: number;
+  wkg: number | null;
+  interpolated: boolean;
+}
+
+export const EMPTY_POWER_CURVE: PowerCurveData = {
+  recent: null,
+  season: null,
+  weightKg: null,
+  simulated: false,
+  error: null,
+};
 
 export interface Wellness {
   id: string; // "YYYY-MM-DD"

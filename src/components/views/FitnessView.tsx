@@ -34,7 +34,7 @@ interface FitnessViewProps {
 }
 
 export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness' }) => {
-  const { wellness, athlete, powerCurve } = useApp();
+  const { wellness, athlete, powerCurve, isPowerCurveLoading } = useApp();
   const [activeTab, setActiveTab] = useState<AnalyticsTab>(initialTab);
 
   const sortedWellness = useMemo(() => {
@@ -48,8 +48,9 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
   const atl = latest?.atl ?? 82;
   const tsb = latest?.tsb ?? (ctl - atl);
   const formStatus = getFormStatus(tsb);
-  const ftp = athlete?.ftp ?? 295;
-  const weight = athlete?.weight ?? 68.5;
+  // FTP of the Intervals.icu profile: no fallback value, the chart shows `--`
+  // when the profile has no FTP.
+  const ftp = athlete?.ftp ?? null;
   const vo2max = latest?.vo2max ?? athlete?.vo2max ?? 56.4;
 
   const tabOptions = [
@@ -101,7 +102,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
           <FitnessChart data={wellness} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PowerCurveChart data={powerCurve} ftp={ftp} weight={weight} />
+            <PowerCurveChart data={powerCurve} ftp={ftp} isLoading={isPowerCurveLoading} />
             <Vo2MaxChart data={wellness} currentVo2Max={vo2max} />
           </div>
 
@@ -214,7 +215,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
       {/* RENDER VIEW: POWER CURVE */}
       {activeTab === 'power' && (
         <div className="space-y-6">
-          <PowerCurveChart data={powerCurve} ftp={ftp} weight={weight} />
+          <PowerCurveChart data={powerCurve} ftp={ftp} isLoading={isPowerCurveLoading} />
 
           <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
