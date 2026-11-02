@@ -154,6 +154,27 @@ export const LoginView: React.FC = () => {
           <Sparkles className="w-4 h-4 text-[#FC5200]" />
           <span>Launch Simulated Demo Mode</span>
         </button>
+
+        {/* Legal links */}
+        <div className="flex items-center justify-center gap-4 mt-6 text-[10px] text-slate-500">
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener"
+            className="hover:text-slate-300 underline underline-offset-2"
+          >
+            Informativa sulla privacy
+          </a>
+          <span className="text-slate-600">&middot;</span>
+          <a
+            href="/termini.html"
+            target="_blank"
+            rel="noopener"
+            className="hover:text-slate-300 underline underline-offset-2"
+          >
+            Termini di servizio
+          </a>
+        </div>
       </div>
     </div>
   );
