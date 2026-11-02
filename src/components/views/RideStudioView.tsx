@@ -640,74 +640,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   const distUnit = useImperial ? 'mi' : 'km';
 
   return (
-    <div className="flex-1 w-full max-w-full flex flex-col justify-between gap-2.5 sm:gap-3.5 animate-fadeIn select-none h-full">
-      {/* 
-        1. FIRST CARD: "Studio Cockpit Bar"
-        - Hidden on APK (isNative=true)
-        - Rendered on Webapp / Desktop (isNative=false) as a full-width header
-      */}
-      {!isNative && (
-        <div className="w-full flex flex-wrap items-center justify-between gap-3 bg-[#1F2025] p-4 rounded-2xl border border-[#383941]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#00E5A3]/10 border border-[#00E5A3]/30 flex items-center justify-center text-[#00E5A3]">
-              <Zap className="w-5 h-5 fill-current" />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-white flex items-center gap-2">
-                <span>Indoor Smart Trainer Studio</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#00E5A3]/15 text-[#00E5A3] border border-[#00E5A3]/30 uppercase">
-                  ERG Live
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400">
-                FTMS Bluetooth Control • Physics Engine • Zwift .ZWO Runner • Garmin .FIT Export
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsWorkoutModalOpen(true)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
-                currentWorkout
-                  ? 'bg-[#00E5A3]/15 border-[#00E5A3]/40 text-[#00E5A3]'
-                  : 'bg-[#2F3037] border-[#383941] text-slate-300 hover:bg-[#3E4049]'
-              }`}
-            >
-              <Dumbbell className="w-4 h-4 text-[#00E5A3]" />
-              <span className="max-w-[160px] truncate">
-                {currentWorkout ? currentWorkout.title : 'Workout (.zwo)'}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setIsBluetoothModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-xs font-bold text-slate-200 transition-colors"
-            >
-              <Bluetooth className="w-4 h-4 text-[#00E5A3]" />
-              <span>Sensors</span>
-            </button>
-
-            <button
-              onClick={handleExportFit}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-xs font-bold text-emerald-300 shadow-sm transition-all"
-              title="Download or generate .FIT file for Strava & Garmin"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export .FIT</span>
-            </button>
-
-            <button
-              onClick={() => setIsSettingsModalOpen(true)}
-              title="Studio Settings"
-              className="p-2 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-slate-300 hover:text-white transition-colors"
-            >
-              <SettingsIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className="flex-1 min-h-0 w-full flex flex-col justify-between gap-2 sm:gap-2.5 animate-fadeIn select-none overflow-hidden h-full">
       {/* Simulation banner if active */}
       {devicesState.isSimulated && (
         <div className="py-1.5 px-3 rounded-xl bg-purple-950/70 border border-purple-800/80 text-purple-200 text-xs flex items-center justify-between shadow-sm">
@@ -751,9 +684,9 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                 {engineState.currentInterval.type} ({engineState.currentIntervalIndex + 1}/{currentWorkout.intervals.length})
               </span>
               <span className="text-slate-400 ml-2 text-xs">
-                Target: <strong className="text-white font-mono text-sm">{engineState.instantaneousTargetPower}W</strong>
+                Target: <strong className="text-white font-mono text-sm sm:text-base">{engineState.instantaneousTargetPower}W</strong>
                 {engineState.instantaneousTargetCadence && (
-                  <span className="text-slate-400 font-mono"> • {engineState.instantaneousTargetCadence}rpm</span>
+                  <span className="text-slate-400 font-mono text-xs sm:text-sm"> • {engineState.instantaneousTargetCadence}rpm</span>
                 )}
               </span>
             </div>
@@ -761,7 +694,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
           <div className="text-right shrink-0">
             <span className="text-xs text-slate-400 font-bold uppercase mr-1.5 hidden sm:inline">Interval:</span>
-            <span className="text-xl sm:text-2xl font-black font-mono text-[#00E5A3] leading-none">
+            <span className="text-xl sm:text-3xl font-black font-mono text-[#00E5A3] leading-none">
               {formatTime(engineState.intervalRemainingSeconds)}
             </span>
           </div>
@@ -773,8 +706,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         - On mobile/APK: 2x2 grid filling the upper half of screen nicely
         - On webapp / desktop: 4 expansive columns across the whole monitor!
       */}
-      <div className={`grid gap-2.5 sm:gap-3.5 ${
-        isNative ? 'grid-cols-2 flex-[1.4]' : 'grid-cols-2 lg:grid-cols-4 flex-1 min-h-[170px] lg:min-h-[220px]'
+      <div className={`grid gap-2 sm:gap-2.5 ${
+        isNative ? 'grid-cols-2 flex-[1.4]' : 'grid-cols-2 lg:grid-cols-4 flex-1 min-h-0'
       }`}>
         {/* Card 1: POWER */}
         <MetricCard
@@ -782,7 +715,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           isSmall={isNative}
           label="Power"
           value={telemetry.power}
-          unit="Watts"
+          unit="W"
           icon={<Zap className="w-4 h-4" />}
           accentColor={currentPowerZone.color}
           subValue={
@@ -822,7 +755,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               </span>
             ) : (
               <span className="text-xs sm:text-sm text-slate-400">
-                {telemetry.cadence >= 90 ? 'High' : telemetry.cadence >= 80 ? 'Optimal' : telemetry.cadence > 0 ? 'Mashing' : 'Coasting'}
+                {telemetry.cadence >= 90 ? 'High' : telemetry.cadence >= 80 ? 'Optimal' : telemetry.cadence > 0 ? 'Low' : 'Coasting'}
               </span>
             )
           }
@@ -830,9 +763,9 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           gaugeColor="#00E5A3"
           footer={
             <div className="flex items-center justify-between text-xs sm:text-sm">
-              <span className="text-slate-400">Cadence Status</span>
+              <span className="text-slate-400">Status</span>
               <span className="font-mono font-bold text-slate-300">
-                {telemetry.cadence > 0 ? `${telemetry.cadence} rev/min` : 'Coasting'}
+                {telemetry.cadence > 0 ? `${telemetry.cadence} rpm` : 'Coasting'}
               </span>
             </div>
           }
@@ -850,11 +783,10 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           subValue={
             telemetry.heartRate > 0 ? (
               <span className="text-xs sm:text-sm text-slate-400">
-                Zone <strong className="text-rose-400">{telemetry.hrZone}</strong> (
-                {Math.round((telemetry.heartRate / settings.maxHeartRate) * 100)}%)
+                Z<strong className="text-rose-400">{telemetry.hrZone}</strong> ({Math.round((telemetry.heartRate / settings.maxHeartRate) * 100)}%)
               </span>
             ) : (
-              <span className="text-xs sm:text-sm text-slate-500">No HR sensor</span>
+              <span className="text-xs sm:text-sm text-slate-500">No sensor</span>
             )
           }
           gaugePercent={
@@ -865,11 +797,11 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           gaugeColor="#f87171"
           footer={
             <div className="flex items-center justify-between text-xs sm:text-sm">
-              <span className="text-slate-400">HR Intensity</span>
-              <span className="font-mono font-bold text-slate-300 truncate max-w-[120px]">
+              <span className="text-slate-400">Zone</span>
+              <span className="font-mono font-bold text-slate-300 truncate">
                 {telemetry.heartRate > 0
                   ? getHeartRateZoneInfo(telemetry.heartRate, settings.maxHeartRate, settings.hrZones).name
-                  : 'Awaiting sensor'}
+                  : 'Awaiting HR'}
               </span>
             </div>
           }
@@ -885,8 +817,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           icon={<Gauge className="w-4 h-4" />}
           accentColor="#4ade80"
           subValue={
-            <span className="font-mono text-xs sm:text-sm text-slate-400">
-              {telemetry.speedMps.toFixed(1)} m/s • Grade {settings.gradientPercent}%
+            <span className="font-mono text-xs sm:text-sm text-slate-400 truncate">
+              {telemetry.speedMps.toFixed(1)} m/s • {settings.gradientPercent}%
             </span>
           }
           gaugePercent={Math.min(100, (telemetry.speedKmh / 60) * 100)}
@@ -902,109 +834,78 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         />
       </div>
 
-      {/*
-        W'BAL RESERVE: the energy left above CP, live
-        - One card in the style of the other metrics: kilojoules, and the share
-          of the full reserve; under a quarter it turns amber, in place, so no
-          other number is covered and the layout does not move
-        - No estimate of CP and W': one line that says so, and no number
-      */}
-      {wbalDisplay ? (
-        <MetricCard
-          variant="hud"
-          isSmall
-          label="W′bal Reserve"
-          value={wbalDisplay.kilojoules.toFixed(1)}
-          unit="kJ"
-          icon={<BatteryMedium className="w-4 h-4" />}
-          accentColor={wbalDisplay.isLow ? '#FB923C' : '#38BDF8'}
-          subValue={
-            <span className="font-mono text-[11px] sm:text-sm text-slate-400">
-              {Math.round(wbalDisplay.percent)}% of {wbalDisplay.fullKilojoules.toFixed(1)} kJ
-              {wbalDisplay.isLow && (
-                <strong className="ml-1.5 text-orange-400 uppercase">Low</strong>
-              )}
-            </span>
-          }
-          gaugePercent={wbalDisplay.percent}
-          gaugeColor={wbalDisplay.isLow ? '#FB923C' : '#38BDF8'}
-          footer={
-            <div className="flex items-center justify-between gap-2 text-[11px] sm:text-sm">
-              <span className="text-slate-400 truncate">Lowest • CP {wbalDisplay.cpWatts} W</span>
-              <span className="font-mono font-bold text-slate-300 shrink-0">
-                {wbalDisplay.lowestKilojoules.toFixed(1)} kJ ({Math.round(wbalDisplay.lowestPercent)}%)
-              </span>
-            </div>
-          }
-        />
-      ) : (
-        <div className="py-1.5 px-3 rounded-xl bg-[#1F2025] border border-[#383941] text-[11px] sm:text-xs text-slate-400 flex items-center gap-2">
-          <BatteryMedium className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-          <span className="min-w-0">
-            <strong className="text-slate-300">W′bal reserve needs a CP estimate:</strong>{' '}
-            {criticalPower.status === 'unavailable'
-              ? CP_UNAVAILABLE_TEXT[criticalPower.reason]
-              : 'the estimate of CP and W′ is not ready yet.'}
-          </span>
-        </div>
-      )}
 
       {/*
-        3. SECONDARY STATS ROW (6 columns across the screen)
-        Elapsed, Distance, Work (kJ), Calories, Remaining, FTP
+        3. SECONDARY STATS ROW (7 columns across the screen)
+        Elapsed, Distance, Work (kJ), Calories, Remaining, FTP, W'bal
       */}
-      <div className="grid grid-cols-6 gap-2 sm:gap-3 w-full">
-        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
+      <div className="grid grid-cols-3 sm:grid-cols-7 gap-1.5 sm:gap-2 w-full shrink-0">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Clock className="w-3 h-3 text-[#00E5A3] hidden sm:inline" /> Elapsed
           </div>
-          <div className="text-xs sm:text-base font-bold font-mono text-white mt-0.5">
+          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-white mt-0.5">
             {formatTime(telemetry.elapsedSeconds)}
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Compass className="w-3 h-3 text-cyan-400 hidden sm:inline" /> Distance
           </div>
-          <div className="text-xs sm:text-base font-bold font-mono text-cyan-400 mt-0.5 truncate">
-            {displayDist} <span className="text-[10px] font-normal">{distUnit}</span>
+          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-cyan-400 mt-0.5 truncate">
+            {displayDist} <span className="text-[10px] sm:text-xs font-normal">{distUnit}</span>
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Zap className="w-3 h-3 text-amber-400 hidden sm:inline" /> Work
           </div>
-          <div className="text-xs sm:text-base font-bold font-mono text-amber-400 mt-0.5 truncate">
-            {Math.round(telemetry.workKj)} <span className="text-[10px] font-normal">kJ</span>
+          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-amber-400 mt-0.5 truncate">
+            {Math.round(telemetry.workKj)} <span className="text-[10px] sm:text-xs font-normal">kJ</span>
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
             <Flame className="w-3 h-3 text-orange-400 hidden sm:inline" /> Calories
           </div>
-          <div className="text-xs sm:text-base font-bold font-mono text-orange-400 mt-0.5 truncate">
-            {telemetry.calories} <span className="text-[10px] font-normal">kcal</span>
+          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-orange-400 mt-0.5 truncate">
+            {telemetry.calories} <span className="text-[10px] sm:text-xs font-normal">kcal</span>
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">
             Rem.
           </div>
-          <div className="text-xs sm:text-base font-bold font-mono text-slate-300 mt-0.5">
+          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-slate-300 mt-0.5">
             {currentWorkout ? formatTime(engineState.workoutRemainingSeconds) : '--:--'}
           </div>
         </div>
 
-        <div className="p-2 sm:p-3 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center">
           <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">
-            Rider FTP
+            FTP
           </div>
-          <div className="text-xs sm:text-base font-bold font-mono text-yellow-400 mt-0.5">
+          <div className="text-sm sm:text-base lg:text-lg font-black font-mono text-yellow-400 mt-0.5">
             {settings.ftp}W
+          </div>
+        </div>
+
+        {/* W'bal reserve embedded as a compact card in the corner */}
+        <div className="p-1.5 sm:p-2 rounded-xl bg-[#1F2025] border border-[#383941] text-center col-span-3 sm:col-span-1">
+          <div className="text-[10px] sm:text-xs font-bold uppercase text-slate-400 flex items-center justify-center gap-1">
+            <BatteryMedium className={`w-3 h-3 ${wbalDisplay?.isLow ? 'text-amber-400' : 'text-sky-400'} hidden sm:inline`} /> W′bal
+          </div>
+          <div className={`text-sm sm:text-base lg:text-lg font-black font-mono mt-0.5 truncate ${wbalDisplay?.isLow ? 'text-amber-400' : 'text-sky-400'}`}>
+            {wbalDisplay ? `${wbalDisplay.kilojoules.toFixed(1)} kJ` : '--'}
+            {wbalDisplay && (
+              <span className="text-[10px] sm:text-xs font-normal text-slate-400 ml-1">
+                ({Math.round(wbalDisplay.percent)}%)
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -1040,6 +941,10 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         onAdjustErgBias={handleAdjustErgBias}
         onAdjustManualWatts={handleAdjustManualWatts}
         onExportFit={handleExportFit}
+        workoutTitle={currentWorkout?.title}
+        onOpenWorkout={() => setIsWorkoutModalOpen(true)}
+        onOpenBluetooth={() => setIsBluetoothModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
         isCompact={isNative}
       />
 

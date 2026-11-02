@@ -171,6 +171,7 @@ export interface UserSettings {
   speedSource: 'physics' | 'trainer'; // Physics calculated or trainer reported
   wheelCircumferenceMm: number; // For speed sensor wheel calculation (default 2105mm - 700x25c)
   hrZones?: HrZoneCustom[];   // Custom physiological heart rate zones
+  cartoApiKey?: string;       // Optional CARTO Basemaps API key
 }
 
 export * from './intervals';

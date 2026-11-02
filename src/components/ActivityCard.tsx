@@ -53,122 +53,102 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   return (
     <div
       onClick={() => onSelect(activity)}
-      className="bg-[#1F2025] hover:bg-[#26272D] border border-[#383941] hover:border-[#384666] rounded-2xl p-5 shadow-lg cursor-pointer transition-all duration-200 group"
+      className="bg-[#1F2025] hover:bg-[#26272D] border border-[#383941] hover:border-[#384666] rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-md cursor-pointer transition-all duration-200 group flex flex-col gap-1.5"
     >
-      {/* Top Row */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider"
-              style={{ backgroundColor: `${sportColor}20`, color: sportColor }}
-            >
-              <SportIcon className="w-3.5 h-3.5" />
-              {sportLabel}
-            </span>
-            <span className="text-xs text-slate-400 font-medium">
-              {formatDateRelative(activity.start_date_local)}
-            </span>
-          </div>
-
-          <h4 className="text-base font-bold text-white truncate group-hover:text-[#00E5A3] transition-colors">
+      {/* Top Row: Sport Badge + Date + Title + Load Pill */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider shrink-0"
+            style={{ backgroundColor: `${sportColor}20`, color: sportColor }}
+          >
+            <SportIcon className="w-3 h-3" />
+            {sportLabel}
+          </span>
+          <span className="text-[11px] text-slate-400 font-medium shrink-0">
+            {formatDateRelative(activity.start_date_local)}
+          </span>
+          <h4 className="text-sm font-bold text-white truncate group-hover:text-[#00E5A3] transition-colors">
             {activity.name}
           </h4>
         </div>
 
         {/* Training Load Pill */}
         {activity.icu_training_load !== undefined && (
-          <div className="flex flex-col items-center bg-[#FC5200]/10 border border-[#FC5200]/30 px-3 py-1.5 rounded-xl shrink-0">
-            <span className="text-base font-black text-[#FC5200] leading-none">
+          <div className="flex items-center gap-1 bg-[#FC5200]/10 border border-[#FC5200]/30 px-2 py-0.5 rounded-lg shrink-0">
+            <span className="text-xs font-black text-[#FC5200] leading-none">
               {Math.round(activity.icu_training_load)}
             </span>
-            <span className="text-[9px] font-extrabold text-[#FC5200] tracking-wider mt-0.5 uppercase">
+            <span className="text-[9px] font-extrabold text-[#FC5200] uppercase">
               Load
             </span>
           </div>
         )}
       </div>
 
-      {/* Metrics Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 border-y border-white/5 my-2">
-        {activity.distance ? (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Distance</span>
-            <span className="text-base font-black text-white">
-              {formatDistance(activity.distance, useImperial)}
+      {/* Bottom Row: Metrics Strip + Sub-tags + Details Arrow */}
+      <div className="flex items-center justify-between gap-3 pt-1 border-t border-white/5 text-xs">
+        <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+          {activity.distance ? (
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Dist</span>
+              <span className="text-xs sm:text-sm font-black text-white">
+                {formatDistance(activity.distance, useImperial)}
+              </span>
+            </div>
+          ) : null}
+
+          <div className="flex items-baseline gap-1">
+            <span className="text-[10px] uppercase font-bold text-slate-400">Time</span>
+            <span className="text-xs sm:text-sm font-black text-white">
+              {formatDuration(activity.moving_time || activity.elapsed_time)}
             </span>
           </div>
-        ) : null}
 
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Time</span>
-          <span className="text-base font-black text-white">
-            {formatDuration(activity.moving_time || activity.elapsed_time)}
-          </span>
-        </div>
+          {activity.average_watts ? (
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Avg W</span>
+              <span className="text-xs sm:text-sm font-black text-white">{formatWatts(activity.average_watts)}</span>
+            </div>
+          ) : isRun && activity.average_speed ? (
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Pace</span>
+              <span className="text-xs sm:text-sm font-black text-white">
+                {formatPace(activity.average_speed, useImperial)}
+              </span>
+            </div>
+          ) : activity.average_speed ? (
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Speed</span>
+              <span className="text-xs sm:text-sm font-black text-white">
+                {formatSpeed(activity.average_speed, useImperial)}
+              </span>
+            </div>
+          ) : null}
 
-        {activity.average_watts ? (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Avg Power</span>
-            <span className="text-base font-black text-white">{formatWatts(activity.average_watts)}</span>
-          </div>
-        ) : isRun && activity.average_speed ? (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Avg Pace</span>
-            <span className="text-base font-black text-white">
-              {formatPace(activity.average_speed, useImperial)}
-            </span>
-          </div>
-        ) : activity.average_speed ? (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Avg Speed</span>
-            <span className="text-base font-black text-white">
-              {formatSpeed(activity.average_speed, useImperial)}
-            </span>
-          </div>
-        ) : null}
+          {activity.average_heartrate ? (
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">HR</span>
+              <span className="text-xs sm:text-sm font-black text-white">
+                {formatHeartRate(activity.average_heartrate)}
+              </span>
+            </div>
+          ) : null}
 
-        {activity.average_heartrate ? (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Avg HR</span>
-            <span className="text-base font-black text-white">
-              {formatHeartRate(activity.average_heartrate)}
-            </span>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Bottom Sub-tags & Details Arrow */}
-      <div className="flex items-center justify-between mt-3 pt-1">
-        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
           {activity.total_elevation_gain ? (
-            <span className="bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
+            <span className="hidden md:inline bg-[#2F3037] px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-300">
               +{Math.round(activity.total_elevation_gain)}m Elev
             </span>
           ) : null}
 
           {activity.icu_intensity ? (
-            <span className="inline-flex items-center gap-1 bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-amber-400">
-              <Zap className="w-3 h-3" />
+            <span className="hidden md:inline bg-[#2F3037] px-1.5 py-0.5 rounded text-[10px] font-medium text-amber-400">
               IF {(activity.icu_intensity > 2 ? activity.icu_intensity / 100 : activity.icu_intensity).toFixed(2)}
-            </span>
-          ) : null}
-
-          {activity.weighted_average_watts ? (
-            <span className="bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
-              NP {Math.round(activity.weighted_average_watts)}W
-            </span>
-          ) : null}
-
-          {activity.icu_joules ? (
-            <span className="inline-flex items-center gap-1 bg-[#2F3037] px-2 py-0.5 rounded text-[11px] font-medium text-slate-300">
-              <Flame className="w-3 h-3 text-amber-500" />
-              {Math.round(activity.icu_joules / 1000)} kJ
             </span>
           ) : null}
         </div>
 
-        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
       </div>
     </div>
   );

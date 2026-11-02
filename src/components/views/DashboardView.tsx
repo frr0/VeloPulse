@@ -6,31 +6,26 @@ import {
   Moon,
   TrendingUp,
   Zap,
-  Play,
-  Bluetooth,
 } from 'lucide-react';
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { Activity } from '../../types/intervals';
 import { formatDuration, getFormStatus } from '../../utils/formatters';
-import { ActivityCard } from '../ActivityCard';
 import { MetricCard } from '../MetricCard';
 import { RecoveryRing } from '../RecoveryRing';
 import { WeeklyLoadBar } from '../WeeklyLoadBar';
 import { AnalyticsTab } from './FitnessView';
 
 interface DashboardViewProps {
-  onSelectActivity: (activity: Activity) => void;
+  onSelectActivity?: (activity: Activity) => void;
   onNavigateTab: (tab: any) => void;
   onNavigateAnalytics?: (tab: AnalyticsTab) => void;
   onOpenBluetooth?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  onSelectActivity,
   onNavigateTab,
   onNavigateAnalytics,
-  onOpenBluetooth,
 }) => {
   const {
     athlete,
@@ -38,7 +33,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     activities,
     events,
     recoveryScore,
-    useImperial,
   } = useApp();
 
   const ctl = latestWellness?.ctl ?? 78;
@@ -47,11 +41,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const formStatus = getFormStatus(tsb);
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const todayActivity = activities.find((a) =>
-    a.start_date_local && a.start_date_local.startsWith(todayStr)
-  );
-  const mostRecentActivity = activities[0];
-
   const todayEvent = events.find((e) =>
     e.start_date_local && e.start_date_local.startsWith(todayStr)
   );
@@ -138,40 +127,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Smart Trainer Launch Card */}
-          <div className="bg-gradient-to-r from-[#1F2025] to-[#141C2B] border border-[#00E5A3]/30 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-[#00E5A3]/10 border border-[#00E5A3]/30 flex items-center justify-center text-[#00E5A3] shrink-0">
-                <Zap className="w-6 h-6 fill-current" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-white">Smart Trainer Studio</h3>
-                <p className="text-xs text-slate-400">
-                  Bluetooth FTMS • ERG Mode • Physics Speed • Garmin .FIT Export
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {onOpenBluetooth && (
-                <button
-                  onClick={onOpenBluetooth}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-xs font-bold text-slate-300 transition-colors"
-                >
-                  <Bluetooth className="w-3.5 h-3.5 text-[#00E5A3]" />
-                  <span>Sensors</span>
-                </button>
-              )}
-              <button
-                onClick={() => onNavigateTab('ride')}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#00E5A3] hover:bg-[#26ebad] text-slate-950 text-xs font-black shadow-lg shadow-[#00E5A3]/20 transition-all"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Launch Ride Studio</span>
-              </button>
-            </div>
-          </div>
-
           {/* Weekly Training Load */}
           <WeeklyLoadBar activities={activities} />
         </div>
@@ -214,39 +169,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
       )}
-
-      {/* Latest Activity Feed Banner */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-            {todayActivity ? "Today's Activity" : 'Latest Workout'}
-          </span>
-          <button
-            onClick={() => onNavigateTab('activities')}
-            className="text-xs font-bold text-[#00E5A3] hover:underline"
-          >
-            View All ({activities.length})
-          </button>
-        </div>
-
-        {todayActivity ? (
-          <ActivityCard
-            activity={todayActivity}
-            useImperial={useImperial}
-            onSelect={onSelectActivity}
-          />
-        ) : mostRecentActivity ? (
-          <ActivityCard
-            activity={mostRecentActivity}
-            useImperial={useImperial}
-            onSelect={onSelectActivity}
-          />
-        ) : (
-          <div className="bg-[#1F2025] rounded-2xl p-8 border border-[#383941] text-center text-slate-400 text-sm">
-            No workouts logged yet.
-          </div>
-        )}
-      </div>
 
       {/* Daily Wellness Biometrics Grid */}
       <div>

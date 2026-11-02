@@ -150,7 +150,7 @@ export const ActivitiesView: React.FC<ActivitiesViewProps> = ({ onSelectActivity
       </div>
 
       {/* Activities Grid / List */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {filteredActivities.length === 0 ? (
           <div className="bg-[#1F2025] rounded-2xl p-12 border border-[#383941] text-center">
             <ActivityIcon className="w-10 h-10 text-slate-500 mx-auto mb-3" />

@@ -165,6 +165,10 @@ export interface ChartPoint {
   t: number;
   /** Recorded value, or null where the device recorded nothing. */
   v: number | null;
+  /** Background altitude in meters, if available. */
+  alt?: number | null;
+  /** Latitude and Longitude at this point, if available. */
+  latlng?: [number, number] | null;
 }
 
 /** Points a chart draws at most. Above this the page slows down on a phone. */
@@ -181,21 +185,31 @@ export const MAX_CHART_POINTS = 900;
 export function thinSeriesForChart(
   timeSecs: number[],
   series: NumericSeries,
-  maxPoints: number = MAX_CHART_POINTS
+  maxPoints: number = MAX_CHART_POINTS,
+  altitude?: NumericSeries | null,
+  latlngSeries?: ([number, number] | null)[] | null
 ): ChartPoint[] {
   const length = Math.min(timeSecs.length, series.length);
   if (length === 0) return [];
 
   const step = Math.max(1, Math.ceil(length / Math.max(1, maxPoints)));
   const points: ChartPoint[] = [];
+
+  const buildPoint = (i: number): ChartPoint => ({
+    t: timeSecs[i],
+    v: series[i],
+    alt: altitude && altitude[i] !== undefined ? altitude[i] : null,
+    latlng: latlngSeries && latlngSeries[i] ? latlngSeries[i] : null,
+  });
+
   for (let i = 0; i < length; i += step) {
-    points.push({ t: timeSecs[i], v: series[i] });
+    points.push(buildPoint(i));
   }
 
   // The last sample closes the chart on the real end of the activity.
   const last = length - 1;
   if (points.length === 0 || points[points.length - 1].t !== timeSecs[last]) {
-    points.push({ t: timeSecs[last], v: series[last] });
+    points.push(buildPoint(last));
   }
 
   return points;

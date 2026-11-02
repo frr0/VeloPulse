@@ -168,10 +168,10 @@ function MainApp() {
       />
 
       <main
-        className={`flex-1 w-full mx-auto flex flex-col ${
+        className={`flex-1 w-full mx-auto flex flex-col max-w-7xl px-4 sm:px-6 lg:px-8 ${
           currentTab === 'ride' && !selectedActivity
-            ? 'p-2 sm:p-4 md:p-6 max-w-full'
-            : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8'
+            ? 'h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] py-2 sm:py-3 overflow-hidden justify-between'
+            : 'py-6 sm:py-8'
         }`}
       >
         {selectedActivity ? (

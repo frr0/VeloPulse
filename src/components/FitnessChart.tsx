@@ -170,11 +170,15 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
                       <div className="space-y-1">
                         <div className="flex justify-between gap-4 text-[#38BDF8]">
                           <span>Fitness (CTL):</span>
-                          <strong className="text-white">{d.ctl ?? '--'}</strong>
+                          <strong className="text-white">
+                            {d.ctl !== undefined && d.ctl !== null ? Math.round(d.ctl) : '--'}
+                          </strong>
                         </div>
                         <div className="flex justify-between gap-4 text-[#A855F7]">
                           <span>Fatigue (ATL):</span>
-                          <strong className="text-white">{d.atl ?? '--'}</strong>
+                          <strong className="text-white">
+                            {d.atl !== undefined && d.atl !== null ? Math.round(d.atl) : '--'}
+                          </strong>
                         </div>
                         <div className="flex justify-between gap-4 text-[#00E5A3]">
                           <span>Form (TSB):</span>

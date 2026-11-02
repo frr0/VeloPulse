@@ -66,13 +66,13 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           {/* Main Number Readout */}
           <div className="flex items-baseline justify-center gap-1.5 my-auto py-1">
             <span
-              className="text-3xl sm:text-4xl md:text-5xl font-black font-mono tracking-tight transition-colors duration-150 leading-none"
+              className="text-4xl sm:text-5xl md:text-6xl font-black font-mono tracking-tight transition-colors duration-150 leading-none"
               style={{ color: accentColor }}
             >
               {value}
             </span>
             {unit && (
-              <span className="text-xs sm:text-sm font-bold uppercase text-slate-400">
+              <span className="text-sm sm:text-base font-bold uppercase text-slate-400">
                 {unit}
               </span>
             )}
@@ -106,46 +106,46 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     return (
       <div
         onClick={onClick}
-        className={`relative overflow-hidden rounded-2xl bg-[#1F2025]/95 border p-4 sm:p-5 lg:p-6 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
+        className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border p-2.5 sm:p-3 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
           highlight
             ? 'border-[#00E5A3]/60 shadow-[0_0_25px_-5px_rgba(0,229,163,0.3)]'
             : 'border-[#383941] hover:border-slate-700 shadow-lg'
         } ${onClick ? 'cursor-pointer hover:border-white/20' : ''}`}
       >
         {/* Top Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            {icon && <span style={{ color: accentColor }} className="scale-125">{icon}</span>}
-            <span className="text-sm font-black uppercase tracking-wider text-slate-300">
+        <div className="flex items-center justify-between gap-1.5 mb-1 min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {icon && <span style={{ color: accentColor }} className="scale-105 shrink-0">{icon}</span>}
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
               {label}
             </span>
           </div>
           {subValue && (
-            <div className="text-sm font-semibold text-slate-300">
+            <div className="text-[11px] sm:text-xs font-semibold text-slate-300 truncate text-right min-w-0 shrink">
               {subValue}
             </div>
           )}
         </div>
 
         {/* Main Big Readout */}
-        <div className="flex items-baseline justify-center gap-2.5 my-auto py-2">
+        <div className="flex items-baseline justify-center gap-1.5 my-auto py-1">
           <span
-            className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight font-mono transition-colors duration-150 leading-none"
+            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight font-mono transition-colors duration-150 leading-none"
             style={{ color: accentColor }}
           >
             {value}
           </span>
           {unit && (
-            <span className="text-base md:text-lg font-bold uppercase text-slate-400">
+            <span className="text-sm sm:text-base lg:text-lg font-bold uppercase text-slate-400">
               {unit}
             </span>
           )}
         </div>
 
         {/* Progress / Gauge Bar */}
-        <div className="space-y-2 mt-auto">
+        <div className="space-y-1 mt-auto">
           {gaugePercent !== undefined && (
-            <div className="w-full bg-slate-800/80 rounded-full h-2 sm:h-2.5 overflow-hidden">
+            <div className="w-full bg-slate-800/80 rounded-full h-1.5 sm:h-2 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{
@@ -157,7 +157,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           )}
 
           {footer && (
-            <div className="pt-2 border-t border-[#383941] text-xs font-medium">
+            <div className="pt-1 border-t border-[#383941] text-[11px] sm:text-xs font-medium leading-tight text-slate-400">
               {footer}
             </div>
           )}

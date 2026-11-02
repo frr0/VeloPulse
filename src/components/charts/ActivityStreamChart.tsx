@@ -19,6 +19,10 @@ export interface StreamChartRow {
   v: number | null;
   /** Same value, repeated only on the stretch to mark. */
   low?: number | null;
+  /** Background altitude in meters, if available. */
+  alt?: number | null;
+  /** Latitude and Longitude [lat, lng] at this moment in time. */
+  latlng?: [number, number] | null;
 }
 
 export interface StreamChartHighlight {
@@ -51,6 +55,8 @@ interface ActivityStreamChartProps {
   reference?: StreamChartReference;
   /** Short line under the chart. */
   footnote?: string;
+  /** Callback fired when the pointer hovers over a point with coordinates. */
+  onHoverPoint?: (coord: [number, number] | null) => void;
 }
 
 /** Ticks of the time axis: about six round marks over the whole activity. */
@@ -89,9 +95,12 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
   highlight,
   reference,
   footnote,
+  onHoverPoint,
 }) => {
   const ticks = useMemo(() => timeTicks(rows), [rows]);
   const formatValue = (value: number): string => value.toFixed(decimals);
+  const hasAltitudeBackground =
+    title !== 'Altitudine' && rows.some((r) => r.alt !== null && r.alt !== undefined);
 
   return (
     <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-4 sm:p-5">
@@ -102,6 +111,11 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
             {title}
           </h4>
           <span className="text-[10px] font-bold text-slate-400 shrink-0">({unit})</span>
+          {hasAltitudeBackground && (
+            <span className="hidden sm:inline-block text-[10px] font-semibold text-slate-400/80 bg-slate-800/60 px-1.5 py-0.5 rounded border border-white/5">
+              Sfondo: Quota
+            </span>
+          )}
         </div>
         {highlight && (
           <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 shrink-0">
@@ -116,12 +130,38 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
 
       <div className="w-full h-[180px] sm:h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={rows} margin={{ top: 6, right: 8, left: -22, bottom: 0 }}>
+          <AreaChart
+            data={rows}
+            margin={{ top: 6, right: 8, left: -22, bottom: 0 }}
+            onMouseMove={(state) => {
+              if (onHoverPoint && state && state.activePayload && state.activePayload.length > 0) {
+                const row = state.activePayload[0].payload as StreamChartRow;
+                if (row.latlng && row.latlng[0] && row.latlng[1]) {
+                  onHoverPoint(row.latlng);
+                  return;
+                }
+              }
+              if (onHoverPoint && (!state || !state.isTooltipActive)) {
+                onHoverPoint(null);
+              }
+            }}
+            onMouseLeave={() => {
+              if (onHoverPoint) {
+                onHoverPoint(null);
+              }
+            }}
+          >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.35} />
                 <stop offset="95%" stopColor={color} stopOpacity={0} />
               </linearGradient>
+              {hasAltitudeBackground && (
+                <linearGradient id={`${gradientId}-alt`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#64748B" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#64748B" stopOpacity={0.03} />
+                </linearGradient>
+              )}
             </defs>
 
             <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
@@ -148,6 +188,15 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
               tickFormatter={formatValue}
             />
 
+            {/* Altitude background axis (hidden scale) */}
+            {hasAltitudeBackground && (
+              <YAxis
+                yAxisId="alt"
+                hide
+                domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin * 0.9)), 'auto']}
+              />
+            )}
+
             {reference && (
               <ReferenceLine
                 y={reference.y}
@@ -168,7 +217,7 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
                 const row = payload[0].payload as StreamChartRow;
                 if (row.v === null || row.v === undefined) return null;
                 return (
-                  <div className="bg-[#2F3037] border border-[#383941] p-2.5 rounded-xl shadow-2xl text-xs">
+                  <div className="bg-[#2F3037] border border-[#383941] p-2.5 rounded-xl shadow-2xl text-xs space-y-1">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                       {formatElapsed(row.t)}
                     </div>
@@ -176,10 +225,34 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
                       {formatValue(row.v)}{' '}
                       <span className="text-[11px] font-semibold text-slate-300">{unit}</span>
                     </div>
+                    {hasAltitudeBackground && row.alt !== null && row.alt !== undefined && (
+                      <div className="text-[10px] font-semibold text-slate-300 flex items-center justify-between gap-3 border-t border-white/10 pt-1 mt-1">
+                        <span className="text-slate-400">Quota:</span>
+                        <span className="font-mono font-bold text-slate-200">{Math.round(row.alt)} m</span>
+                      </div>
+                    )}
                   </div>
                 );
               }}
             />
+
+            {/* Subtle background altitude silhouette */}
+            {hasAltitudeBackground && (
+              <Area
+                yAxisId="alt"
+                type="monotone"
+                dataKey="alt"
+                name="Altitudine"
+                stroke="#64748B"
+                strokeWidth={1}
+                strokeOpacity={0.35}
+                fill={`url(#${gradientId}-alt)`}
+                dot={false}
+                activeDot={false}
+                isAnimationActive={false}
+                connectNulls={true}
+              />
+            )}
 
             <Area
               type="monotone"

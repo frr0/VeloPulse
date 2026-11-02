@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Volume2, Save, Heart, Download, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { X, Settings, Volume2, Save, Heart, Download, RefreshCw, CheckCircle2, Compass } from 'lucide-react';
 import { UserSettings, HrZoneCustom } from '../types';
 import { useApp } from '../context/AppContext';
 import { getAthleteSportSettings, sportSettingsToHrZones } from '../services/intervals/api';
@@ -351,6 +351,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="text-[10px] opacity-75 mt-0.5">Reported by Flywheel Sensor</div>
               </button>
             </div>
+          </div>
+
+          {/* CARTO Basemap Key */}
+          <div className="p-3.5 rounded-2xl bg-[#26272D] border border-[#383941]">
+            <div className="flex items-center gap-2 mb-1">
+              <Compass className="w-4 h-4 text-[#A8C7FA]" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#9E9EA7]">
+                CARTO API Key
+              </label>
+            </div>
+            <input
+              type="text"
+              placeholder="Inserisci la tua Carto API Key"
+              value={formData.cartoApiKey || ''}
+              onChange={(e) => setFormData({ ...formData, cartoApiKey: e.target.value.trim() })}
+              className="w-full bg-[#131316] border border-[#383941] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#A8C7FA]"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Opzionale per le mappe CARTO Basemap. Puoi anche impostarla nel file <code className="text-[#A8C7FA]">.env</code> come <code className="text-[#A8C7FA]">VITE_CARTO_KEY</code>.
+            </p>
           </div>
 
           {/* Sound toggle */}
