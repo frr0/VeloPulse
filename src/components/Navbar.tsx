@@ -229,9 +229,9 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
     </header>
 
-    {/* Android Bottom Navigation Bar */}
+    {/* Mobile Bottom Navigation Bar (Android & iOS) */}
     {isAndroidApp && (
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#131316]/95 backdrop-blur-lg border-t border-[#383941] px-2 py-1.5 shadow-2xl">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#131316]/95 backdrop-blur-lg border-t border-[#383941] px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-2xl">
         <div className="grid grid-cols-5 w-full gap-1">
           <button
             onClick={() => onSelectTab('dashboard')}

@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import './index.css';
 
 if (isAndroid()) {
-  document.documentElement.classList.add('android-app');
+  document.documentElement.classList.add('android-app', 'mobile-app');
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

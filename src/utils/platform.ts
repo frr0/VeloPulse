@@ -1,15 +1,23 @@
 import { Capacitor } from '@capacitor/core';
 
 /**
- * Checks whether the app is currently running inside the Android native Capacitor shell.
- * Can also be triggered via URL query param (?platform=android) for testing.
+ * Checks whether the app is currently running inside a mobile shell (Android or iOS).
+ * Can also be triggered via URL query param (?platform=android | ?platform=ios | ?platform=mobile) for testing.
  */
-export const isAndroid = (): boolean => {
+export const isMobile = (): boolean => {
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('platform') === 'android') {
+    const p = urlParams.get('platform');
+    if (p === 'android' || p === 'ios' || p === 'mobile') {
       return true;
     }
   }
-  return Capacitor.getPlatform() === 'android';
+  const platform = Capacitor.getPlatform();
+  return platform === 'android' || platform === 'ios';
 };
+
+/**
+ * Shared mobile check across Android and iOS so both platforms
+ * provide the exact same layout, bottom bar, and mobile optimizations.
+ */
+export const isAndroid = (): boolean => isMobile();
