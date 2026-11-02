@@ -140,7 +140,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
           >
             {/* Zero Form baseline */}
             <ReferenceLine y={0} stroke="rgba(255, 255, 255, 0.25)" strokeDasharray="3 3" />
@@ -163,8 +163,8 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
             />
             <YAxis
               stroke="#64748B"
-              fontSize={10}
-              width={34}
+              tick={{ fill: '#94A3B8', fontSize: 10 }}
+              width={32}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />

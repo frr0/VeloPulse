@@ -41,6 +41,30 @@
   background: #3E4049;
 }
 
+/* Hide lateral and horizontal scrollbars in Android app and touch devices */
+html.android-app ::-webkit-scrollbar,
+html.android-app *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+html.android-app,
+html.android-app * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  * {
+    scrollbar-width: none !important;
+  }
+}
+
 /* Glow effects */
 .glow-cyan {
   box-shadow: 0 0 25px -5px rgba(168, 199, 250, 0.25);

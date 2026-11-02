@@ -224,7 +224,7 @@ export const HrvChart: React.FC<HrvChartProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
@@ -247,8 +247,9 @@ export const HrvChart: React.FC<HrvChartProps> = ({ data }) => {
             <YAxis
               domain={['dataMin - 10', 'dataMax + 10']}
               stroke="#64748B"
+              tick={{ fill: '#94A3B8', fontSize: 10 }}
               fontSize={10}
-              width={34}
+              width={32}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />

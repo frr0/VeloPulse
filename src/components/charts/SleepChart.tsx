@@ -504,7 +504,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                   light: d.stages.light.hours,
                   awake: d.stages.awake.hours,
                 }))}
-                margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
                 <XAxis
@@ -517,8 +517,9 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 />
                 <YAxis
                   stroke="#64748B"
+                  tick={{ fill: '#94A3B8', fontSize: 10 }}
                   fontSize={10}
-                  width={34}
+                  width={32}
                   tickLine={false}
                   axisLine={{ stroke: '#383941' }}
                   unit="h"
@@ -562,7 +563,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             {activeTab === 'duration' ? (
               <BarChart
                 data={chartData}
-                margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
@@ -598,8 +599,9 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 <YAxis
                   domain={[4, 11]}
                   stroke="#64748B"
+                  tick={{ fill: '#94A3B8', fontSize: 10 }}
                   fontSize={10}
-                  width={34}
+                  width={32}
                   tickLine={false}
                   axisLine={{ stroke: '#383941' }}
                   unit="h"
@@ -657,7 +659,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             ) : (
               <BarChart
                 data={chartData}
-                margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
@@ -692,6 +694,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 <YAxis
                   domain={[40, 100]}
                   stroke="#64748B"
+                  tick={{ fill: '#94A3B8', fontSize: 10 }}
                   fontSize={10}
                   width={34}
                   tickLine={false}

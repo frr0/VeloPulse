@@ -21,9 +21,11 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Disable rubber-banding bounce / overscroll on Android WebView
+        // Disable rubber-banding bounce and lateral/horizontal scrollbars on Android WebView
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
+            getBridge().getWebView().setVerticalScrollBarEnabled(false);
+            getBridge().getWebView().setHorizontalScrollBarEnabled(false);
         }
 
         getBridge().getWebView().addJavascriptInterface(new Object() {

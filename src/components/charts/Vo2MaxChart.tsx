@@ -171,7 +171,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
-            margin={{ top: 8, right: 6, left: isAndroidApp ? -28 : -20, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
           >
             <defs>
               <linearGradient id="vo2Purple" x1="0" y1="0" x2="0" y2="1">
@@ -199,10 +199,11 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               axisLine={{ stroke: '#383941' }}
             />
             <YAxis
-              domain={[50, 60]}
+              domain={['dataMin - 2', 'dataMax + 2']}
               stroke="#64748B"
+              tick={{ fill: '#94A3B8', fontSize: 10 }}
               fontSize={10}
-              width={34}
+              width={32}
               tickLine={false}
               axisLine={{ stroke: '#383941' }}
             />
