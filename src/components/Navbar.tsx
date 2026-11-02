@@ -93,8 +93,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSelectTab('ride')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 currentTab === 'ride'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA] border border-[#A8C7FA]/30'
-                  : 'text-[#9E9EA7] hover:text-[#A8C7FA] hover:bg-white/5'
+                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
+                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
               }`}
             >
               <Zap className={`w-4 h-4 ${currentTab === 'ride' ? 'fill-current' : ''}`} />

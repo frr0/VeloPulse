@@ -640,7 +640,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   const distUnit = useImperial ? 'mi' : 'km';
 
   return (
-    <div className="flex-1 min-h-0 w-full flex flex-col justify-between gap-2 sm:gap-2.5 animate-fadeIn select-none overflow-hidden h-full">
+    <div className="flex-1 min-h-0 w-full flex flex-col justify-start gap-2.5 sm:gap-3 animate-fadeIn select-none overflow-hidden h-full">
       {/* Simulation banner if active */}
       {devicesState.isSimulated && (
         <div className="py-1.5 px-3 rounded-xl bg-purple-950/70 border border-purple-800/80 text-purple-200 text-xs flex items-center justify-between shadow-sm">
@@ -703,11 +703,10 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
       {/* 
         2. PRIMARY METRICS: POWER, CADENCE, HEART RATE, SPEED
-        - On mobile/APK: 2x2 grid filling the upper half of screen nicely
-        - On webapp / desktop: 4 expansive columns across the whole monitor!
+        Landscape rectangular cards where base > height, retaining strict aspect ratio
       */}
-      <div className={`grid gap-2 sm:gap-2.5 ${
-        isNative ? 'grid-cols-2 flex-[1.4]' : 'grid-cols-2 lg:grid-cols-4 flex-1 min-h-0'
+      <div className={`grid gap-2 sm:gap-2.5 w-full shrink-0 ${
+        isNative ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'
       }`}>
         {/* Card 1: POWER */}
         <MetricCard
@@ -912,18 +911,18 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
       {/* 
         4. TRAINING GRAPH (WORKOUT PROFILE CHART)
-        - Mobile/APK: flex-1 expansion so no empty space down
-        - Webapp/Desktop: expansive chart filling the wide screen
       */}
-      <WorkoutProfileChart
-        workout={currentWorkout}
-        currentSecond={engineState.workoutElapsedSeconds}
-        currentIntervalIndex={engineState.currentIntervalIndex}
-        ftp={settings.ftp}
-        onSelectInterval={(_idx) => {}}
-        onOpenWorkoutModal={() => setIsWorkoutModalOpen(true)}
-        isCompact={isNative}
-      />
+      <div className="w-full shrink-0 flex flex-col justify-center">
+        <WorkoutProfileChart
+          workout={currentWorkout}
+          currentSecond={engineState.workoutElapsedSeconds}
+          currentIntervalIndex={engineState.currentIntervalIndex}
+          ftp={settings.ftp}
+          onSelectInterval={(_idx) => {}}
+          onOpenWorkoutModal={() => setIsWorkoutModalOpen(true)}
+          isCompact={isNative}
+        />
+      </div>
 
       {/* 
         5. WORKOUT TACTILE CONTROLS

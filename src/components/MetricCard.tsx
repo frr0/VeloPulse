@@ -42,7 +42,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       return (
         <div
           onClick={onClick}
-          className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border p-2.5 sm:p-3.5 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
+          className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border p-2.5 sm:p-3.5 backdrop-blur-md transition-all duration-200 flex flex-col justify-between aspect-[16/11] w-full ${
             highlight
               ? 'border-[#00E5A3]/60 shadow-[0_0_20px_-3px_rgba(0,229,163,0.35)]'
               : 'border-[#383941] hover:border-slate-700 shadow-md'
@@ -102,11 +102,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       );
     }
 
-    // Full-Screen Desktop HUD card: spacious and prominent across the screen
+    // Full-Screen Desktop HUD card: landscape rectangle where base > height, retaining strict aspect ratio
     return (
       <div
         onClick={onClick}
-        className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border p-2.5 sm:p-3 backdrop-blur-md transition-all duration-200 flex flex-col justify-between h-full ${
+        className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border p-2.5 sm:p-3.5 backdrop-blur-md transition-all duration-200 flex flex-col justify-between aspect-[16/10] w-full ${
           highlight
             ? 'border-[#00E5A3]/60 shadow-[0_0_25px_-5px_rgba(0,229,163,0.3)]'
             : 'border-[#383941] hover:border-slate-700 shadow-lg'

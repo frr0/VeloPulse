@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Maximize2, Minimize2, Navigation, Compass, WifiOff } from 'lucide-react';
+import { Navigation, Compass, WifiOff, X } from 'lucide-react';
 import { Activity } from '../types/intervals';
 import { formatDistance, formatElevation } from '../utils/formatters';
 
-export type MapStyle = 'streets' | 'satellite' | 'osm' | 'dark';
+export type MapStyle = 'streets' | 'satellite' | 'osm';
 
 interface TileStyle {
   name: string;
@@ -34,13 +34,6 @@ const TILE_STYLES: Record<MapStyle, TileStyle> = {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   },
-  dark: {
-    name: 'Dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-    subdomains: 'abcd',
-    maxZoom: 20,
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-  },
 };
 
 interface ActivityMapProps {
@@ -53,6 +46,10 @@ interface ActivityMapProps {
   cartoApiKey?: string;
   /** Current point hovered on one of the telemetry charts [lat, lng]. */
   hoveredCoordinate?: [number, number] | null;
+  /** Whether the map is in fixed/sticky position while scrolling charts */
+  isPinned?: boolean;
+  /** Close / dismiss the map to scroll charts alone */
+  onClose?: () => void;
 }
 
 export const ActivityMap: React.FC<ActivityMapProps> = ({
@@ -60,7 +57,10 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
   coordinates,
   useImperial = false,
   hoveredCoordinate,
+  isPinned = false,
+  onClose,
 }) => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const polylineLayerRef = useRef<L.Polyline | null>(null);
@@ -68,8 +68,23 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
   const hoverMarkerRef = useRef<L.Marker | null>(null);
 
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets');
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasTileError, setHasTileError] = useState(false);
+
+  const handleRecenter = () => {
+    if (!mapInstanceRef.current || !polylineLayerRef.current) return;
+    mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), {
+      padding: [45, 45],
+      animate: true,
+    });
+  };
+
+  // Invalidate Leaflet canvas size when pinned/sticky mode toggles
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapInstanceRef.current?.invalidateSize();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isPinned]);
 
   // Initialize Leaflet map and route overlay
   useEffect(() => {
@@ -122,58 +137,41 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     }).addTo(map);
     polylineLayerRef.current = mainPolyline;
 
-    // Start Marker (Green Pill)
+    // Start Marker: simple clean green dot
     const startPoint = coordinates[0];
     const startIcon = L.divIcon({
-      className: 'custom-map-marker',
+      className: 'custom-map-marker-start',
       html: `
         <div style="
-          background-color: #00E5A3;
-          color: #04241a;
-          font-weight: 900;
-          font-size: 10px;
-          letter-spacing: 0.5px;
-          padding: 3px 8px;
+          width: 14px;
+          height: 14px;
           border-radius: 9999px;
-          border: 2px solid #ffffff;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        ">
-          <span style="display:inline-block; width:6px; height:6px; border-radius:9999px; background:#04241a;"></span>
-          START
-        </div>
+          background-color: #00E5A3;
+          border: 2.5px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        "></div>
       `,
-      iconSize: [60, 24],
-      iconAnchor: [30, 12],
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
     });
     L.marker(startPoint, { icon: startIcon }).addTo(map);
 
-    // Finish Marker (Coral Pill)
+    // Finish Marker: simple clean red dot
     const endPoint = coordinates[coordinates.length - 1];
     const finishIcon = L.divIcon({
-      className: 'custom-map-marker',
+      className: 'custom-map-marker-finish',
       html: `
         <div style="
-          background-color: #FC5200;
-          color: #ffffff;
-          font-weight: 900;
-          font-size: 10px;
-          letter-spacing: 0.5px;
-          padding: 3px 8px;
+          width: 14px;
+          height: 14px;
           border-radius: 9999px;
-          border: 2px solid #ffffff;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          gap: 3px;
-        ">
-          🏁 FINISH
-        </div>
+          background-color: #EF4444;
+          border: 2.5px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        "></div>
       `,
-      iconSize: [64, 24],
-      iconAnchor: [32, 12],
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
     });
     L.marker(endPoint, { icon: finishIcon }).addTo(map);
 
@@ -268,26 +266,17 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     }
   }, [hoveredCoordinate]);
 
-  const handleRecenter = () => {
-    if (mapInstanceRef.current && polylineLayerRef.current) {
-      mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), {
-        padding: [45, 45],
-      });
-    }
-  };
-
   // Defensive guard: the parent shows the empty state when there is no track.
   if (coordinates.length < 2) return null;
 
   return (
     <div
-      className={`relative bg-[#1F2025] border border-[#383941] rounded-3xl overflow-hidden shadow-xl transition-all ${
-        isFullscreen ? 'fixed inset-4 z-50 rounded-2xl flex flex-col' : 'w-full'
-      }`}
+      ref={wrapperRef}
+      className="relative bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl transition-all w-full rounded-3xl"
     >
       {/* Top Map Header Bar / Badge */}
-      <div className="absolute top-4 left-4 z-[400] flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] shadow-lg text-xs font-semibold text-white">
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025] border border-[#383941] shadow-xl text-xs font-semibold text-white">
           <Navigation className="w-3.5 h-3.5 text-[#00E5A3]" />
           <span>Traccia Percorso GPS</span>
           <span className="text-slate-400 font-mono text-[11px] border-l border-white/10 pl-2">
@@ -297,78 +286,69 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
         </div>
       </div>
 
-      {/* Floating Controls: Layer Selector + Recenter + Fullscreen */}
-      <div className="absolute top-4 right-4 z-[400] flex items-center gap-2 flex-wrap justify-end">
-        {/* Map Layer Mode Selector */}
-        <div className="flex items-center bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] rounded-xl p-1 shadow-lg text-xs">
+      {/* Floating Controls: Layer Selector + Recenter + Close */}
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+        {/* Map Layer Mode Selector (Mappa, Satellite, OSM) */}
+        <div className="flex items-center bg-[#1F2025] border border-[#383941] rounded-xl p-1 shadow-xl text-xs">
           <button
+            type="button"
             onClick={() => setMapStyle('streets')}
             title="Mappa stradale reale con toponimi e rilievi"
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
               mapStyle === 'streets'
                 ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
             }`}
           >
             Mappa
           </button>
           <button
+            type="button"
             onClick={() => setMapStyle('satellite')}
             title="Vista aerea satellitare ad alta definizione"
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
               mapStyle === 'satellite'
                 ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
             }`}
           >
             Satellite
           </button>
           <button
+            type="button"
             onClick={() => setMapStyle('osm')}
             title="OpenStreetMap Standard"
-            className={`hidden sm:inline-block px-2.5 py-1 rounded-lg font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
               mapStyle === 'osm'
                 ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/5'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
             }`}
           >
             OSM
-          </button>
-          <button
-            onClick={() => setMapStyle('dark')}
-            title="Tema scuro ad alto contrasto"
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-              mapStyle === 'dark'
-                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Dark
           </button>
         </div>
 
         {/* Recenter Button */}
         <button
+          type="button"
           onClick={handleRecenter}
           title="Centra percorso"
-          className="p-2 rounded-xl bg-[#1F2025]/90 hover:bg-[#2F3037] backdrop-blur-md border border-[#383941] text-slate-300 hover:text-white shadow-lg transition-colors"
+          className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-slate-200 hover:text-white shadow-xl transition-colors cursor-pointer"
         >
           <Compass className="w-4 h-4" />
         </button>
 
-        {/* Fullscreen Button */}
-        <button
-          onClick={() => {
-            setIsFullscreen((prev) => !prev);
-            setTimeout(() => {
-              mapInstanceRef.current?.invalidateSize();
-            }, 100);
-          }}
-          title={isFullscreen ? 'Riduci mappa' : 'Espandi a schermo intero'}
-          className="p-2 rounded-xl bg-[#1F2025]/90 hover:bg-[#2F3037] backdrop-blur-md border border-[#383941] text-slate-300 hover:text-white shadow-lg transition-colors"
-        >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
+        {/* Close Button to dismiss/hide map and scroll graphs alone */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            title="Chiudi mappa (scorri solo i grafici)"
+            className="p-2 rounded-xl bg-[#1F2025] hover:bg-rose-500/25 hover:text-rose-400 border border-[#383941] text-slate-200 shadow-xl transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Offline / missing tiles notice */}
@@ -383,7 +363,9 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
       <div
         ref={mapContainerRef}
         className={`w-full bg-[#1a1b20] transition-all [&_.leaflet-control-attribution]:bg-[#1F2025]/90 [&_.leaflet-control-attribution]:text-slate-400 [&_.leaflet-control-attribution]:backdrop-blur [&_.leaflet-control-attribution_a]:text-[#00E5A3] ${
-          isFullscreen ? 'flex-1 h-full' : 'h-80 sm:h-[400px] md:h-[460px]'
+          isPinned
+            ? 'h-56 sm:h-64 md:h-72 max-h-[36vh]'
+            : 'h-80 sm:h-[400px] md:h-[460px]'
         }`}
       />
     </div>

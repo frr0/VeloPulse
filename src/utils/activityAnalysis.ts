@@ -13,6 +13,7 @@ export const ACTIVITY_STREAM_TYPES = [
   'heartrate',
   'watts',
   'cadence',
+  'velocity_smooth',
 ] as const;
 
 /**
@@ -35,17 +36,21 @@ export interface ActivitySeries {
   watts: NumericSeries | null;
   /** Revolutions per minute. null when the activity has no cadence. */
   cadence: NumericSeries | null;
+  /** Speed in km/h. null when the activity has no velocity stream. */
+  speed: NumericSeries | null;
 }
 
 /**
  * Names a series can arrive with. Intervals.icu answers the `watts` request
  * with a stream named `raw_watts` in some cases, so both names are accepted.
+ * Speed stream is typically `velocity_smooth` in m/s from Intervals.icu/Strava.
  */
-const SERIES_ALIASES: Record<'altitude' | 'heartrate' | 'watts' | 'cadence', string[]> = {
+const SERIES_ALIASES: Record<'altitude' | 'heartrate' | 'watts' | 'cadence' | 'speed', string[]> = {
   altitude: ['altitude'],
   heartrate: ['heartrate'],
   watts: ['watts', 'raw_watts'],
   cadence: ['cadence'],
+  speed: ['velocity_smooth', 'speed'],
 };
 
 function isFiniteNumber(value: unknown): value is number {
@@ -109,13 +114,15 @@ export function readActivitySeries(streams: ActivityStream[]): ActivitySeries | 
   const rawHeartrate = findStreamData(streams, SERIES_ALIASES.heartrate);
   const rawWatts = findStreamData(streams, SERIES_ALIASES.watts);
   const rawCadence = findStreamData(streams, SERIES_ALIASES.cadence);
+  const rawSpeed = findStreamData(streams, SERIES_ALIASES.speed);
   const rawTime = findStreamData(streams, ['time']);
 
   const length = Math.max(
     rawAltitude?.length ?? 0,
     rawHeartrate?.length ?? 0,
     rawWatts?.length ?? 0,
-    rawCadence?.length ?? 0
+    rawCadence?.length ?? 0,
+    rawSpeed?.length ?? 0
   );
   if (length === 0) return null;
 
@@ -140,9 +147,10 @@ export function readActivitySeries(streams: ActivityStream[]): ActivitySeries | 
   }
   if (keptIndexes.length === 0) return null;
 
-  const build = (data: unknown[] | null): NumericSeries | null => {
+  const build = (data: unknown[] | null, multiplier: number = 1): NumericSeries | null => {
     if (!data) return null;
-    const series = toNumericSeries(data, keptIndexes);
+    const raw = toNumericSeries(data, keptIndexes);
+    const series = multiplier === 1 ? raw : raw.map((val) => (val !== null ? val * multiplier : null));
     return hasAnyValue(series) ? series : null;
   };
 
@@ -153,9 +161,11 @@ export function readActivitySeries(streams: ActivityStream[]): ActivitySeries | 
     heartrate: build(rawHeartrate),
     watts: build(rawWatts),
     cadence: build(rawCadence),
+    // Intervals.icu provides velocity in m/s; convert to km/h (1 m/s = 3.6 km/h)
+    speed: build(rawSpeed, 3.6),
   };
 
-  if (!series.altitude && !series.heartrate && !series.watts && !series.cadence) return null;
+  if (!series.altitude && !series.heartrate && !series.watts && !series.cadence && !series.speed) return null;
   return series;
 }
 
@@ -173,6 +183,78 @@ export interface ChartPoint {
 
 /** Points a chart draws at most. Above this the page slows down on a phone. */
 export const MAX_CHART_POINTS = 900;
+
+/**
+ * Dropout & momentary pause threshold (in seconds).
+ *
+ * In cycling analytics, momentary gaps where power or cadence drops to zero/null
+ * (due to sensor packet loss, gear shifting, brief freewheel coasting, or cornering)
+ * are smoothed via interpolation to prevent artificial vertical plunges to zero on charts.
+ * Configured to 10 seconds to cover brief pauses and sensor hiccups.
+ *
+ * True pauses/stops longer than this threshold (> 10s, like red lights or long descents)
+ * are genuine rests and are preserved as zero.
+ */
+export const DROPOUT_THRESHOLD_SECONDS = 10;
+
+/**
+ * Fills short dropouts / micro-pauses (<= maxDropoutSeconds) in a power or cadence series
+ * by linear interpolation between surrounding active non-zero samples.
+ *
+ * Runs of zero or null lasting longer than maxDropoutSeconds remain untouched (true zero).
+ */
+export function smoothShortDropouts(
+  timeSecs: number[],
+  series: NumericSeries | null,
+  maxDropoutSeconds: number = DROPOUT_THRESHOLD_SECONDS
+): NumericSeries | null {
+  if (!series || series.length === 0) return null;
+
+  const result: NumericSeries = [...series];
+  const length = Math.min(timeSecs.length, series.length);
+
+  let i = 0;
+  while (i < length) {
+    const val = result[i];
+    const isZeroOrMissing = val === null || val === 0;
+
+    if (isZeroOrMissing) {
+      const startIndex = i;
+      while (i < length && (result[i] === null || result[i] === 0)) {
+        i++;
+      }
+      const endIndex = i - 1;
+
+      // Check if bounded by valid positive values on both sides
+      const prevIndex = startIndex - 1;
+      const nextIndex = i;
+
+      if (prevIndex >= 0 && nextIndex < length) {
+        const prevVal = result[prevIndex];
+        const nextVal = result[nextIndex];
+
+        if (prevVal !== null && prevVal > 0 && nextVal !== null && nextVal > 0) {
+          const gapDuration = timeSecs[nextIndex] - timeSecs[prevIndex];
+
+          // If the pause / zero duration is <= maxDropoutSeconds (e.g. up to 10s), interpolate!
+          if (gapDuration <= maxDropoutSeconds + 1) {
+            const timeSpan = timeSecs[nextIndex] - timeSecs[prevIndex];
+            const valDiff = nextVal - prevVal;
+
+            for (let k = startIndex; k <= endIndex; k++) {
+              const fraction = timeSpan > 0 ? (timeSecs[k] - timeSecs[prevIndex]) / timeSpan : 0.5;
+              result[k] = Math.round(prevVal + fraction * valDiff);
+            }
+          }
+        }
+      }
+    } else {
+      i++;
+    }
+  }
+
+  return result;
+}
 
 /**
  * Thins a series for drawing, keeping one sample every N.

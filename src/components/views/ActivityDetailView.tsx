@@ -10,9 +10,11 @@ import {
   Download,
   ExternalLink,
   Footprints,
+  Gauge,
   Heart,
   Home,
   Loader2,
+  MapPin,
   MapPinOff,
   MessageSquare,
   Mountain,
@@ -45,6 +47,7 @@ import {
   computeHrZoneHistogram,
   computePowerZoneHistogram,
   readActivitySeries,
+  smoothShortDropouts,
   thinSeriesForChart,
 } from '../../utils/activityAnalysis';
 import {
@@ -102,6 +105,9 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const [series, setSeries] = useState<ActivitySeries | null>(null);
   // Coordinate hovered on one of the telemetry charts
   const [hoveredCoordinate, setHoveredCoordinate] = useState<[number, number] | null>(null);
+  // Fixed/sticky map mode while scrolling graphs; can be dismissed with 'X'
+  const [isMapPinned, setIsMapPinned] = useState(true);
+  const [isMapClosed, setIsMapClosed] = useState(false);
 
   // Keyboard shortcut: Escape to go back
   useEffect(() => {
@@ -176,6 +182,18 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
     });
   }, [series?.timeSecs, route]);
 
+  // Power & cadence series filtered for micro-dropouts / momentary stops (<= 3 seconds)
+  // so brief interruptions or gear shifting don't cause sharp plunges to 0,
+  // while longer stops (> 3s, like red lights) remain at 0.
+  const smoothedWatts = useMemo(
+    () => (series?.watts ? smoothShortDropouts(series.timeSecs, series.watts) : null),
+    [series]
+  );
+  const smoothedCadence = useMemo(
+    () => (series?.cadence ? smoothShortDropouts(series.timeSecs, series.cadence) : null),
+    [series]
+  );
+
   // Charts over time: one chart per grandeur the activity really has. The
   // series are thinned for drawing only, so the page stays fluid on a phone;
   // every analysis below runs on the full series.
@@ -195,23 +213,33 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   );
   const wattsRows = useMemo<StreamChartRow[]>(
     () =>
-      series?.watts
-        ? thinSeriesForChart(series.timeSecs, series.watts, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
+      smoothedWatts && series
+        ? thinSeriesForChart(series.timeSecs, smoothedWatts, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
         : [],
-    [series, fullLatlngSeries]
+    [series, smoothedWatts, fullLatlngSeries]
   );
   const cadenceRows = useMemo<StreamChartRow[]>(
     () =>
-      series?.cadence
-        ? thinSeriesForChart(series.timeSecs, series.cadence, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
+      smoothedCadence && series
+        ? thinSeriesForChart(series.timeSecs, smoothedCadence, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
         : [],
-    [series, fullLatlngSeries]
+    [series, smoothedCadence, fullLatlngSeries]
   );
+  const speedRows = useMemo<StreamChartRow[]>(() => {
+    if (!series?.speed) return [];
+    // If user prefers imperial, convert km/h to mph (1 km/h = 0.621371 mph)
+    const values = useImperial
+      ? series.speed.map((v) => (v !== null ? v * 0.621371 : null))
+      : series.speed;
+    return thinSeriesForChart(series.timeSecs, values, MAX_CHART_POINTS, series.altitude, fullLatlngSeries);
+  }, [series, useImperial, fullLatlngSeries]);
+
   const hasStreamCharts =
     altitudeRows.length > 0 ||
     heartrateRows.length > 0 ||
     wattsRows.length > 0 ||
-    cadenceRows.length > 0;
+    cadenceRows.length > 0 ||
+    speedRows.length > 0;
 
   // Why there is no recorded data. The demo login and an activity without an
   // Intervals.icu id are told apart from a call that really failed.
@@ -410,17 +438,35 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Interactive GPS Map, ONLY if a real track exists */}
-      {hasRoute && (
-        <section>
+      {/* Interactive GPS Map: sticky during scroll, dismissible with X */}
+      {hasRoute && !isMapClosed && (
+        <section className={`transition-all duration-200 ${isMapPinned ? 'sticky top-20 z-20 shadow-2xl rounded-2xl overflow-hidden' : ''}`}>
           <ActivityMap
             activity={currentAct}
             coordinates={route}
             useImperial={useImperial}
             cartoApiKey={settings?.cartoApiKey}
             hoveredCoordinate={hoveredCoordinate}
+            isPinned={isMapPinned}
+            onClose={() => setIsMapClosed(true)}
           />
         </section>
+      )}
+
+      {/* Button to restore map when dismissed via X */}
+      {hasRoute && isMapClosed && (
+        <div className="flex items-center justify-between p-2.5 px-4 rounded-xl bg-[#1F2025] border border-[#383941] shadow-md">
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <MapPin className="w-4 h-4 text-[#00E5A3]" />
+            <span>Mappa GPS nascosta: puoi scorrere tutti i grafici a schermo intero.</span>
+          </div>
+          <button
+            onClick={() => setIsMapClosed(false)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-xs font-bold text-[#00E5A3] hover:text-white transition-colors"
+          >
+            <span>Riapri Mappa</span>
+          </button>
+        </div>
       )}
 
       {/* Activity Key Metrics Overview - Single unified card between map and charts with compact font */}
@@ -606,6 +652,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                 gradientId="streamWatts"
                 rows={wattsRows}
                 icon={<Zap className="w-4 h-4 text-[#FC5200]" />}
+                footnote="Filtro anti-dropout (≤ 10s): pause brevi interpolate, soste prolungate azzerate"
                 onHoverPoint={setHoveredCoordinate}
               />
             )}
@@ -617,6 +664,19 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                 gradientId="streamCadence"
                 rows={cadenceRows}
                 icon={<RotateCw className="w-4 h-4 text-[#A8C7FA]" />}
+                footnote="Filtro anti-dropout (≤ 10s): pause brevi interpolate, soste prolungate azzerate"
+                onHoverPoint={setHoveredCoordinate}
+              />
+            )}
+            {speedRows.length > 0 && (
+              <ActivityStreamChart
+                title="Velocità"
+                unit={useImperial ? 'mph' : 'km/h'}
+                color="#38BDF8"
+                gradientId="streamSpeed"
+                rows={speedRows}
+                decimals={1}
+                icon={<Gauge className="w-4 h-4 text-[#38BDF8]" />}
                 onHoverPoint={setHoveredCoordinate}
               />
             )}
