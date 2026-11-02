@@ -241,6 +241,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <span className="text-[11px] text-slate-500 block mt-2">
           VeloPulse • Unified Smart Cycling & Intervals Platform
         </span>
+        <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-slate-500">
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener"
+            className="hover:text-slate-300 underline underline-offset-2"
+          >
+            Informativa sulla privacy
+          </a>
+          <span className="text-slate-600">&middot;</span>
+          <a
+            href="/termini.html"
+            target="_blank"
+            rel="noopener"
+            className="hover:text-slate-300 underline underline-offset-2"
+          >
+            Termini di servizio
+          </a>
+        </div>
       </div>
     </div>
   );

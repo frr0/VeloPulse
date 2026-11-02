@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Informativa sulla privacy | VeloPulse</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300E5A3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='18.5' cy='17.5' r='3.5'/><circle cx='5.5' cy='17.5' r='3.5'/><circle cx='15' cy='5' r='1'/><path d='M12 17.5V14l-3-3 4-3 2 3h2'/></svg>" />
+    <meta name="theme-color" content="#080A0F" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #080a0f;
+        color: #e5e7eb;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+          sans-serif;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+      header.page-head {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      .logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: rgba(0, 229, 163, 0.1);
+        border: 1px solid rgba(0, 229, 163, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .logo svg {
+        width: 22px;
+        height: 22px;
+      }
+      .brand {
+        font-weight: 800;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
+        color: #ffffff;
+      }
+      .brand span {
+        color: #00e5a3;
+      }
+      h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 0 0 0.35rem;
+      }
+      .updated {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #9e9ea7;
+        margin: 0 0 2rem;
+      }
+      h2 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #00e5a3;
+        margin: 2rem 0 0.75rem;
+      }
+      p,
+      li {
+        color: #d4d4d8;
+        font-size: 0.92rem;
+      }
+      ul {
+        padding-left: 1.2rem;
+      }
+      li {
+        margin-bottom: 0.5rem;
+      }
+      .card {
+        background: #1f2025;
+        border: 1px solid #383941;
+        border-radius: 1.25rem;
+        padding: 1.1rem 1.25rem;
+        margin: 1rem 0;
+      }
+      .todo {
+        background: rgba(252, 82, 0, 0.1);
+        border: 1px solid rgba(252, 82, 0, 0.35);
+        color: #ffb38a;
+        border-radius: 0.9rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+      a {
+        color: #00e5a3;
+        text-decoration: underline;
+      }
+      a:hover {
+        color: #6effcb;
+      }
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #383941;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.5rem;
+        font-size: 0.85rem;
+      }
+      footer a {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="page-head">
+        <div class="logo">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#00E5A3"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="18.5" cy="17.5" r="3.5" />
+            <circle cx="5.5" cy="17.5" r="3.5" />
+            <circle cx="15" cy="5" r="1" />
+            <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
+          </svg>
+        </div>
+        <span class="brand">VELO<span>PULSE</span></span>
+      </header>
+
+      <h1>Informativa sulla privacy</h1>
+      <p class="updated">Ultimo aggiornamento: 2 novembre 2026</p>
+
+      <div class="todo">DA COMPLETARE: titolare del trattamento e indirizzo di contatto</div>
+
+      <h2>Che cosa è VeloPulse</h2>
+      <p>
+        VeloPulse è una dashboard dimostrativa per l'allenamento indoor su bicicletta. È
+        un'applicazione che funziona solo nel tuo browser: non ha un account proprio e non ha
+        un server che riceve o conserva i tuoi dati. Questa pagina spiega quali dati tratta
+        l'app e come.
+      </p>
+
+      <h2>La chiave API di Intervals.icu</h2>
+      <p>
+        Per vedere i tuoi dati veri, incolli la tua chiave API personale di Intervals.icu nella
+        schermata di accesso. L'app:
+      </p>
+      <ul>
+        <li>
+          salva la chiave <strong>in chiaro</strong> nell'archivio locale del browser
+          (<code>localStorage</code>) del dispositivo che stai usando;
+        </li>
+        <li>
+          la usa solo per autenticarti direttamente con Intervals.icu quando il browser chiama
+          le sue API.
+        </li>
+      </ul>
+      <p>
+        La chiave non viene mai inviata a un server di VeloPulse, perché VeloPulse non ne ha
+        uno. Chi ha accesso al dispositivo o al browser può leggere la chiave salvata: non usare
+        un computer condiviso o pubblico per inserirla, ed esci dall'app quando hai finito.
+      </p>
+
+      <h2>Modalità dimostrativa</h2>
+      <p>
+        Puoi anche usare VeloPulse in modalità dimostrativa, con dati di esempio inventati: in
+        questo caso non devi inserire nessuna chiave e non viene letto nessun dato reale.
+      </p>
+
+      <h2>Dati scaricati da Intervals.icu e impostazioni</h2>
+      <p>
+        Una volta entrato con la tua chiave, l'app scarica da Intervals.icu le attività, i dati
+        di benessere, gli eventi del calendario e la curva di potenza, e li salva nell'archivio
+        locale del browser per mostrarli più in fretta la volta dopo. Anche le tue impostazioni
+        (FTP, zone di frequenza cardiaca, peso, preferenze dell'unità di misura) restano solo
+        lì.
+      </p>
+
+      <h2>Per quanto tempo restano i dati e come si cancellano</h2>
+      <p>
+        Chiave API, dati scaricati e impostazioni restano nell'archivio locale del browser
+        finché non li cancelli tu. Per cancellarli:
+      </p>
+      <ul>
+        <li>premi "Disconnetti account" nell'app, oppure</li>
+        <li>svuota i dati di navigazione del browser per questo sito.</li>
+      </ul>
+      <p>
+        Dato che VeloPulse non ha un server, <strong>non esiste un account da cancellare presso
+        di noi</strong>: i tuoi dati di allenamento restano su Intervals.icu secondo le loro
+        regole, non le nostre.
+      </p>
+
+      <h2>Servizi di terzi</h2>
+      <div class="card">
+        <p style="margin-top: 0">
+          <strong>Intervals.icu</strong> — è il titolare autonomo del trattamento dei tuoi dati
+          di allenamento. Il tuo browser parla direttamente con i suoi server quando scarica o
+          invia dati: VeloPulse non è un intermediario. Consulta l'informativa di
+          <a href="https://intervals.icu/privacy" target="_blank" rel="noopener">Intervals.icu</a>.
+        </p>
+        <p>
+          <strong>OpenStreetMap e CARTO</strong> — quando apri la mappa di un percorso, il
+          browser scarica i fondali della mappa da questi servizi: ricevono l'indirizzo IP di
+          chi guarda la mappa in quel momento.
+        </p>
+        <p style="margin-bottom: 0">
+          <strong>Sensori Bluetooth</strong> — se collega un rullo, un misuratore di potenza,
+          un sensore di cadenza o una fascia cardiaca, l'app comunica con quei dispositivi
+          direttamente dal browser. I dati restano sul dispositivo che stai usando e non
+          vengono inviati a nessun server di VeloPulse.
+        </p>
+      </div>
+
+      <h2>File .fit</h2>
+      <p>
+        I file <code>.fit</code> delle sessioni registrate sono generati dal dispositivo e
+        scaricati direttamente da te: non passano da nessun server di VeloPulse.
+      </p>
+
+      <h2>Che cosa VeloPulse non fa</h2>
+      <p>
+        Nessun analytics, nessun cookie di profilazione, nessun invio di email, nessun
+        pagamento, nessuna notifica push.
+      </p>
+
+      <h2>Dove è pubblicato questo sito</h2>
+      <p>
+        Questo sito dimostrativo è ospitato sull'infrastruttura di institorAI. La versione
+        demo è privata: si apre solo con un link di accesso, non è indicizzata ed è pensata
+        per prove e presentazioni.
+      </p>
+
+      <h2>Contatti</h2>
+      <div class="todo">DA COMPLETARE: titolare del trattamento e indirizzo di contatto</div>
+
+      <footer>
+        <a href="/">Torna all'app</a>
+        <a href="/termini.html">Termini di servizio</a>
+      </footer>
+    </main>
+  </body>
+</html>
