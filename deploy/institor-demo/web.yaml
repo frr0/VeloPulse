@@ -1,0 +1,164 @@
+# Demo site of VeloPulse on the institor cluster.
+#
+# The app is client-only: no backend, no database, no persistent volume. nginx
+# serves the static build of `npm run build`.
+#
+# This file holds only the nginx configuration, the Deployment and the Service.
+# The built files live in separate ConfigMaps that `publish.sh` creates from
+# `dist/`, because their names carry a content hash that changes at every build.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-nginx
+  labels:
+    app: web
+data:
+  default.conf: |
+    server {
+      # nginx-unprivileged runs as a normal user and cannot bind port 80.
+      listen 8080;
+      server_name _;
+      root /usr/share/nginx/html;
+      index index.html;
+
+      # Smaller responses over the wire for text assets.
+      gzip on;
+      gzip_vary on;
+      gzip_min_length 1024;
+      gzip_proxied any;
+      gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        image/svg+xml;
+
+      # Minimal security headers.
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      # Only `frame-ancestors`, so the page can be shown in the institor
+      # dashboard preview and nowhere else. No other directive is set: the app
+      # calls https://intervals.icu from the browser and loads map tiles from
+      # *.basemaps.cartocdn.com and *.tile.openstreetmap.org, and a stricter
+      # policy would block them.
+      add_header Content-Security-Policy "frame-ancestors 'self' https://app.institorai.com" always;
+
+      # Build output: immutable, the file name carries a content hash.
+      location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+      }
+
+      # The legal pages are real files in the root, so `try_files` serves them
+      # directly and never falls back to index.html.
+      location / {
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "frame-ancestors 'self' https://app.institorai.com" always;
+        try_files $uri $uri/ /index.html;
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.30.5-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+            # index.html and the legal pages.
+            - name: site-root
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+            # All the build output in one directory, from several ConfigMaps.
+            - name: site-assets
+              mountPath: /usr/share/nginx/html/assets
+              readOnly: true
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: web-nginx
+        - name: site-root
+          configMap:
+            name: web-root
+        # A ConfigMap holds at most 1 MiB, the whole build is larger, so the
+        # files are split over several ConfigMaps. A `projected` volume joins
+        # them into a single directory.
+        - name: site-assets
+          projected:
+            sources:
+              - configMap:
+                  name: web-assets-1
+              - configMap:
+                  name: web-assets-2
+              - configMap:
+                  name: web-assets-3
+              - configMap:
+                  name: web-assets-4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  type: ClusterIP
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
