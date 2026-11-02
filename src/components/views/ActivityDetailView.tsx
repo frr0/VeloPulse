@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Bike,
@@ -8,6 +8,9 @@ import {
   ExternalLink,
   Footprints,
   Heart,
+  Home,
+  Loader2,
+  MapPinOff,
   MessageSquare,
   Repeat,
   Share2,
@@ -20,6 +23,7 @@ import { UserSettings } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { getActivityDetails, getActivityStreams } from '../../services/intervals/api';
 import { ActivityMap } from '../ActivityMap';
+import { getActivityRoute } from '../../utils/polyline';
 import {
   formatDateRelative,
   formatDistance,
@@ -128,6 +132,27 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const isRun = typeLower.includes('run');
   const isRide = typeLower.includes('ride') || typeLower.includes('cycl');
 
+  // Real GPS track only: the app never draws an invented route.
+  // The memo keys on the track sources, not on the activity object: when the
+  // details arrive the component builds a new object, and keying on it would
+  // hand the map a new array and rebuild it, losing the zoom set by the user.
+  const routeSignature = [
+    currentAct.id,
+    Array.isArray(currentAct.icu_latlng) ? currentAct.icu_latlng.length : 0,
+    currentAct.map?.summary_polyline || currentAct.map?.polyline || '',
+    currentAct.summary_polyline || currentAct.polyline || '',
+  ].join('|');
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- routeSignature covers every field read by getActivityRoute
+  const route = useMemo(() => getActivityRoute(currentAct), [routeSignature]);
+  const hasRoute = route.length > 1;
+
+  const isIndoorSession =
+    currentAct.indoor === true ||
+    currentAct.trainer === true ||
+    typeLower.includes('virtual') ||
+    typeLower.includes('indoor');
+
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       {/* Top Header / Breadcrumb Bar */}
@@ -178,9 +203,46 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Interactive GPS Map */}
+      {/* Main Grid: Interactive GPS Map, only with a real track */}
       <section>
-        <ActivityMap activity={currentAct} useImperial={useImperial} />
+        {hasRoute ? (
+          <ActivityMap activity={currentAct} coordinates={route} useImperial={useImperial} />
+        ) : isIndoorSession ? (
+          <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#26272D] border border-white/5 flex items-center justify-center mb-3">
+              <Home className="w-7 h-7 text-[#00E5A3]" />
+            </div>
+            <h4 className="text-base font-bold text-white mb-1">
+              Sessione al chiuso: nessun percorso GPS registrato
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md">
+              Trovi i dati dell&apos;allenamento qui sotto: potenza, velocità, battito, cadenza e zone.
+            </p>
+          </div>
+        ) : isLoadingDetails ? (
+          <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#26272D] border border-white/5 flex items-center justify-center mb-3">
+              <Loader2 className="w-7 h-7 text-[#00E5A3] animate-spin" />
+            </div>
+            <h4 className="text-base font-bold text-white mb-1">Carico il percorso da Intervals.icu</h4>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md">
+              Scarico la traccia GPS dell&apos;attività.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#26272D] border border-white/5 flex items-center justify-center mb-3">
+              <MapPinOff className="w-7 h-7 text-[#F28B82]" />
+            </div>
+            <h4 className="text-base font-bold text-white mb-1">
+              Questa attività non ha un percorso GPS su Intervals.icu
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md">
+              Intervals.icu non ha una traccia per questa attività, quindi non c&apos;è niente da disegnare
+              sulla mappa.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Key Hero Metrics Grid */}
