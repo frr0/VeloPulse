@@ -1,4 +1,15 @@
-import { Activity, Athlete, CalendarEvent, PowerCurvePoint, SportSettings, Wellness } from '../../types/intervals';
+import {
+  Activity,
+  Athlete,
+  CalendarEvent,
+  EMPTY_POWER_CURVE,
+  PowerCurveData,
+  PowerCurveReading,
+  PowerCurveSample,
+  PowerCurveSeries,
+  SportSettings,
+  Wellness,
+} from '../../types/intervals';
 import { HrZoneCustom } from '../../types';
 import { getDefaultHrZones } from '../../utils/zones';
 
@@ -140,211 +151,240 @@ export async function getCalendarEvents(
   return request<CalendarEvent[]>(`/athlete/${id}/events?${params.toString()}`, apiKey);
 }
 
-export function derivePowerCurve(ftp: number = 250, weight: number = 70): PowerCurvePoint[] {
-  const w = weight > 0 ? weight : 70;
-  const f = ftp > 0 ? ftp : 250;
+/** Curves asked to Intervals.icu: last 42 days and current season. */
+const RECENT_CURVE_ID = '42d';
+const SEASON_CURVE_ID = 's0';
 
-  // Realistic Critical Power & W' power duration curve modeling:
-  // Non-elite cyclists typically achieve ~78-82% of FTP in a continuous 60m ride unless performing a dedicated 1h TT.
-  const steps = [
-    { secs: 5, label: '5s', ratio: 2.10, seasonRatio: 2.25, cat: 'Sprint' as const },
-    { secs: 15, label: '15s', ratio: 1.85, seasonRatio: 1.95, cat: 'Sprint' as const },
-    { secs: 30, label: '30s', ratio: 1.55, seasonRatio: 1.65, cat: 'Anaerobic' as const },
-    { secs: 60, label: '1m', ratio: 1.35, seasonRatio: 1.42, cat: 'Anaerobic' as const },
-    { secs: 120, label: '2m', ratio: 1.20, seasonRatio: 1.26, cat: 'VO2 Max' as const },
-    { secs: 300, label: '5m', ratio: 1.10, seasonRatio: 1.15, cat: 'VO2 Max' as const },
-    { secs: 600, label: '10m', ratio: 1.02, seasonRatio: 1.06, cat: 'Threshold' as const },
-    { secs: 1200, label: '20m', ratio: 0.96, seasonRatio: 1.00, cat: 'Threshold' as const },
-    { secs: 3600, label: '1h', ratio: 0.78, seasonRatio: 0.82, cat: 'Endurance' as const },
-  ];
+const CURVE_LABELS: Record<string, string> = {
+  '42d': 'Recent 42D',
+  s0: 'Season',
+};
 
-  return steps.map((m) => {
-    const watts = Math.round(f * m.ratio);
-    const seasonWatts = Math.round(f * m.seasonRatio);
-    return {
-      secs: m.secs,
-      label: m.label,
-      watts,
-      wkg: Number((watts / w).toFixed(1)),
-      seasonWatts,
-      seasonWkg: Number((seasonWatts / w).toFixed(1)),
-      category: m.cat,
-    };
-  });
+function curveLabel(id: string): string {
+  return CURVE_LABELS[id] ?? id.toUpperCase();
 }
 
-function extractCurve(obj: any): { secs: number[]; watts: number[] } | null {
-  if (!obj) return null;
-  if (Array.isArray(obj.secs) && Array.isArray(obj.watts) && obj.secs.length > 0) {
-    return { secs: obj.secs, watts: obj.watts };
-  }
-  if (Array.isArray(obj.points)) {
-    const secs: number[] = [];
-    const watts: number[] = [];
-    for (const p of obj.points) {
-      if (typeof p.secs === 'number' && typeof p.watts === 'number') {
-        secs.push(p.secs);
-        watts.push(p.watts);
-      }
-    }
-    if (secs.length > 0) return { secs, watts };
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
   }
   return null;
 }
 
+/**
+ * Reads the `secs`, `watts` and `watts_per_kg` arrays of one curve of the
+ * Intervals.icu response.
+ * Returns null when the object is not a curve, an empty list when the curve
+ * carries no usable number. No value is ever filled in.
+ */
+function parseCurveSamples(value: unknown, weightKg: number | null): PowerCurveSample[] | null {
+  const obj = asRecord(value);
+  if (!obj) return null;
+  if (!Array.isArray(obj.secs) || !Array.isArray(obj.watts)) return null;
+
+  const secs = obj.secs;
+  const watts = obj.watts;
+  const wkgArray = Array.isArray(obj.watts_per_kg) ? obj.watts_per_kg : null;
+  const length = Math.min(secs.length, watts.length);
+  const samples: PowerCurveSample[] = [];
+
+  for (let i = 0; i < length; i++) {
+    const sec = secs[i];
+    const watt = watts[i];
+    if (!isFiniteNumber(sec) || !isFiniteNumber(watt)) continue;
+
+    // Round first, then check: a duration under half a second would round to 0,
+    // and a 0 breaks the logarithmic time axis and powerAtSecs (log(0)).
+    const roundedSecs = Math.round(sec);
+    const roundedWatts = Math.round(watt);
+    if (roundedSecs <= 0 || roundedWatts <= 0) continue;
+
+    const rawWkg = wkgArray ? wkgArray[i] : undefined;
+    let wkg: number | null = null;
+    if (isFiniteNumber(rawWkg) && rawWkg > 0) {
+      wkg = rawWkg;
+    } else if (weightKg !== null) {
+      wkg = watt / weightKg;
+    }
+
+    samples.push({ secs: roundedSecs, watts: roundedWatts, wkg });
+  }
+
+  samples.sort((a, b) => a.secs - b.secs);
+  return samples;
+}
+
+interface CurveEntry {
+  id: string;
+  samples: PowerCurveSample[];
+}
+
+/**
+ * Finds the curves in the response. Intervals.icu can answer with a list of
+ * curves, with an object that holds a list, or with a single curve.
+ * Returns null when the shape is not recognised.
+ */
+function collectCurves(data: unknown, weightKg: number | null): CurveEntry[] | null {
+  const requestedIds = [RECENT_CURVE_ID, SEASON_CURVE_ID];
+
+  const fromList = (list: unknown[]): CurveEntry[] | null => {
+    const entries: CurveEntry[] = [];
+    for (const item of list) {
+      const samples = parseCurveSamples(item, weightKg);
+      if (samples === null) continue;
+      const obj = asRecord(item);
+      const rawId = obj && typeof obj.curve === 'string' && obj.curve.trim() ? obj.curve.trim() : null;
+      entries.push({
+        id: rawId ?? requestedIds[entries.length] ?? `curve-${entries.length + 1}`,
+        samples,
+      });
+    }
+    return entries.length > 0 ? entries : null;
+  };
+
+  if (Array.isArray(data)) {
+    return fromList(data);
+  }
+
+  const obj = asRecord(data);
+  if (!obj) return null;
+
+  if (Array.isArray(obj.curves)) {
+    return fromList(obj.curves);
+  }
+
+  // Object with one key per curve, for example { "42d": {...}, "s0": {...} }.
+  const keyed: CurveEntry[] = [];
+  for (const id of requestedIds) {
+    const samples = parseCurveSamples(obj[id], weightKg);
+    if (samples !== null) keyed.push({ id, samples });
+  }
+  if (keyed.length > 0) return keyed;
+
+  const single = parseCurveSamples(obj, weightKg);
+  if (single !== null) return [{ id: requestedIds[0], samples: single }];
+
+  return null;
+}
+
+function describePowerCurveError(err: unknown): string {
+  if (err instanceof IntervalsApiError) {
+    if (err.status === 401 || err.status === 403) {
+      return 'Intervals.icu refused the request. Please check your API key.';
+    }
+    if (err.status === 404) {
+      return 'Intervals.icu has no power curves for this athlete.';
+    }
+    return `Intervals.icu did not answer correctly (HTTP ${err.status}).`;
+  }
+  return 'Intervals.icu did not answer. Please check the connection and try again.';
+}
+
+/**
+ * Power at a given duration.
+ * Exact sample when the curve has that duration, otherwise linear
+ * interpolation on the logarithm of the time between the two samples that
+ * bracket it. Outside the range of the curve the value does not exist.
+ */
+export function powerAtSecs(
+  samples: PowerCurveSample[],
+  targetSecs: number
+): PowerCurveReading | null {
+  if (!Array.isArray(samples) || samples.length === 0 || targetSecs <= 0) return null;
+
+  for (const sample of samples) {
+    if (sample.secs === targetSecs) {
+      return { secs: targetSecs, watts: sample.watts, wkg: sample.wkg, interpolated: false };
+    }
+  }
+
+  for (let i = 0; i < samples.length - 1; i++) {
+    const low = samples[i];
+    const high = samples[i + 1];
+    if (low.secs >= targetSecs || targetSecs >= high.secs) continue;
+
+    const span = Math.log(high.secs) - Math.log(low.secs);
+    if (span <= 0) return null;
+    const ratio = (Math.log(targetSecs) - Math.log(low.secs)) / span;
+    const watts = low.watts + (high.watts - low.watts) * ratio;
+    const wkg =
+      low.wkg !== null && high.wkg !== null ? low.wkg + (high.wkg - low.wkg) * ratio : null;
+
+    return { secs: targetSecs, watts: Math.round(watts), wkg, interpolated: true };
+  }
+
+  return null;
+}
+
+/**
+ * Power curves of the athlete, exactly as Intervals.icu reports them.
+ * When the call fails, or the athlete has no power data, the curves stay empty
+ * and `error` says why: the app never shows made up watts.
+ */
 export async function getPowerCurves(
   apiKey: string,
   athleteId = '0',
-  defaultFtp = 250,
-  weight = 70,
-  activitiesList?: Activity[]
-): Promise<PowerCurvePoint[]> {
+  athleteWeightKg: number | null = null,
+  sportType = 'Ride'
+): Promise<PowerCurveData> {
   const id = athleteId.trim() || '0';
-  const targetSteps = [
-    { secs: 5, label: '5s', cat: 'Sprint' as const },
-    { secs: 15, label: '15s', cat: 'Sprint' as const },
-    { secs: 30, label: '30s', cat: 'Anaerobic' as const },
-    { secs: 60, label: '1m', cat: 'Anaerobic' as const },
-    { secs: 120, label: '2m', cat: 'VO2 Max' as const },
-    { secs: 300, label: '5m', cat: 'VO2 Max' as const },
-    { secs: 600, label: '10m', cat: 'Threshold' as const },
-    { secs: 1200, label: '20m', cat: 'Threshold' as const },
-    { secs: 3600, label: '1h', cat: 'Endurance' as const },
-  ];
+  const weightKg =
+    isFiniteNumber(athleteWeightKg) && athleteWeightKg > 0 ? athleteWeightKg : null;
+  const params = new URLSearchParams({
+    curves: `${RECENT_CURVE_ID},${SEASON_CURVE_ID}`,
+    type: sportType,
+  });
 
+  let data: unknown;
   try {
-    // Try multiple endpoint patterns for Intervals.icu
-    let data: any = null;
-    const endpointsToTry = [
-      `/athlete/${id}/power-curves?curves=42d,1y`,
-      `/athlete/${id}/power-curves?curves=42d,1y&type=Ride`,
-      `/athlete/${id}/power-curves?curves=1y`,
-      `/athlete/${id}/power-curves.json?curves=42d,1y`,
-    ];
-
-    for (const ep of endpointsToTry) {
-      try {
-        data = await request<any>(ep, apiKey);
-        if (data) break;
-      } catch {
-        // try next endpoint
-      }
-    }
-
-    let recentCurve: { secs: number[]; watts: number[] } | null = null;
-    let seasonCurve: { secs: number[]; watts: number[] } | null = null;
-
-    if (Array.isArray(data)) {
-      for (const item of data) {
-        const c = extractCurve(item);
-        if (c) {
-          if (!recentCurve) recentCurve = c;
-          else if (!seasonCurve) seasonCurve = c;
-        }
-      }
-    } else if (data && typeof data === 'object') {
-      if (Array.isArray(data.curves)) {
-        for (const item of data.curves) {
-          const c = extractCurve(item);
-          if (c) {
-            if (!recentCurve) recentCurve = c;
-            else if (!seasonCurve) seasonCurve = c;
-          }
-        }
-      } else {
-        recentCurve =
-          extractCurve(data['42d']) ||
-          extractCurve(data['s0']) ||
-          extractCurve(data['1y']) ||
-          extractCurve(data);
-        seasonCurve =
-          extractCurve(data['1y']) ||
-          extractCurve(data['all']) ||
-          recentCurve;
-      }
-    }
-
-    if (recentCurve && recentCurve.watts && recentCurve.watts.length > 0) {
-      const getWattsAtSecs = (curve: { secs: number[]; watts: number[] }, targetSec: number): number | null => {
-        if (!curve.secs || !curve.watts || curve.watts.length === 0) return null;
-        const secs = curve.secs;
-        const watts = curve.watts;
-
-        const idx = secs.indexOf(targetSec);
-        if (idx >= 0 && typeof watts[idx] === 'number' && watts[idx] > 0) {
-          return Math.round(watts[idx]);
-        }
-
-        let closestIdx = -1;
-        let minDiff = Infinity;
-        for (let i = 0; i < secs.length; i++) {
-          const diff = Math.abs(secs[i] - targetSec);
-          if (diff < minDiff && typeof watts[i] === 'number' && watts[i] > 0) {
-            minDiff = diff;
-            closestIdx = i;
-          }
-        }
-
-        // Allow closest match within 20% of target duration
-        if (closestIdx >= 0 && minDiff <= targetSec * 0.20) {
-          return Math.round(watts[closestIdx]);
-        }
-        return null;
-      };
-
-      // Check if we can find 60m power from actual activities if curve doesn't reach 1h
-      let best60mFromActivities: number | null = null;
-      if (activitiesList && activitiesList.length > 0) {
-        for (const act of activitiesList) {
-          const dur = act.moving_time || act.elapsed_time || 0;
-          if (dur >= 3500 && act.average_watts && act.average_watts > 0) {
-            if (!best60mFromActivities || act.average_watts > best60mFromActivities) {
-              best60mFromActivities = Math.round(act.average_watts);
-            }
-          }
-        }
-      }
-
-      const points: PowerCurvePoint[] = [];
-      let validCount = 0;
-
-      for (const step of targetSteps) {
-        let recentWatts = getWattsAtSecs(recentCurve, step.secs);
-        let sWatts = seasonCurve ? getWattsAtSecs(seasonCurve, step.secs) : null;
-
-        // If 60m is missing from recentCurve but present in seasonCurve or activities, use it
-        if (step.secs === 3600) {
-          if (!recentWatts && sWatts) recentWatts = sWatts;
-          if (!recentWatts && best60mFromActivities) {
-            recentWatts = best60mFromActivities;
-            if (!sWatts) sWatts = best60mFromActivities;
-          }
-        }
-
-        if (recentWatts !== null && recentWatts > 0) {
-          validCount++;
-          const finalSeasonWatts = sWatts !== null && sWatts >= recentWatts ? sWatts : recentWatts;
-          points.push({
-            secs: step.secs,
-            label: step.label,
-            watts: recentWatts,
-            wkg: Number((recentWatts / weight).toFixed(1)),
-            seasonWatts: finalSeasonWatts,
-            seasonWkg: Number((finalSeasonWatts / weight).toFixed(1)),
-            category: step.cat,
-          });
-        }
-      }
-
-      if (validCount >= 3) {
-        return points;
-      }
-    }
+    data = await request<unknown>(`/athlete/${id}/power-curves?${params.toString()}`, apiKey);
   } catch (err) {
-    console.warn('Intervals.icu power curves fetch exception:', err);
+    console.warn('Intervals.icu power curves request failed:', err);
+    return { ...EMPTY_POWER_CURVE, weightKg, error: describePowerCurveError(err) };
   }
 
-  return derivePowerCurve(defaultFtp, weight);
+  const curves = collectCurves(data, weightKg);
+  if (!curves) {
+    return {
+      ...EMPTY_POWER_CURVE,
+      weightKg,
+      error: 'Intervals.icu answered with power curves in an unexpected format.',
+    };
+  }
+
+  const toSeries = (entry: CurveEntry | undefined): PowerCurveSeries | null => {
+    if (!entry || entry.samples.length === 0) return null;
+    return { id: entry.id, label: curveLabel(entry.id), samples: entry.samples };
+  };
+
+  // Match each curve by the id Intervals.icu reports: the answer can list the
+  // curves in any order, and matching by position would swap the two buttons.
+  const findCurve = (wantedId: string): CurveEntry | undefined =>
+    curves.find((entry) => entry.id === wantedId);
+
+  let recent = toSeries(findCurve(RECENT_CURVE_ID));
+  let season = toSeries(findCurve(SEASON_CURVE_ID));
+
+  // The answer carries only curves with ids we did not ask for: keep them in
+  // the order they arrived, so a usable curve is never thrown away.
+  if (!recent && !season) {
+    recent = toSeries(curves[0]);
+    season = toSeries(curves[1]);
+  }
+
+  if (!recent && !season) {
+    return {
+      ...EMPTY_POWER_CURVE,
+      weightKg,
+      error: 'Intervals.icu has no power data in this period.',
+    };
+  }
+
+  return { recent, season, weightKg, simulated: false, error: null };
 }
 
 export async function getAthleteSportSettings(

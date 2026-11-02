@@ -1,66 +1,66 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Layers, Maximize2, Minimize2, Navigation, Compass, AlertCircle } from 'lucide-react';
+import { Layers, Maximize2, Minimize2, Navigation, Compass, WifiOff } from 'lucide-react';
 import { Activity } from '../types/intervals';
-import { decodePolyline, getScenicDemoRoute } from '../utils/polyline';
 import { formatDistance, formatElevation } from '../utils/formatters';
+
+type MapStyle = 'dark' | 'osm';
+
+interface TileStyle {
+  url: string;
+  subdomains: string;
+  maxZoom: number;
+  attribution: string;
+}
+
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+// Free tile providers. The attribution below is required by their terms of use.
+const TILE_STYLES: Record<MapStyle, TileStyle> = {
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    subdomains: 'abcd',
+    maxZoom: 20,
+    attribution: `${OSM_ATTRIBUTION} &copy; <a href="https://carto.com/attributions">CARTO</a>`,
+  },
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    subdomains: 'abc',
+    maxZoom: 19,
+    attribution: OSM_ATTRIBUTION,
+  },
+};
+
+// Transparent 1x1 PNG: a tile that fails to load leaves the container colour
+// visible instead of a black hole or a broken image glyph.
+const TRANSPARENT_TILE =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 interface ActivityMapProps {
   activity: Activity;
+  /**
+   * Real GPS track of the activity, at least two points. The parent must keep
+   * the array identity stable (useMemo): a new array rebuilds the map.
+   */
+  coordinates: [number, number][];
   useImperial?: boolean;
 }
 
-export const ActivityMap: React.FC<ActivityMapProps> = ({ activity, useImperial = false }) => {
+export const ActivityMap: React.FC<ActivityMapProps> = ({ activity, coordinates, useImperial = false }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const polylineLayerRef = useRef<L.Polyline | null>(null);
-  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
-  const [mapStyle, setMapStyle] = useState<'dark' | 'osm'>('dark');
+  const [mapStyle, setMapStyle] = useState<MapStyle>('dark');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [hasValidRoute, setHasValidRoute] = useState<boolean>(true);
-
-  // Extract coordinates from activity
-  const getCoordinates = (): [number, number][] => {
-    // 1. Explicit latlng stream array
-    if (Array.isArray(activity.icu_latlng) && activity.icu_latlng.length > 1) {
-      return activity.icu_latlng;
-    }
-
-    // 2. Encoded summary polyline
-    const polyStr =
-      activity.map?.summary_polyline ||
-      activity.map?.polyline ||
-      activity.summary_polyline ||
-      activity.polyline;
-
-    if (polyStr) {
-      const decoded = decodePolyline(polyStr);
-      if (decoded.length > 1) return decoded;
-    }
-
-    // 3. Fallback scenic route for demo / mock outdoor rides
-    const demo = getScenicDemoRoute(activity.id, activity.type);
-    if (demo && demo.length > 1) {
-      return demo;
-    }
-
-    return [];
-  };
-
-  const coordinates = getCoordinates();
-  const isIndoor =
-    activity.indoor ||
-    activity.trainer ||
-    (activity.type && (activity.type.toLowerCase().includes('virtual') || activity.type.toLowerCase().includes('indoor')));
+  const [hasTileError, setHasTileError] = useState(false);
 
   useEffect(() => {
-    if (!mapContainerRef.current || coordinates.length === 0) {
-      setHasValidRoute(false);
-      return;
-    }
-    setHasValidRoute(true);
+    if (!mapContainerRef.current || coordinates.length < 2) return;
+
+    setHasTileError(false);
 
     // If map already exists, remove it before reinitializing
     if (mapInstanceRef.current) {
@@ -71,19 +71,22 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({ activity, useImperial 
     // Initialize Leaflet Map
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
-      attributionControl: false,
+      attributionControl: true,
     });
     mapInstanceRef.current = map;
 
-    // Tile URL based on style
-    const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-    const osmTileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-    const tileLayer = L.tileLayer(mapStyle === 'dark' ? darkTileUrl : osmTileUrl, {
-      maxZoom: 19,
-      subdomains: 'abcd',
+    const style = TILE_STYLES[mapStyle];
+    const tileLayer = L.tileLayer(style.url, {
+      maxZoom: style.maxZoom,
+      subdomains: style.subdomains,
+      attribution: style.attribution,
+      errorTileUrl: TRANSPARENT_TILE,
     }).addTo(map);
-    tileLayerRef.current = tileLayer;
+
+    // The desktop build runs in Electron, where the network can be missing.
+    tileLayer.on('tileerror', () => {
+      setHasTileError(true);
+    });
 
     // Outer glow track (darker background contrast)
     L.polyline(coordinates, {
@@ -171,12 +174,14 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({ activity, useImperial 
 
     return () => {
       clearTimeout(timer);
+      tileLayer.off('tileerror');
+      polylineLayerRef.current = null;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [activity.id, mapStyle]);
+  }, [coordinates, mapStyle]);
 
   const handleRecenter = () => {
     if (mapInstanceRef.current && polylineLayerRef.current) {
@@ -190,23 +195,8 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({ activity, useImperial 
     setMapStyle((prev) => (prev === 'dark' ? 'osm' : 'dark'));
   };
 
-  if (!hasValidRoute || coordinates.length === 0) {
-    return (
-      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
-        <div className="w-14 h-14 rounded-2xl bg-[#26272D] border border-white/5 flex items-center justify-center text-slate-400 mb-3">
-          <AlertCircle className="w-7 h-7 text-amber-400" />
-        </div>
-        <h4 className="text-base font-bold text-white mb-1">
-          {isIndoor ? 'Sessione Indoor / Rulli' : 'Nessuna traccia GPS registrata'}
-        </h4>
-        <p className="text-xs sm:text-sm text-slate-400 max-w-md">
-          {isIndoor
-            ? 'Questa attività è stata registrata al chiuso su smart trainer o rullo. I dati di potenza, cadenza e frequenza cardiaca sono disponibili nei grafici e nelle sezioni sottostanti.'
-            : 'Il file dell’attività non include coordinate geografiche GPS (o si tratta di un allenamento indoor).'}
-        </p>
-      </div>
-    );
-  }
+  // Defensive guard: the parent shows the empty state when there is no track.
+  if (coordinates.length < 2) return null;
 
   return (
     <div
@@ -261,18 +251,21 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({ activity, useImperial 
         </button>
       </div>
 
+      {/* Offline / missing tiles notice: the route stays visible */}
+      {hasTileError && (
+        <div className="absolute bottom-4 left-4 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] shadow-lg text-[11px] font-semibold text-slate-300">
+          <WifiOff className="w-3.5 h-3.5 text-[#F28B82]" />
+          <span>Sfondo mappa non disponibile: il percorso resta visibile</span>
+        </div>
+      )}
+
       {/* Map Leaflet Container */}
       <div
         ref={mapContainerRef}
-        className={`w-full transition-all ${isFullscreen ? 'flex-1 h-full' : 'h-72 sm:h-96 md:h-[420px]'}`}
+        className={`w-full bg-[#26272D] transition-all [&_.leaflet-control-attribution]:bg-[#1F2025]/90 [&_.leaflet-control-attribution]:text-slate-400 [&_.leaflet-control-attribution]:backdrop-blur [&_.leaflet-control-attribution_a]:text-[#00E5A3] ${
+          isFullscreen ? 'flex-1 h-full' : 'h-72 sm:h-96 md:h-[420px]'
+        }`}
       />
-
-      {/* Subtle attribution note */}
-      <div className="absolute bottom-2 right-3 z-[400] pointer-events-none">
-        <span className="text-[10px] text-slate-400/80 bg-black/50 px-2 py-0.5 rounded backdrop-blur">
-          © OpenStreetMap contributors • CARTO
-        </span>
-      </div>
     </div>
   );
 };

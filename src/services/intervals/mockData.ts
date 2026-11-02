@@ -1,4 +1,12 @@
-import { Activity, Athlete, CalendarEvent, PowerCurvePoint, Wellness } from '../../types/intervals';
+import {
+  Activity,
+  Athlete,
+  CalendarEvent,
+  PowerCurveData,
+  PowerCurveSample,
+  PowerCurveSeries,
+  Wellness,
+} from '../../types/intervals';
 
 export const MOCK_ATHLETE: Athlete = {
   id: 'i104928',
@@ -15,17 +23,80 @@ export const MOCK_ATHLETE: Athlete = {
   vo2max: 56.4,
 };
 
-export const MOCK_POWER_CURVE: PowerCurvePoint[] = [
-  { secs: 5, label: '5s', watts: 620, wkg: 9.1, seasonWatts: 680, seasonWkg: 9.9, category: 'Sprint' },
-  { secs: 15, label: '15s', watts: 540, wkg: 7.9, seasonWatts: 580, seasonWkg: 8.5, category: 'Sprint' },
-  { secs: 30, label: '30s', watts: 450, wkg: 6.6, seasonWatts: 480, seasonWkg: 7.0, category: 'Anaerobic' },
-  { secs: 60, label: '1m', watts: 390, wkg: 5.7, seasonWatts: 410, seasonWkg: 6.0, category: 'Anaerobic' },
-  { secs: 120, label: '2m', watts: 350, wkg: 5.1, seasonWatts: 365, seasonWkg: 5.3, category: 'VO2 Max' },
-  { secs: 300, label: '5m', watts: 320, wkg: 4.7, seasonWatts: 335, seasonWkg: 4.9, category: 'VO2 Max' },
-  { secs: 600, label: '10m', watts: 295, wkg: 4.3, seasonWatts: 305, seasonWkg: 4.5, category: 'Threshold' },
-  { secs: 1200, label: '20m', watts: 280, wkg: 4.1, seasonWatts: 288, seasonWkg: 4.2, category: 'Threshold' },
-  { secs: 3600, label: '1h', watts: 228, wkg: 3.3, seasonWatts: 242, seasonWkg: 3.5, category: 'Endurance' },
+// --- Simulated power curve, demo login only -------------------------------
+// The watts below are NOT measured data: a simple model builds them from the
+// demo FTP. They exist to show the chart during the demo tour. An athlete who
+// logs in with a real API key never sees them: with a real key the app shows
+// only the curves of Intervals.icu, or an empty chart with the reason.
+
+/** Watts as a share of FTP at a few reference durations, for the demo only. */
+const SIMULATED_FTP_RATIOS: { secs: number; ratio: number }[] = [
+  { secs: 1, ratio: 2.55 },
+  { secs: 5, ratio: 2.10 },
+  { secs: 15, ratio: 1.85 },
+  { secs: 30, ratio: 1.55 },
+  { secs: 60, ratio: 1.35 },
+  { secs: 120, ratio: 1.20 },
+  { secs: 300, ratio: 1.10 },
+  { secs: 600, ratio: 1.02 },
+  { secs: 1200, ratio: 0.96 },
+  { secs: 3600, ratio: 0.78 },
+  { secs: 18000, ratio: 0.62 },
 ];
+
+function simulatedFtpRatio(secs: number): number {
+  const first = SIMULATED_FTP_RATIOS[0];
+  const last = SIMULATED_FTP_RATIOS[SIMULATED_FTP_RATIOS.length - 1];
+  if (secs <= first.secs) return first.ratio;
+  if (secs >= last.secs) return last.ratio;
+
+  for (let i = 0; i < SIMULATED_FTP_RATIOS.length - 1; i++) {
+    const low = SIMULATED_FTP_RATIOS[i];
+    const high = SIMULATED_FTP_RATIOS[i + 1];
+    if (secs > low.secs && secs <= high.secs) {
+      const span = Math.log(high.secs) - Math.log(low.secs);
+      const position = (Math.log(secs) - Math.log(low.secs)) / span;
+      return low.ratio + (high.ratio - low.ratio) * position;
+    }
+  }
+  return last.ratio;
+}
+
+/** Durations of the simulated curve: dense on short efforts, sparse on long ones. */
+function simulatedDurations(): number[] {
+  const durations: number[] = [];
+  for (let s = 1; s < 60; s += 1) durations.push(s);
+  for (let s = 60; s < 600; s += 10) durations.push(s);
+  for (let s = 600; s < 3600; s += 60) durations.push(s);
+  for (let s = 3600; s <= 18000; s += 300) durations.push(s);
+  return durations;
+}
+
+function buildSimulatedSeries(
+  id: string,
+  label: string,
+  ftp: number,
+  weightKg: number,
+  boost: number
+): PowerCurveSeries {
+  const samples: PowerCurveSample[] = simulatedDurations().map((secs) => {
+    const watts = Math.round(ftp * simulatedFtpRatio(secs) * boost);
+    return { secs, watts, wkg: watts / weightKg };
+  });
+  return { id, label, samples };
+}
+
+const SIMULATED_FTP = MOCK_ATHLETE.ftp ?? 250;
+const SIMULATED_WEIGHT = MOCK_ATHLETE.weight ?? 70;
+
+/** Simulated curves of the demo athlete. `simulated: true` marks them in the app. */
+export const SIMULATED_DEMO_POWER_CURVE: PowerCurveData = {
+  recent: buildSimulatedSeries('42d', 'Recent 42D', SIMULATED_FTP, SIMULATED_WEIGHT, 1.0),
+  season: buildSimulatedSeries('s0', 'Season', SIMULATED_FTP, SIMULATED_WEIGHT, 1.06),
+  weightKg: SIMULATED_WEIGHT,
+  simulated: true,
+  error: null,
+};
 
 export function generateMockWellness(): Wellness[] {
   const result: Wellness[] = [];

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  derivePowerCurve,
   getActivities,
   getAthleteProfile,
   getCalendarEvents,
@@ -12,10 +11,20 @@ import {
   MOCK_ACTIVITIES,
   MOCK_ATHLETE,
   MOCK_CALENDAR_EVENTS,
-  MOCK_POWER_CURVE,
   MOCK_WELLNESS,
+  SIMULATED_DEMO_POWER_CURVE,
 } from '../services/intervals/mockData';
-import { Activity, Athlete, AuthCredentials, CalendarEvent, PowerCurvePoint, Wellness } from '../types/intervals';
+import {
+  Activity,
+  Athlete,
+  AuthCredentials,
+  CalendarEvent,
+  EMPTY_POWER_CURVE,
+  PowerCurveData,
+  PowerCurveSample,
+  PowerCurveSeries,
+  Wellness,
+} from '../types/intervals';
 import { computeRecoveryScore } from '../utils/formatters';
 
 interface AppContextType {
@@ -24,7 +33,8 @@ interface AppContextType {
   wellness: Wellness[];
   activities: Activity[];
   events: CalendarEvent[];
-  powerCurve: PowerCurvePoint[];
+  powerCurve: PowerCurveData;
+  isPowerCurveLoading: boolean;
   latestWellness: Wellness | null;
   recoveryScore: number;
   weeklyLoad: number;
@@ -54,13 +64,61 @@ const STORAGE_KEYS = {
   POWER_CURVE: 'intervals_pulse_power_curve',
 };
 
+function parseCachedSeries(value: unknown): PowerCurveSeries | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const candidate = value as Partial<PowerCurveSeries>;
+  if (typeof candidate.id !== 'string' || typeof candidate.label !== 'string') return null;
+  if (!Array.isArray(candidate.samples)) return null;
+
+  const samples: PowerCurveSample[] = [];
+  for (const item of candidate.samples) {
+    if (!item || typeof item !== 'object') continue;
+    const sample = item as Partial<PowerCurveSample>;
+    if (typeof sample.secs !== 'number' || typeof sample.watts !== 'number') continue;
+    samples.push({
+      secs: sample.secs,
+      watts: sample.watts,
+      wkg: typeof sample.wkg === 'number' ? sample.wkg : null,
+    });
+  }
+
+  if (samples.length === 0) return null;
+  return { id: candidate.id, label: candidate.label, samples };
+}
+
+/**
+ * Reads the cached curve. Returns null when the cache is empty, old or broken:
+ * a cache that cannot be read never becomes a number on the chart.
+ */
+function parseCachedPowerCurve(raw: string | null): PowerCurveData | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const value = parsed as Partial<PowerCurveData>;
+    const recent = parseCachedSeries(value.recent);
+    const season = parseCachedSeries(value.season);
+    if (!recent && !season) return null;
+    return {
+      recent,
+      season,
+      weightKg: typeof value.weightKg === 'number' ? value.weightKg : null,
+      simulated: value.simulated === true,
+      error: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [credentials, setCredentials] = useState<AuthCredentials | null>(null);
   const [athlete, setAthlete] = useState<Athlete | null>(null);
   const [wellness, setWellness] = useState<Wellness[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [powerCurve, setPowerCurve] = useState<PowerCurvePoint[]>(MOCK_POWER_CURVE);
+  const [powerCurve, setPowerCurve] = useState<PowerCurveData>(EMPTY_POWER_CURVE);
+  const [isPowerCurveLoading, setIsPowerCurveLoading] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,12 +139,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUseImperial(JSON.parse(savedSettings).useImperial);
       }
 
-      if (cachedPowerCurve) {
-        try {
-          setPowerCurve(JSON.parse(cachedPowerCurve));
-        } catch {
-          // ignore
-        }
+      const restoredPowerCurve = parseCachedPowerCurve(cachedPowerCurve);
+      if (restoredPowerCurve) {
+        setPowerCurve(restoredPowerCurve);
+      } else if (cachedPowerCurve) {
+        localStorage.removeItem(STORAGE_KEYS.POWER_CURVE);
       }
 
       if (savedAuth) {
@@ -119,9 +176,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setWellness(MOCK_WELLNESS);
         setActivities(MOCK_ACTIVITIES);
         setEvents(MOCK_CALENDAR_EVENTS);
-        setPowerCurve(MOCK_POWER_CURVE);
+        setPowerCurve(SIMULATED_DEMO_POWER_CURVE);
         return;
       }
+
+      setIsPowerCurveLoading(true);
 
       const [fetchedAthlete, fetchedWellness, fetchedActivities, fetchedEvents] =
         await Promise.all([
@@ -131,12 +190,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           getCalendarEvents(auth.apiKey, auth.athleteId),
         ]);
 
+      // Weight of the Intervals.icu profile: it feeds the W/kg fallback when
+      // the curve has no watts_per_kg. Without a weight the W/kg stay empty.
+      const profileWeight = fetchedAthlete?.weight ?? athlete?.weight ?? null;
+
       const fetchedPowerCurve = await getPowerCurves(
         auth.apiKey,
         auth.athleteId,
-        fetchedAthlete?.ftp || athlete?.ftp || 250,
-        fetchedAthlete?.weight || athlete?.weight || 70,
-        fetchedActivities
+        profileWeight
       );
 
       setAthlete(fetchedAthlete);
@@ -149,13 +210,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(fetchedActivities));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(fetchedEvents));
 
-      if (fetchedPowerCurve && fetchedPowerCurve.length > 0) {
-        setPowerCurve(fetchedPowerCurve);
+      setPowerCurve(fetchedPowerCurve);
+      if (fetchedPowerCurve.recent || fetchedPowerCurve.season) {
         localStorage.setItem(STORAGE_KEYS.POWER_CURVE, JSON.stringify(fetchedPowerCurve));
-      } else if (fetchedAthlete) {
-        const derived = derivePowerCurve(fetchedAthlete.ftp || 250, fetchedAthlete.weight || 70);
-        setPowerCurve(derived);
-        localStorage.setItem(STORAGE_KEYS.POWER_CURVE, JSON.stringify(derived));
       }
     } catch (err: any) {
       console.error('Fetch error:', err);
@@ -167,6 +224,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      setIsPowerCurveLoading(false);
     }
   }
 
@@ -216,6 +274,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setWellness(MOCK_WELLNESS);
     setActivities(MOCK_ACTIVITIES);
     setEvents(MOCK_CALENDAR_EVENTS);
+    setPowerCurve(SIMULATED_DEMO_POWER_CURVE);
     setIsLoading(false);
   };
 
@@ -231,7 +290,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setWellness([]);
     setActivities([]);
     setEvents([]);
-    setPowerCurve(MOCK_POWER_CURVE);
+    setPowerCurve(EMPTY_POWER_CURVE);
+    setIsPowerCurveLoading(false);
     setError(null);
   };
 
@@ -284,17 +344,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [activities]);
 
-  // If athlete FTP/weight changes and no API power curve is present yet, update derived model
-  useEffect(() => {
-    if (athlete && !credentials?.isDemo) {
-      const cached = localStorage.getItem(STORAGE_KEYS.POWER_CURVE);
-      if (!cached) {
-        const derived = derivePowerCurve(athlete.ftp || 250, athlete.weight || 70);
-        setPowerCurve(derived);
-      }
-    }
-  }, [athlete?.ftp, athlete?.weight]);
-
   return (
     <AppContext.Provider
       value={{
@@ -304,6 +353,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activities,
         events,
         powerCurve,
+        isPowerCurveLoading,
         latestWellness,
         recoveryScore,
         weeklyLoad,

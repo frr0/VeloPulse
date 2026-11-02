@@ -1,3 +1,5 @@
+import { Activity } from '../types/intervals';
+
 /**
  * Decodes a Google Encoded Polyline string into an array of [lat, lng] coordinates.
  */
@@ -39,58 +41,50 @@ export function decodePolyline(encoded: string, precision = 5): [number, number]
 }
 
 /**
- * Generates smooth scenic route coordinates for demo / mock activities
- * or activities without GPS data.
+ * Keeps only the points that are usable as geographic coordinates.
+ * A corrupted or partial stream can contain null entries or NaN values,
+ * which would break the map bounds.
  */
-export function getScenicDemoRoute(activityId: string, activityType: string): [number, number][] | null {
-  const typeLower = (activityType || '').toLowerCase();
-  if (typeLower.includes('virtual') || typeLower.includes('indoor') || typeLower.includes('turbo')) {
-    return null;
+function sanitizeCoordinates(points: [number, number][]): [number, number][] {
+  return points.filter((point) => {
+    if (!Array.isArray(point) || point.length < 2) return false;
+    const [lat, lng] = point;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+  });
+}
+
+/**
+ * Returns the real GPS track of an activity, as recorded on Intervals.icu.
+ *
+ * Lookup order: the `latlng` stream, then the encoded polylines. No route is
+ * ever generated: an activity without a track returns an empty array, so the
+ * caller can show an honest empty state instead of a map.
+ *
+ * `start_latlng` alone is not a track: it only tells that the activity was
+ * recorded outdoors, and it is not enough to draw a line.
+ */
+export function getActivityRoute(activity: Activity | null | undefined): [number, number][] {
+  if (!activity) return [];
+
+  // 1. Explicit latlng stream array (most accurate).
+  if (Array.isArray(activity.icu_latlng) && activity.icu_latlng.length > 1) {
+    const stream = sanitizeCoordinates(activity.icu_latlng);
+    if (stream.length > 1) return stream;
   }
 
-  // Generate scenic GPS track based on seed (e.g. Italian cycling routes)
-  // Route 1: Stelvio / Passo dello Stelvio Loop (Bormio, Lombardy)
-  // Route 2: Strade Bianche / Tuscany gravel loop (Siena, Chianti)
-  // Route 3: Dolomiti Sellaronda (Corvara, Val Gardena)
-  const seed = (activityId || 'default').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const routeType = seed % 3;
+  // 2. Encoded summary polyline.
+  const encoded =
+    activity.map?.summary_polyline ||
+    activity.map?.polyline ||
+    activity.summary_polyline ||
+    activity.polyline;
 
-  let centerLat = 46.528;
-  let centerLng = 10.453;
-  let radiusLat = 0.045;
-  let radiusLng = 0.075;
-
-  if (routeType === 1) {
-    // Siena / Chianti
-    centerLat = 43.318;
-    centerLng = 11.330;
-    radiusLat = 0.055;
-    radiusLng = 0.085;
-  } else if (routeType === 2) {
-    // Dolomites / Sellaronda
-    centerLat = 46.554;
-    centerLng = 11.856;
-    radiusLat = 0.060;
-    radiusLng = 0.090;
+  if (encoded) {
+    const decoded = sanitizeCoordinates(decodePolyline(encoded));
+    if (decoded.length > 1) return decoded;
   }
 
-  const pointsCount = 65;
-  const coords: [number, number][] = [];
-
-  for (let i = 0; i <= pointsCount; i++) {
-    const angle = (i / pointsCount) * Math.PI * 2;
-    // Add realistic road curves and loops
-    const wobble1 = Math.sin(angle * 3) * 0.28;
-    const wobble2 = Math.cos(angle * 5) * 0.12;
-    const wobble3 = Math.sin(angle * 7) * 0.06;
-
-    const rLat = radiusLat * (1 + wobble1 + wobble2);
-    const rLng = radiusLng * (1 - wobble1 + wobble3);
-
-    const lat = centerLat + Math.cos(angle) * rLat;
-    const lng = centerLng + Math.sin(angle) * rLng;
-    coords.push([lat, lng]);
-  }
-
-  return coords;
+  return [];
 }
