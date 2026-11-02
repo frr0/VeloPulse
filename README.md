@@ -1,4 +1,4 @@
-# VeloPulse 🚴‍♂️⚡ | Smart Cycling Studio & Athletic Analytics
+# VeloPulse | Smart Cycling Studio & Athletic Analytics
 
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -14,26 +14,26 @@ Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316
 
 ---
 
-## 📱 Cross-Platform Availability
+## Cross-Platform Availability
 
 VeloPulse runs natively or as an app on all major operating systems:
 
 | Platform | Format | Description |
 | :--- | :--- | :--- |
-| 📱 **Android** | `.apk` | Native Capacitor BLE with background wake-lock and direct `.fit` export |
-| 🍏 **iOS** | Xcode Project | Native Capacitor iOS app with Bluetooth Central background capabilities |
-| 🪟 **Windows 11** | `.zip` (Portable) | Standalone desktop application with `VeloPulse.exe` |
-| 🍏 **macOS** | `.zip` (`.app`) | macOS standalone desktop application bundle |
-| 🐧 **Linux** | `.AppImage` / `.tar.gz` | Universal Linux binaries + `VeloPulse-Linux.sh` launcher |
-| 🌐 **Web** | Web App | Modern PWA/SPA optimized for Chrome, Edge, and Chromium |
+| **Android** | `.apk` | Native Capacitor BLE with background wake-lock and direct `.fit` export |
+| **iOS** | Xcode Project | Native Capacitor iOS app with Bluetooth Central background capabilities |
+| **Windows 11** | `.zip` (Portable) | Standalone desktop application with `VeloPulse.exe` |
+| **macOS** | `.zip` (`.app`) | macOS standalone desktop application bundle |
+| **Linux** | `.AppImage` / `.tar.gz` | Universal Linux binaries + `VeloPulse-Linux.sh` launcher |
+| **Web** | Web App | Modern PWA/SPA optimized for Chrome, Edge, and Chromium |
 
 All pre-compiled packages are available in the [GitHub Releases](https://github.com/frr0/Cycling-App/releases) section.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 🚴 1. Indoor Smart Trainer & Ride Studio
+### 1. Indoor Smart Trainer & Ride Studio
 * **Bluetooth Sensor Connectivity**:
   * **Smart Trainer (FTMS & Cycling Power)**: Connects via Bluetooth FTMS (`0x1826`) or Cycling Power (`0x1818`). Live instantaneous power (W), 3-second smoothing, cadence (RPM), and hardware flywheel speed.
   * **Bluetooth Cadence Sensor**: Dedicated crank cadence sensor support (`0x1816`).
@@ -56,7 +56,7 @@ All pre-compiled packages are available in the [GitHub Releases](https://github.
 
 ---
 
-### 🗺️ 2. Dedicated Activity Page & Interactive GPS Route Map
+### 2. Dedicated Activity Page & Interactive GPS Route Map
 * **Dedicated Full-Page View**:
   * Opening any activity from the Dashboard or Activities list navigates to a dedicated page (`ActivityDetailView`) instead of a modal popup.
   * Integrated breadcrumb navigation with a quick `← Back to Activities / Dashboard` button and `Escape` keyboard shortcut.
@@ -76,7 +76,7 @@ All pre-compiled packages are available in the [GitHub Releases](https://github.
 
 ---
 
-### 📈 3. Athletic Performance & Recovery Analytics (Intervals.icu)
+### 3. Athletic Performance & Recovery Analytics (Intervals.icu)
 * **Direct Intervals.icu Sync or 1-Click Demo Mode**:
   * Authenticate using your Intervals.icu API Key, or explore immediately using the simulated pro athlete dataset.
 * **Customizable Heart Rate Zones**:
@@ -98,7 +98,7 @@ All pre-compiled packages are available in the [GitHub Releases](https://github.
 
 ---
 
-### 🎨 4. Google Material 3 Dark Theme
+### 4. Google Material 3 Dark Theme
 * **Color Palette**:
   * Background Scaffold: `#131316` (deep charcoal)
   * Surface Container: `#1F2025`
@@ -115,11 +115,11 @@ All pre-compiled packages are available in the [GitHub Releases](https://github.
 
 ---
 
-## 📥 Downloads & Installation
+## Downloads & Installation
 
 Pre-built binaries can be downloaded directly from the [GitHub Releases](https://github.com/frr0/Cycling-App/releases) page:
 
-### 📱 Android
+### Android
 1. Download `VeloPulse.apk`.
 2. Sideload onto your device:
    ```bash
@@ -127,15 +127,15 @@ Pre-built binaries can be downloaded directly from the [GitHub Releases](https:/
    ```
 3. Grant Bluetooth and Location permissions when prompted.
 
-### 🪟 Windows 11
+### Windows 11
 1. Download `VeloPulse-win-x64.zip`.
 2. Extract the archive and launch `VeloPulse.exe`.
 
-### 🍏 macOS
+### macOS
 1. Download `VeloPulse-mac-x64.zip`.
 2. Extract and move `VeloPulse.app` to your `/Applications` folder.
 
-### 🐧 Linux
+### Linux
 1. Download `VeloPulse-linux-x86_64.AppImage` (or `VeloPulse-linux-x64.tar.gz`).
 2. Make it executable and run:
    ```bash
@@ -149,7 +149,7 @@ Pre-built binaries can be downloaded directly from the [GitHub Releases](https:/
 
 ---
 
-## 🛠️ Development & Building from Source
+## Development & Building from Source
 
 ### Prerequisites
 * **Node.js**: v18+ or v20+
@@ -164,39 +164,39 @@ cd Cycling-App
 npm install
 ```
 
-### 🌐 Run Web Development Server
+### Run Web Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:5173](http://localhost:5173) in Chrome, Edge, or Chromium.
 
-### 🏗️ Build Production Web Assets
+### Build Production Web Assets
 ```bash
 npm run build
 ```
 
-### 🐧 Build Linux Desktop (AppImage & Tarball)
+### Build Linux Desktop (AppImage & Tarball)
 ```bash
 npm run dist:linux
 ```
 
-### 🪟 Build Windows 11 Desktop (Zip & Directory)
+### Build Windows 11 Desktop (Zip & Directory)
 ```bash
 npm run dist:win
 ```
 
-### 🍏 Build macOS Desktop (Zip & App Bundle)
+### Build macOS Desktop (Zip & App Bundle)
 ```bash
 npm run dist:mac
 ```
 
-### 📱 Build Android APK
+### Build Android APK
 ```bash
 npm run android:build
 ```
 Outputs the ready-to-install `VeloPulse.apk`.
 
-### 🍏 Build iOS Native Project
+### Build iOS Native Project
 ```bash
 npm run ios:sync
 npm run ios:open
@@ -205,7 +205,7 @@ Opens the project in Xcode for signing and deployment to physical iPhones or iPa
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 Cycling/
@@ -239,6 +239,6 @@ Cycling/
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
