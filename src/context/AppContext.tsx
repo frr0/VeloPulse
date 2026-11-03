@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { DEMO_ONLY } from '../config/demoOnly';
 import {
   getActivities,
   getAthleteProfile,
@@ -86,6 +87,14 @@ function parseCachedSeries(value: unknown): PowerCurveSeries | null {
   return { id: candidate.id, label: candidate.label, samples };
 }
 
+function createDemoCredentials(): AuthCredentials {
+  return {
+    apiKey: 'DEMO_KEY',
+    athleteId: 'demo',
+    isDemo: true,
+  };
+}
+
 /**
  * Reads the cached curve. Returns null when the cache is empty, old or broken:
  * a cache that cannot be read never becomes a number on the chart.
@@ -112,20 +121,44 @@ function parseCachedPowerCurve(raw: string | null): PowerCurveData | null {
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [credentials, setCredentials] = useState<AuthCredentials | null>(null);
-  const [athlete, setAthlete] = useState<Athlete | null>(null);
-  const [wellness, setWellness] = useState<Wellness[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [powerCurve, setPowerCurve] = useState<PowerCurveData>(EMPTY_POWER_CURVE);
+  // DEMO_ONLY (the published demo site only): the demo athlete and its mock
+  // data are ready from the very first render, so the app never shows the
+  // login screen, not even for an instant.
+  const [credentials, setCredentials] = useState<AuthCredentials | null>(() =>
+    DEMO_ONLY ? createDemoCredentials() : null
+  );
+  const [athlete, setAthlete] = useState<Athlete | null>(() => (DEMO_ONLY ? MOCK_ATHLETE : null));
+  const [wellness, setWellness] = useState<Wellness[]>(() => (DEMO_ONLY ? MOCK_WELLNESS : []));
+  const [activities, setActivities] = useState<Activity[]>(() =>
+    DEMO_ONLY ? MOCK_ACTIVITIES : []
+  );
+  const [events, setEvents] = useState<CalendarEvent[]>(() =>
+    DEMO_ONLY ? MOCK_CALENDAR_EVENTS : []
+  );
+  const [powerCurve, setPowerCurve] = useState<PowerCurveData>(() =>
+    DEMO_ONLY ? SIMULATED_DEMO_POWER_CURVE : EMPTY_POWER_CURVE
+  );
   const [isPowerCurveLoading, setIsPowerCurveLoading] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(!DEMO_ONLY);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [useImperial, setUseImperial] = useState<boolean>(false);
 
   // Restore stored session from localStorage on startup
   useEffect(() => {
+    if (DEMO_ONLY) {
+      // A visitor who once pasted a real API key, or an account from a
+      // previous build, must not find it again: the demo always starts from
+      // the credentials created above, never from a stored session, and
+      // leaves nothing of a real account in the browser.
+      localStorage.removeItem(STORAGE_KEYS.AUTH);
+      localStorage.removeItem(STORAGE_KEYS.ATHLETE);
+      localStorage.removeItem(STORAGE_KEYS.WELLNESS);
+      localStorage.removeItem(STORAGE_KEYS.ACTIVITIES);
+      localStorage.removeItem(STORAGE_KEYS.EVENTS);
+      localStorage.removeItem(STORAGE_KEYS.POWER_CURVE);
+      return;
+    }
     try {
       const savedAuth = localStorage.getItem(STORAGE_KEYS.AUTH);
       const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -263,11 +296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginDemo = async () => {
     setIsLoading(true);
     setError(null);
-    const auth: AuthCredentials = {
-      apiKey: 'DEMO_KEY',
-      athleteId: 'demo',
-      isDemo: true,
-    };
+    const auth = createDemoCredentials();
     localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(auth));
     setCredentials(auth);
     setAthlete(MOCK_ATHLETE);
@@ -279,6 +308,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    // DEMO_ONLY: there is no account to disconnect, and no logout control is
+    // shown; this guard only protects against a stray call.
+    if (DEMO_ONLY) return;
     localStorage.removeItem(STORAGE_KEYS.AUTH);
     localStorage.removeItem(STORAGE_KEYS.ATHLETE);
     localStorage.removeItem(STORAGE_KEYS.WELLNESS);
