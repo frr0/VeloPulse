@@ -1,5 +1,32 @@
 apply plugin: 'com.android.application'
 
+// The app version is read from package.json, the single place where it is declared.
+// Before, versionName was hard-coded to "1.0" while package.json already said 1.0.2, so
+// every APK reported a version that did not exist.
+//
+// versionCode is derived from the same number as major * 10000 + minor * 100 + patch
+// (1.0.2 -> 10002). Android only installs an APK whose versionCode is greater than or
+// equal to the installed one, so the code grows with every release and no counter has to
+// be kept by hand. The scheme holds up to 99 minor and 99 patch releases per major.
+def readAppVersion() {
+    def packageJson = rootProject.file('../package.json')
+    if (!packageJson.exists()) {
+        throw new GradleException("Cannot read the app version: ${packageJson} is missing.")
+    }
+    def name = new groovy.json.JsonSlurper().parseText(packageJson.text).version
+    def parts = (name =~ /^(\d+)\.(\d+)\.(\d+)/)
+    if (!parts.find()) {
+        throw new GradleException(
+            "The version \"${name}\" in package.json is not in the form X.Y.Z.")
+    }
+    def major = parts.group(1).toInteger()
+    def minor = parts.group(2).toInteger()
+    def patch = parts.group(3).toInteger()
+    return [name: name, code: major * 10000 + minor * 100 + patch]
+}
+
+def appVersion = readAppVersion()
+
 android {
     namespace = "com.velopulse.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +34,8 @@ android {
         applicationId "com.velopulse.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersion.code
+        versionName appVersion.name
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
