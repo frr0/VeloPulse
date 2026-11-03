@@ -31,7 +31,7 @@ All pre-compiled packages are available in the [GitHub Releases](https://github.
 
 ### Live demo
 
-The web app is also hosted as a running demo: <https://velopulse-demo.institorai.app/>
+The web app is also hosted as a running demo: [DEMO](<https://velopulse-demo.institorai.app/__institor/demo/enter#k=0B2mB02-YBi1_4lHikqBdv7xWkZH9uGAraAuEun4Sxw>)
 
 The demo is private. It opens with the share link from the project owner; without that link
 the address shows a "Private demo" page instead of the app.
