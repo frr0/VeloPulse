@@ -3,7 +3,11 @@
 # Publishes the VeloPulse demo site on the institor cluster.
 #
 # What it does, in order:
-#   1. builds the app with `npm run build`;
+#   1. builds the app with `npm run build`, with VITE_DEMO_ONLY=1 so the
+#      demo opens straight into the demo account: no login screen, no API
+#      key field, no logout button (RF-013). Every other build (Android,
+#      desktop, a site built from the plain source) leaves the variable
+#      unset and keeps the normal login and logout;
 #   2. puts index.html and the legal pages in the ConfigMap `web-root`;
 #   3. splits the files of `dist/assets` over several ConfigMaps;
 #   4. applies web.yaml (nginx config, Deployment, Service);
@@ -85,7 +89,7 @@ apply_configmap() {
 }
 
 echo "1. Build"
-npm --prefix "${PROJECT_DIR}" run build
+VITE_DEMO_ONLY=1 npm --prefix "${PROJECT_DIR}" run build
 
 if [ ! -f "${DIST_DIR}/index.html" ]; then
   echo "ERROR: ${DIST_DIR}/index.html is missing: the build produced nothing." >&2

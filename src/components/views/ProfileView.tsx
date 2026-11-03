@@ -10,6 +10,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import React from 'react';
+import { DEMO_ONLY } from '../../config/demoOnly';
 import { useApp } from '../../context/AppContext';
 import { UserSettings } from '../../types';
 
@@ -229,15 +230,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       </div>
 
-      {/* Disconnect Account */}
+      {/* Disconnect Account: not in the published demo (DEMO_ONLY), which has
+          no login and no logout. */}
       <div className="text-center pt-2">
-        <button
-          onClick={logout}
-          className="inline-flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-2xl transition-all"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Disconnect Intervals.icu Account</span>
-        </button>
+        {!DEMO_ONLY && (
+          <button
+            onClick={logout}
+            className="inline-flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-2xl transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Disconnect Intervals.icu Account</span>
+          </button>
+        )}
         <span className="text-[11px] text-slate-500 block mt-2">
           VeloPulse • Unified Smart Cycling & Intervals Platform
         </span>

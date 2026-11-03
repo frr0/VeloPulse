@@ -155,6 +155,8 @@ function MainApp() {
     );
   }
 
+  // In the published demo (DEMO_ONLY) credentials are set from the first
+  // render by AppProvider, so this branch never runs there.
   if (!credentials) {
     return <LoginView />;
   }
