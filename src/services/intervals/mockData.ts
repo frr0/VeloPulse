@@ -188,8 +188,12 @@ export const MOCK_ACTIVITIES: Activity[] = [
     max_heartrate: 176,
     average_watts: 196,
     weighted_average_watts: 221,
-    icu_training_load: 198,
-    icu_intensity: 72,
+    // Both derived from the generated series, so the ride does not claim a
+    // load it did not produce: intensity is the normalized power over FTP
+    // (221 / 295 = 75%), and the load is the standard training stress of
+    // 6540 s at that intensity (102).
+    icu_training_load: 102,
+    icu_intensity: 75,
     icu_ftp: 295,
     icu_joules: 1281840,
     icu_average_cadence: 80,
