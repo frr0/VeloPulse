@@ -155,6 +155,45 @@ export function generateMockWellness(): Wellness[] {
 export const MOCK_WELLNESS: Wellness[] = generateMockWellness();
 
 export const MOCK_ACTIVITIES: Activity[] = [
+  // Sample outdoor ride of the demonstration account (RF-014). The track is a
+  // plausible loop in the hills north-west of Verona, built for the demo: it is
+  // nobody's recorded ride, and the app shows the Demo Mode label on every
+  // screen. It is stored the way Intervals.icu delivers a summary track, as an
+  // encoded polyline, so getActivityRoute decodes it like a real one. The loop
+  // is closed and measures 48.75 km, which is the distance declared below.
+  {
+    id: 'act_100',
+    name: 'Valpolicella Hills Endurance Loop',
+    type: 'Ride',
+    start_date_local: new Date(Date.now() - 3600 * 1000).toISOString(),
+    distance: 48750,
+    moving_time: 6540,
+    elapsed_time: 6980,
+    total_elevation_gain: 742,
+    average_speed: 7.45,
+    max_speed: 16.8,
+    average_heartrate: 138,
+    max_heartrate: 171,
+    average_watts: 196,
+    weighted_average_watts: 212,
+    icu_training_load: 198,
+    icu_intensity: 72,
+    icu_ftp: 295,
+    icu_joules: 1281840,
+    icu_average_cadence: 86,
+    icu_hr_zones: [114, 133, 152, 171, 190],
+    icu_hr_zone_times: [900, 2760, 1980, 780, 120],
+    feel: 4,
+    rpe: 5,
+    indoor: false,
+    description:
+      'Rolling endurance loop through the Valpolicella hills: two long climbs, a fast descent and a flat run home.',
+    start_latlng: [45.62058, 10.905],
+    map: {
+      summary_polyline:
+        'sgmuGg{paAmGoRoC{RU{RzAkR~DuQpGuPpIsOzJmNvKmMbLkL~KsKvK{JhKkJzJyIlJmIfJ{H`JiHbJwGdJ}FjJeFnJiEpJsDlJaDbJsCrIqC~HwCbHkDfGeEhFgFpEoGzDsHlDsIfDkJjDoJxDgJlEiIdFwG`GwE|GgCvHq@jIf@xIvB|I`ExIrFpIrG`IvGnHbGxGxEdGxCtFjAhFGbF{AbFgDfFeFpFoGzFeHhGcHpGkG|GaF`HkDbHmB`Ho@|GFxGr@tGnArG|AvGtA~G~@nHZ`IOzI}@xJiBtKkCrLcDjMkD~MaDjNgCpN}AjNg@~MRlMrAvLvC|KrE`KjGjJzHtI`J`I`KnHzK`HrLpGhMzF`N~ExNzDxOhCxPlAzQD`SoA~SmDxTqGlUqJpUmMhU}OtT}QpSgSbRwSlPoSpNkRrLoPxJ_NhI_K~GuGdGkDvFaAvF^bGnBvGnDtH~EpIxFpJ`GnKzFfLhFxLnEhMnDpMrCxMrB|M|AbNhAhNx@pNl@|Nb@jOXtOJ~OEbP]~Oy@rO}AzNeCxMmDjLwEvJ}F|H_HdGwHpEeIfDoIjCiI`CaIhCqHdD}GpEiGhGwFhIkFhKeFdMeFtNoFrO_GvOqGdOkHxMcIrKyI|HoJtE{JhBcKAgKiBcK_EyJcGoJqHaJiIwIkIkIyHeI}G_IwF_IsE}HsDaI_D}H{C{HgDsHgEcHuFoGoHuFsJsEyLoD{NgCuPeBaRaA_Sc@iSMeS?qRDoQFePAwNKgMW}Ke@wJq@yIy@cI_AqHaAgHcA_HeAwGkAoGwA_GmBqFmCyE{DcEsFiDyHsCeKaCyMyBgP{BsRiCsTeDaVoEyVaGyV{H}U}JiT{L{QyN{NkPgKsQ',
+    },
+  },
   {
     id: 'act_101',
     name: 'Morning VO2 Max 4x4m Intervals',
