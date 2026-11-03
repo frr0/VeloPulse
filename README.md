@@ -29,6 +29,13 @@ VeloPulse runs natively or as an app on all major operating systems:
 
 All pre-compiled packages are available in the [GitHub Releases](https://github.com/frr0/Cycling-App/releases) section.
 
+### Live demo
+
+The web app is also hosted as a running demo: <https://velopulse-demo.institorai.app/>
+
+The demo is private. It opens with the share link from the project owner; without that link
+the address shows a "Private demo" page instead of the app.
+
 ---
 
 ## Key Features
