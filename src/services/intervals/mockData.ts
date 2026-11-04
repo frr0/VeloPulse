@@ -154,7 +154,61 @@ export function generateMockWellness(): Wellness[] {
 
 export const MOCK_WELLNESS: Wellness[] = generateMockWellness();
 
+// Track of the sample outdoor ride of the demonstration account (RF-014). A
+// plausible loop in the hills north-west of Verona, built for the demo: it is
+// nobody's recorded ride, and the app shows the Demo Mode label on every
+// screen. It is the one source for both the map (`map.summary_polyline`
+// below, decoded by getActivityRoute like a real Intervals.icu track) and the
+// demo `latlng` stream of src/services/intervals/mockStreams.ts, so the map
+// and the charts over time can never show two different paths. The loop is
+// closed (its first and last point are the same) and measures 48,750.1 m.
+export const DEMO_OUTDOOR_POLYLINE =
+  'sgmuGg{paAmGoRoC{RU{RzAkR~DuQpGuPpIsOzJmNvKmMbLkL~KsKvK{JhKkJzJyIlJmIfJ{H`JiHbJwGdJ}FjJeFnJiEpJsDlJaDbJsCrIqC~HwCbHkDfGeEhFgFpEoGzDsHlDsIfDkJjDoJxDgJlEiIdFwG`GwE|GgCvHq@jIf@xIvB|I`ExIrFpIrG`IvGnHbGxGxEdGxCtFjAhFGbF{AbFgDfFeFpFoGzFeHhGcHpGkG|GaF`HkDbHmB`Ho@|GFxGr@tGnArG|AvGtA~G~@nHZ`IOzI}@xJiBtKkCrLcDjMkD~MaDjNgCpN}AjNg@~MRlMrAvLvC|KrE`KjGjJzHtI`J`I`KnHzK`HrLpGhMzF`N~ExNzDxOhCxPlAzQD`SoA~SmDxTqGlUqJpUmMhU}OtT}QpSgSbRwSlPoSpNkRrLoPxJ_NhI_K~GuGdGkDvFaAvF^bGnBvGnDtH~EpIxFpJ`GnKzFfLhFxLnEhMnDpMrCxMrB|M|AbNhAhNx@pNl@|Nb@jOXtOJ~OEbP]~Oy@rO}AzNeCxMmDjLwEvJ}F|H_HdGwHpEeIfDoIjCiI`CaIhCqHdD}GpEiGhGwFhIkFhKeFdMeFtNoFrO_GvOqGdOkHxMcIrKyI|HoJtE{JhBcKAgKiBcK_EyJcGoJqHaJiIwIkIkIyHeI}G_IwF_IsE}HsDaI_D}H{C{HgDsHgEcHuFoGoHuFsJsEyLoD{NgCuPeBaRaA_Sc@iSMeS?qRDoQFePAwNKgMW}Ke@wJq@yIy@cI_AqHaAgHcA_HeAwGkAoGwA_GmBqFmCyE{DcEsFiDyHsCeKaCyMyBgP{BsRiCsTeDaVoEyVaGyV{H}U}JiT{L{QyN{NkPgKsQ';
+
 export const MOCK_ACTIVITIES: Activity[] = [
+  // Sample outdoor ride of the demonstration account (RF-014). Distance,
+  // elevation gain, average/max power and heart rate, average cadence and
+  // the heart rate zone times below are measured from the demo streams of
+  // mockStreams.ts (getDemoActivityStreams), with the same functions the app
+  // runs on a real Intervals.icu answer (see /tmp measurement script in the
+  // task report): they are not written by hand, so they never drift from the
+  // charts the activity page draws from those very streams.
+  {
+    id: 'act_100',
+    name: 'Valpolicella Hills Endurance Loop',
+    type: 'Ride',
+    start_date_local: new Date(Date.now() - 3600 * 1000).toISOString(),
+    distance: 48750,
+    moving_time: 6540,
+    elapsed_time: 6980,
+    total_elevation_gain: 748,
+    average_speed: 7.45,
+    max_speed: 17.06,
+    average_heartrate: 150,
+    max_heartrate: 176,
+    average_watts: 196,
+    weighted_average_watts: 221,
+    // Both derived from the generated series, so the ride does not claim a
+    // load it did not produce: intensity is the normalized power over FTP
+    // (221 / 295 = 75%), and the load is the standard training stress of
+    // 6540 s at that intensity (102).
+    icu_training_load: 102,
+    icu_intensity: 75,
+    icu_ftp: 295,
+    icu_joules: 1281840,
+    icu_average_cadence: 80,
+    icu_hr_zones: [114, 133, 152, 171, 190],
+    icu_hr_zone_times: [30, 1590, 1995, 2420, 505],
+    feel: 4,
+    rpe: 5,
+    indoor: false,
+    description:
+      'Rolling endurance loop through the Valpolicella hills: two long climbs, a fast descent and a flat run home.',
+    start_latlng: [45.62058, 10.905],
+    map: {
+      summary_polyline: DEMO_OUTDOOR_POLYLINE,
+    },
+  },
   {
     id: 'act_101',
     name: 'Morning VO2 Max 4x4m Intervals',
