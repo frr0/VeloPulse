@@ -12,6 +12,10 @@
 
 Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316`, surface containers, pill navigation, and Material You accents).
 
+<p align="center">
+  <img src="docs/screenshots/dashboard-today.png" alt="VeloPulse Dashboard" width="100%" />
+</p>
+
 ---
 
 ## Cross-Platform Availability
@@ -29,6 +33,13 @@ VeloPulse runs natively or as an app on all major operating systems:
 
 All pre-compiled packages are available in the [GitHub Releases](https://github.com/frr0/Cycling-App/releases) section.
 
+<p align="center">
+  <img src="docs/screenshots/mobile-dashboard.jpg" width="24%" alt="Mobile Dashboard & Readiness" />
+  <img src="docs/screenshots/mobile-ride-studio.jpg" width="24%" alt="Mobile Ride Studio" />
+  <img src="docs/screenshots/mobile-activity-map.jpg" width="24%" alt="Mobile Activity & Route Map" />
+  <img src="docs/screenshots/mobile-training-plan.jpg" width="24%" alt="Mobile Training Plan" />
+</p>
+
 ### Live demo
 
 The web app is also hosted as a running demo: [DEMO](<https://velopulse-demo.institorai.app/__institor/demo/enter#k=0B2mB02-YBi1_4lHikqBdv7xWkZH9uGAraAuEun4Sxw>)
@@ -41,6 +52,11 @@ the address shows a "Private demo" page instead of the app.
 ## Key Features
 
 ### 1. Indoor Smart Trainer & Ride Studio
+
+<p align="center">
+  <img src="docs/screenshots/ride-studio.png" alt="Ride Studio - Smart Trainer HUD & ERG Workout Runner" width="100%" />
+</p>
+
 * **Bluetooth Sensor Connectivity**:
   * **Smart Trainer (FTMS & Cycling Power)**: Connects via Bluetooth FTMS (`0x1826`) or Cycling Power (`0x1818`). Live instantaneous power (W), 3-second smoothing, cadence (RPM), and hardware flywheel speed.
   * **Bluetooth Cadence Sensor**: Dedicated crank cadence sensor support (`0x1816`).
@@ -64,6 +80,11 @@ the address shows a "Private demo" page instead of the app.
 ---
 
 ### 2. Dedicated Activity Page & Interactive GPS Route Map
+
+<p align="center">
+  <img src="docs/screenshots/activity-map-telemetry.png" alt="Activity Detail - Interactive GPS Route Map & Telemetry" width="100%" />
+</p>
+
 * **Dedicated Full-Page View**:
   * Opening any activity from the Dashboard or Activities list navigates to a dedicated page (`ActivityDetailView`) instead of a modal popup.
   * Integrated breadcrumb navigation with a quick `← Back to Activities / Dashboard` button and `Escape` keyboard shortcut.
@@ -84,6 +105,11 @@ the address shows a "Private demo" page instead of the app.
 ---
 
 ### 3. Athletic Performance & Recovery Analytics (Intervals.icu)
+
+<p align="center">
+  <img src="docs/screenshots/fitness-form.png" alt="Fitness & Form Analytics - CTL vs ATL Modeling" width="100%" />
+</p>
+
 * **Direct Intervals.icu Sync or 1-Click Demo Mode**:
   * Authenticate using your Intervals.icu API Key, or explore immediately using the simulated pro athlete dataset.
 * **Customizable Heart Rate Zones**:
