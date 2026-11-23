@@ -562,49 +562,6 @@ h2 {
   font-size: 0.95rem;
 }
 
-/* ---------- Domande e risposte ---------- */
-
-.faq-list {
-  display: grid;
-  gap: 12px;
-}
-
-details {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 4px 22px;
-}
-
-summary {
-  cursor: pointer;
-  font-weight: 700;
-  padding: 16px 0;
-  list-style: none;
-}
-
-summary::-webkit-details-marker {
-  display: none;
-}
-
-summary::before {
-  content: "+";
-  display: inline-block;
-  width: 20px;
-  color: var(--primary);
-  font-weight: 800;
-}
-
-details[open] summary::before {
-  content: "\2212";
-}
-
-details p {
-  margin: 0 0 18px;
-  color: var(--text-muted);
-  padding-left: 20px;
-}
-
 /* ---------- Piede di pagina ---------- */
 
 .site-footer {
