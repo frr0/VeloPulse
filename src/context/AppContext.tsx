@@ -157,6 +157,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem(STORAGE_KEYS.ACTIVITIES);
       localStorage.removeItem(STORAGE_KEYS.EVENTS);
       localStorage.removeItem(STORAGE_KEYS.POWER_CURVE);
+
+      // The unit preference is not account data: it is the visitor's own
+      // choice in the Profile page, and it has to survive a reload here too.
+      const savedUnits = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (savedUnits) {
+        try {
+          setUseImperial(Boolean(JSON.parse(savedUnits).useImperial));
+        } catch {
+          localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+        }
+      }
       return;
     }
     try {

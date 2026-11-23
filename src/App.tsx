@@ -10,6 +10,7 @@ import { DashboardView } from './components/views/DashboardView';
 import { AnalyticsTab, FitnessView } from './components/views/FitnessView';
 import { ProfileView } from './components/views/ProfileView';
 import { RideStudioView } from './components/views/RideStudioView';
+import { DEMO_ONLY } from './config/demoOnly';
 import { AppProvider, useApp } from './context/AppContext';
 import { BluetoothManager } from './services/bluetooth/bluetoothManager';
 import {
@@ -156,9 +157,12 @@ function MainApp() {
   }
 
   // In the published demo (DEMO_ONLY) credentials are set from the first
-  // render by AppProvider, so this branch never runs there.
+  // render by AppProvider, so this branch never runs there. DEMO_ONLY is a
+  // build-time constant, so on the demo build the condition folds to null and
+  // the bundler drops LoginView, with the API key field and its texts, out of
+  // the bundle: the demo ships no login code at all.
   if (!credentials) {
-    return <LoginView />;
+    return DEMO_ONLY ? null : <LoginView />;
   }
 
   return (
