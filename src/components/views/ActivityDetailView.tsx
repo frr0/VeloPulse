@@ -34,6 +34,7 @@ import {
   getActivityStreams,
   latlngStreamToCoordinates,
 } from '../../services/intervals/api';
+import { getDemoActivityStreams } from '../../services/intervals/mockStreams';
 import { ActivityMap } from '../ActivityMap';
 import { ActivityStreamChart, StreamChartRow } from '../charts/ActivityStreamChart';
 import { ZoneHistogramChart } from '../charts/ZoneHistogramChart';
@@ -151,6 +152,26 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         .finally(() => {
           setIsLoadingDetails(false);
         });
+      return;
+    }
+
+    // Demo login: the app never calls Intervals.icu, but the one demo ride
+    // that carries streams (RF-014) runs through the very same
+    // readActivitySeries and latlngStreamToCoordinates as a real key, so its
+    // charts, histograms, W'bal and decoupling are never a special case.
+    // Every other demo activity has no streams, and streamsUnavailableReason
+    // below keeps explaining why.
+    if (credentials && credentials.isDemo && activity.id) {
+      const demoStreams = getDemoActivityStreams(activity.id);
+      if (demoStreams) {
+        setSeries(readActivitySeries(demoStreams));
+        setDetailedActivity((prev) => {
+          const track = latlngStreamToCoordinates(
+            demoStreams.find((stream) => stream.type === 'latlng')
+          );
+          return track.length > 1 ? { ...prev, icu_latlng: track } : prev;
+        });
+      }
     }
   }, [activity, credentials]);
 
@@ -241,15 +262,21 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
     cadenceRows.length > 0 ||
     speedRows.length > 0;
 
-  // Why there is no recorded data. The demo login and an activity without an
-  // Intervals.icu id are told apart from a call that really failed.
+  // Why there is no recorded data. null when there is series data to show:
+  // either a real answer from Intervals.icu, or the one demo ride that
+  // carries streams (RF-014). An activity without an Intervals.icu id and a
+  // call that really failed are told apart from the demo login.
   const streamsUnavailableReason =
-    streamsError ??
-    (!credentials || credentials.isDemo
-      ? 'L’accesso dimostrativo non è collegato a Intervals.icu, quindi non ci sono dati registrati da leggere.'
-      : !currentAct.id
-      ? 'Questa attività non ha un identificativo su Intervals.icu, quindi non posso chiedere i dati registrati.'
-      : 'Intervals.icu non ha dati registrati per questa attività.');
+    series !== null
+      ? null
+      : streamsError ??
+        (credentials && credentials.isDemo
+          ? 'L’accesso dimostrativo non è collegato a Intervals.icu: questa attività non ha dati registrati nella demo.'
+          : !credentials
+          ? 'L’accesso dimostrativo non è collegato a Intervals.icu, quindi non ci sono dati registrati da leggere.'
+          : !currentAct.id
+          ? 'Questa attività non ha un identificativo su Intervals.icu, quindi non posso chiedere i dati registrati.'
+          : 'Intervals.icu non ha dati registrati per questa attività.');
 
   // CP and W' estimated on the power curve the app already downloaded.
   const criticalPower = useMemo<CriticalPowerResult>(() => {
