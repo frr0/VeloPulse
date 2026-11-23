@@ -6,6 +6,20 @@
 # This file holds only the nginx configuration, the Deployment and the Service.
 # The built files live in separate ConfigMaps that `publish.sh` creates from
 # `dist/`, because their names carry a content hash that changes at every build.
+#
+# Three paths are served:
+#   /         the demo app, as before (RF-013);
+#   /app/     the same demo app, from the same ConfigMaps mounted a second
+#             time: index.html of the build links its assets with a relative
+#             path (./assets/...), so the directory needs its own copy of
+#             /assets;
+#   /landing/ the product landing page of docs/, from the ConfigMaps
+#             web-landing-*.
+#
+# When the owner agrees to move the landing page to the root, / and /landing/
+# swap: web-landing-root goes to /usr/share/nginx/html, its css, js and
+# screenshots follow, /app/ stays as it is and the /landing/ location goes
+# away. Nothing else changes.
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -50,6 +64,44 @@ data:
         add_header Cache-Control "public, max-age=31536000, immutable" always;
         add_header X-Content-Type-Options "nosniff" always;
         try_files $uri =404;
+      }
+
+      # Same build output under /app/: index.html of the build links its
+      # assets with a relative path, so /app/ needs its own /assets.
+      location /app/assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+      }
+
+      # The demo app a second time, on the address the landing page links to.
+      # The app has no client-side router, so the fallback on its own
+      # index.html is enough.
+      location /app/ {
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "frame-ancestors 'self' https://app.institorai.com" always;
+        try_files $uri $uri/ /app/index.html;
+      }
+
+      # Files of the landing page. Their names carry no content hash, so they
+      # are cached for an hour, not forever. A regular expression location is
+      # matched before the /landing/ prefix above it.
+      location ~ ^/landing/(css|js|screenshots)/ {
+        add_header Cache-Control "public, max-age=3600" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+      }
+
+      # Pages of the landing page. Every page is a real file, so a missing
+      # path is a 404 and never the index.html of the app.
+      location /landing/ {
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "frame-ancestors 'self' https://app.institorai.com" always;
+        try_files $uri $uri/index.html =404;
       }
 
       # The legal pages are real files in the root, so `try_files` serves them
@@ -126,6 +178,30 @@ spec:
             - name: site-assets
               mountPath: /usr/share/nginx/html/assets
               readOnly: true
+            # The same app under /app/, from the same ConfigMaps. A second
+            # mount of a ConfigMap costs no extra storage: the kubelet keeps
+            # one copy of the data per volume and the files are read-only.
+            - name: app-root
+              mountPath: /usr/share/nginx/html/app
+              readOnly: true
+            - name: app-assets
+              mountPath: /usr/share/nginx/html/app/assets
+              readOnly: true
+            # Landing page of docs/. When the owner agrees to move it to the
+            # root, these four mounts move from /landing to the root and to
+            # /css, /js, /screenshots.
+            - name: landing-root
+              mountPath: /usr/share/nginx/html/landing
+              readOnly: true
+            - name: landing-css
+              mountPath: /usr/share/nginx/html/landing/css
+              readOnly: true
+            - name: landing-js
+              mountPath: /usr/share/nginx/html/landing/js
+              readOnly: true
+            - name: landing-screenshots
+              mountPath: /usr/share/nginx/html/landing/screenshots
+              readOnly: true
       volumes:
         - name: nginx-conf
           configMap:
@@ -147,6 +223,42 @@ spec:
                   name: web-assets-3
               - configMap:
                   name: web-assets-4
+        # The same two volumes again, for /app/.
+        - name: app-root
+          configMap:
+            name: web-root
+        - name: app-assets
+          projected:
+            sources:
+              - configMap:
+                  name: web-assets-1
+              - configMap:
+                  name: web-assets-2
+              - configMap:
+                  name: web-assets-3
+              - configMap:
+                  name: web-assets-4
+        # Landing page of docs/. `publish.sh` creates these ConfigMaps from
+        # the files of docs/. The screenshots are split over three ConfigMaps
+        # for the same 1 MiB reason as the build output.
+        - name: landing-root
+          configMap:
+            name: web-landing-root
+        - name: landing-css
+          configMap:
+            name: web-landing-css
+        - name: landing-js
+          configMap:
+            name: web-landing-js
+        - name: landing-screenshots
+          projected:
+            sources:
+              - configMap:
+                  name: web-landing-shots-1
+              - configMap:
+                  name: web-landing-shots-2
+              - configMap:
+                  name: web-landing-shots-3
 ---
 apiVersion: v1
 kind: Service
