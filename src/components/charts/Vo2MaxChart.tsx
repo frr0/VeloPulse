@@ -16,14 +16,14 @@ import { isAndroid } from '../../utils/platform';
 
 interface Vo2MaxChartProps {
   data: Wellness[];
-  currentVo2Max?: number;
+  currentVo2Max?: number | null;
 }
 
 type RangeOption = '14' | '30' | '90' | '180';
 
 export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
   data,
-  currentVo2Max = 56.4,
+  currentVo2Max = null,
 }) => {
   const [range, setRange] = useState<RangeOption>('30');
 
@@ -31,28 +31,30 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
     if (!data || data.length === 0) return [];
 
     const sorted = [...data]
-      .filter((d) => d.vo2max !== undefined || d.ctl !== undefined)
+      .filter((d) => typeof d.vo2max === 'number' && Number.isFinite(d.vo2max) && d.vo2max > 0)
       .sort((a, b) => new Date(a.id).getTime() - new Date(b.id).getTime());
 
     const limit = parseInt(range, 10);
     const sliced = sorted.slice(-limit);
 
-    return sliced.map((d) => {
-      // If vo2max was explicitly logged, use it; otherwise correlate with CTL progression
-      const baseVo2 = d.vo2max ?? (d.ctl ? Math.round((48 + (d.ctl / 100) * 10) * 10) / 10 : 54.5);
-      return {
-        id: d.id,
-        vo2max: baseVo2,
-        ctl: d.ctl,
-      };
-    });
+    return sliced.map((d) => ({
+      id: d.id,
+      vo2max: d.vo2max as number,
+    }));
   }, [data, range]);
 
-  const latest = chartData[chartData.length - 1]?.vo2max ?? currentVo2Max;
-  const earliest = chartData[0]?.vo2max ?? latest;
-  const change = Math.round((latest - earliest) * 10) / 10;
+  const latest =
+    chartData.length > 0
+      ? chartData[chartData.length - 1].vo2max
+      : typeof currentVo2Max === 'number' && Number.isFinite(currentVo2Max) && currentVo2Max > 0
+      ? currentVo2Max
+      : null;
+  const earliest = chartData.length > 0 ? chartData[0].vo2max : null;
+  const change =
+    chartData.length >= 2 && latest !== null && earliest !== null
+      ? Math.round((latest - earliest) * 10) / 10
+      : null;
 
-  // Classification
   const getClassification = (score: number) => {
     if (score >= 56) return { tier: 'Superior', color: '#A855F7', desc: 'Top 5% of athletes' };
     if (score >= 50) return { tier: 'Excellent', color: '#00E5A3', desc: 'Top 15% aerobic capacity' };
@@ -60,7 +62,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
     return { tier: 'Fair', color: '#F59E0B', desc: 'Average aerobic baseline' };
   };
 
-  const classification = getClassification(latest);
+  const classification = latest !== null ? getClassification(latest) : null;
   const isAndroidApp = isAndroid();
 
   return (
@@ -72,16 +74,22 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
             <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Aerobic Capacity
             </span>
-            <span
-              className="px-2 py-0.5 rounded text-[10px] font-bold"
-              style={{
-                backgroundColor: `${classification.color}20`,
-                color: classification.color,
-                border: `1px solid ${classification.color}40`,
-              }}
-            >
-              {classification.tier} ({classification.desc})
-            </span>
+            {classification ? (
+              <span
+                className="px-2 py-0.5 rounded text-[10px] font-bold"
+                style={{
+                  backgroundColor: `${classification.color}20`,
+                  color: classification.color,
+                  border: `1px solid ${classification.color}40`,
+                }}
+              >
+                {classification.tier} ({classification.desc})
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10">
+                No data
+              </span>
+            )}
           </div>
           <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             VO2 Max Progression & Aerobic Fitness Trend
@@ -117,13 +125,20 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
                 Current VO2 Max
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-2xl font-black text-white">{latest.toFixed(1)}</span>
-                <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+                <span className="text-2xl font-black text-white">
+                  {latest !== null ? latest.toFixed(1) : '--'}
+                </span>
+                {latest !== null && (
+                  <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+                )}
               </div>
             </div>
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${classification.color}15`, color: classification.color }}
+              style={{
+                backgroundColor: `${classification?.color ?? '#64748B'}15`,
+                color: classification?.color ?? '#64748B',
+              }}
             >
               <Award className="w-5 h-5" />
             </div>
@@ -137,11 +152,24 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               <div className="flex items-baseline gap-1 mt-0.5">
                 <span
                   className="text-2xl font-black"
-                  style={{ color: change >= 0 ? '#00E5A3' : '#EF4444' }}
+                  style={{
+                    color:
+                      change === null
+                        ? '#94A3B8'
+                        : change >= 0
+                        ? '#00E5A3'
+                        : '#EF4444',
+                  }}
                 >
-                  {change >= 0 ? `+${change.toFixed(1)}` : change.toFixed(1)}
+                  {change === null
+                    ? '--'
+                    : change >= 0
+                    ? `+${change.toFixed(1)}`
+                    : change.toFixed(1)}
                 </span>
-                <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+                {change !== null && (
+                  <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+                )}
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-[#00E5A3]/15 text-[#00E5A3] flex items-center justify-center">
@@ -152,12 +180,19 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
           <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Aerobic Benchmark
+                Aerobic Tier
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-2xl font-black text-[#A855F7]">Top 5%</span>
-                <span className="text-xs text-slate-400 font-bold">Age Group</span>
+                <span
+                  className="text-2xl font-black"
+                  style={{ color: classification?.color ?? '#94A3B8' }}
+                >
+                  {classification ? classification.tier : '--'}
+                </span>
               </div>
+              <span className="text-[10px] text-slate-400 block">
+                {classification ? classification.desc : 'No VO2 Max recorded'}
+              </span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-[#A855F7]/15 text-[#A855F7] flex items-center justify-center">
               <Flame className="w-5 h-5" />
@@ -168,80 +203,90 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
 
       {/* Chart Canvas */}
       <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={chartData}
-            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="vo2Purple" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#A855F7" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#A855F7" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="vo2Purple" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#A855F7" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#A855F7" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
-            {/* Superior Tier Reference Area (56+) */}
-            <ReferenceArea
-              y1={56}
-              y2={65}
-              fill="rgba(168, 85, 247, 0.06)"
-              strokeOpacity={0}
-            />
+              {/* Superior Tier Reference Area (56+) */}
+              <ReferenceArea
+                y1={56}
+                y2={65}
+                fill="rgba(168, 85, 247, 0.06)"
+                strokeOpacity={0}
+              />
 
-            <XAxis
-              dataKey="id"
-              tickFormatter={(v) => formatDateShort(v)}
-              stroke="#64748B"
-              fontSize={10}
-              tickLine={false}
-              axisLine={{ stroke: '#383941' }}
-            />
-            <YAxis
-              domain={['dataMin - 2', 'dataMax + 2']}
-              stroke="#64748B"
-              tick={{ fill: '#94A3B8', fontSize: 10 }}
-              fontSize={10}
-              width={32}
-              tickLine={false}
-              axisLine={{ stroke: '#383941' }}
-            />
+              <XAxis
+                dataKey="id"
+                tickFormatter={(v) => formatDateShort(v)}
+                stroke="#64748B"
+                fontSize={10}
+                tickLine={false}
+                axisLine={{ stroke: '#383941' }}
+              />
+              <YAxis
+                domain={['dataMin - 2', 'dataMax + 2']}
+                stroke="#64748B"
+                tick={{ fill: '#94A3B8', fontSize: 10 }}
+                fontSize={10}
+                width={32}
+                tickLine={false}
+                axisLine={{ stroke: '#383941' }}
+              />
 
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const d = payload[0].payload as { id: string; vo2max: number };
-                  const tier = getClassification(d.vo2max);
-                  return (
-                    <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
-                      <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
-                        {d.id}
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const d = payload[0].payload as { id: string; vo2max: number };
+                    const tier = getClassification(d.vo2max);
+                    return (
+                      <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
+                        <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
+                          {d.id}
+                        </div>
+                        <div className="flex justify-between gap-4 text-[#A855F7]">
+                          <span>VO2 Max:</span>
+                          <strong className="text-white">{d.vo2max} ml/kg/min</strong>
+                        </div>
+                        <div className="mt-1 text-[10px]" style={{ color: tier.color }}>
+                          Classification: {tier.tier} ({tier.desc})
+                        </div>
                       </div>
-                      <div className="flex justify-between gap-4 text-[#A855F7]">
-                        <span>VO2 Max:</span>
-                        <strong className="text-white">{d.vo2max} ml/kg/min</strong>
-                      </div>
-                      <div className="mt-1 text-[10px]" style={{ color: tier.color }}>
-                        Classification: {tier.tier} ({tier.desc})
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
+                    );
+                  }
+                  return null;
+                }}
+              />
 
-            <Area
-              type="monotone"
-              dataKey="vo2max"
-              stroke="#A855F7"
-              strokeWidth={3}
-              fill="url(#vo2Purple)"
-              name="VO2 Max"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+              <Area
+                type="monotone"
+                dataKey="vo2max"
+                stroke="#A855F7"
+                strokeWidth={3}
+                fill="url(#vo2Purple)"
+                name="VO2 Max"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-center gap-1.5 bg-[#26272D] rounded-xl border border-[#383941] px-6">
+            <Award className="w-5 h-5 text-slate-500" />
+            <span className="text-sm font-bold text-white">No VO2 Max data available</span>
+            <span className="text-xs text-slate-400 max-w-md">
+              No recorded VO2 Max values were found in your synced wellness history.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Android Controls & Compact Stats Below Chart */}
@@ -250,7 +295,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
           {/* Controls: Range Selector */}
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Periodo:
+              Range:
             </span>
             <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
               {(['14', '30', '90', '180'] as RangeOption[]).map((r) => (
@@ -276,11 +321,16 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
                 Current
               </span>
               <div className="flex items-baseline justify-center gap-1 mt-0.5">
-                <span className="text-lg font-black text-white">{latest.toFixed(1)}</span>
-                <span className="text-[9px] text-slate-400">ml/kg</span>
+                <span className="text-lg font-black text-white">
+                  {latest !== null ? latest.toFixed(1) : '--'}
+                </span>
+                {latest !== null && <span className="text-[9px] text-slate-400">ml/kg</span>}
               </div>
-              <span className="text-[9px] font-bold block truncate" style={{ color: classification.color }}>
-                {classification.tier}
+              <span
+                className="text-[9px] font-bold block truncate"
+                style={{ color: classification?.color ?? '#94A3B8' }}
+              >
+                {classification ? classification.tier : '--'}
               </span>
             </div>
 
@@ -291,23 +341,41 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               <div className="flex items-baseline justify-center gap-1 mt-0.5">
                 <span
                   className="text-lg font-black"
-                  style={{ color: change >= 0 ? '#00E5A3' : '#EF4444' }}
+                  style={{
+                    color:
+                      change === null
+                        ? '#94A3B8'
+                        : change >= 0
+                        ? '#00E5A3'
+                        : '#EF4444',
+                  }}
                 >
-                  {change >= 0 ? `+${change.toFixed(1)}` : change.toFixed(1)}
+                  {change === null
+                    ? '--'
+                    : change >= 0
+                    ? `+${change.toFixed(1)}`
+                    : change.toFixed(1)}
                 </span>
-                <span className="text-[9px] text-slate-400">ml/kg</span>
+                {change !== null && <span className="text-[9px] text-slate-400">ml/kg</span>}
               </div>
               <span className="text-[9px] text-slate-400">{range}d Delta</span>
             </div>
 
             <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                Benchmark
+                Tier
               </span>
               <div className="flex items-baseline justify-center gap-1 mt-0.5">
-                <span className="text-lg font-black text-[#A855F7]">Top 5%</span>
+                <span
+                  className="text-sm font-black"
+                  style={{ color: classification?.color ?? '#94A3B8' }}
+                >
+                  {classification ? classification.tier : '--'}
+                </span>
               </div>
-              <span className="text-[9px] text-slate-400">Age Group</span>
+              <span className="text-[9px] text-slate-400 truncate block">
+                {classification ? classification.desc : 'No data'}
+              </span>
             </div>
           </div>
         </div>
@@ -320,7 +388,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
             </span>
           </div>
           <span className="text-slate-500 text-[11px]">
-            Calculated from maximal aerobic power (W) & body mass
+            Recorded VO2 Max values from your wellness log
           </span>
         </div>
       )}

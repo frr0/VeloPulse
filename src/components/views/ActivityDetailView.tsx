@@ -91,7 +91,7 @@ interface ActivityDetailViewProps {
 export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   activity,
   onBack,
-  returnTabName = 'Attività',
+  returnTabName = 'Activities',
   useImperial = false,
   settings,
 }) => {
@@ -110,10 +110,12 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const [isMapPinned, setIsMapPinned] = useState(true);
   const [isMapClosed, setIsMapClosed] = useState(false);
 
-  // Keyboard shortcut: Escape to go back
+  // Keyboard shortcut: Escape to go back (only when no enlarged chart modal is open)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onBack();
+      if (e.key === 'Escape' && !document.querySelector('[data-chart-modal="true"]')) {
+        onBack();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -425,7 +427,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
             className="group flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-slate-300 hover:text-white transition-all text-xs font-bold"
           >
             <ArrowLeft className="w-4 h-4 text-[#00E5A3] group-hover:-translate-x-0.5 transition-transform" />
-            <span>Torna a {returnTabName}</span>
+            <span>Back to {returnTabName}</span>
           </button>
 
           <div className="h-6 w-[1px] bg-white/10 hidden sm:block" />
@@ -465,509 +467,478 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         </div>
       </div>
 
-      {/* Interactive GPS Map: sticky during scroll, dismissible with X */}
-      {hasRoute && !isMapClosed && (
-        <section
-          className={`transition-all duration-200 ${
-            isMapPinned
-              ? 'sticky top-16 sm:top-20 z-20 shadow-2xl rounded-2xl overflow-hidden'
-              : ''
-          }`}
-        >
-          <ActivityMap
-            activity={currentAct}
-            coordinates={route}
-            useImperial={useImperial}
-            cartoApiKey={settings?.cartoApiKey}
-            hoveredCoordinate={hoveredCoordinate}
-            isPinned={isMapPinned}
-            onClose={() => setIsMapClosed(true)}
-          />
-        </section>
-      )}
+      {/* Main 2-Column Layout: Left = Map + Compact Metrics + HR/Power Zones, Right = Telemetry Charts */}
+      {(hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones || hasStreamCharts || (series && decoupling.status === 'ok')) && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT COLUMN: Map + Compact Key Metrics + HR & Power Zones underneath */}
+          {(hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones) && (
+            <div className="lg:col-span-5 space-y-4">
+              {/* Interactive GPS Map (normal card behavior, stays under top navbar, expandable) */}
+              {hasRoute && (
+                <section>
+                  <ActivityMap
+                    activity={currentAct}
+                    coordinates={route}
+                    useImperial={useImperial}
+                    cartoApiKey={settings?.cartoApiKey}
+                    hoveredCoordinate={hoveredCoordinate}
+                  />
+                </section>
+              )}
 
-      {/* Button to restore map when dismissed via X */}
-      {hasRoute && isMapClosed && (
-        <div className="flex items-center justify-between p-2.5 px-4 rounded-xl bg-[#1F2025] border border-[#383941] shadow-md">
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <MapPin className="w-4 h-4 text-[#00E5A3]" />
-            <span>Mappa GPS nascosta: puoi scorrere tutti i grafici a schermo intero.</span>
-          </div>
-          <button
-            onClick={() => setIsMapClosed(false)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-xs font-bold text-[#00E5A3] hover:text-white transition-colors"
-          >
-            <span>Riapri Mappa</span>
-          </button>
-        </div>
-      )}
+              {/* Compact Key Metrics Card directly below the map */}
+              {(hasHeroMetrics || hasPerformanceMetrics) && (
+                <section className="bg-[#1F2025] border border-[#383941] p-3 rounded-2xl shadow-lg">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {currentAct.distance ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                          Distance
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {formatDistance(currentAct.distance, useImperial)}
+                        </span>
+                      </div>
+                    ) : null}
 
-      {/* Activity Key Metrics Overview - Single unified card between map and charts with compact font */}
-      {(hasHeroMetrics || hasPerformanceMetrics) && (
-        <section className="bg-[#1F2025] border border-[#383941] p-3.5 sm:p-4 rounded-2xl shadow-lg space-y-3">
-          {/* Primary Stats Row */}
-          {hasHeroMetrics && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-              {currentAct.distance ? (
-                <div className="bg-[#26272D] p-2.5 sm:p-3 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Distanza
-                  </span>
-                  <span className="text-base sm:text-lg font-black text-white font-mono">
-                    {formatDistance(currentAct.distance, useImperial)}
-                  </span>
-                </div>
-              ) : null}
+                    {(currentAct.moving_time || currentAct.elapsed_time) ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                          Duration
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {formatDuration(currentAct.moving_time || currentAct.elapsed_time)}
+                        </span>
+                      </div>
+                    ) : null}
 
-              {(currentAct.moving_time || currentAct.elapsed_time) ? (
-                <div className="bg-[#26272D] p-2.5 sm:p-3 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Tempo
-                  </span>
-                  <span className="text-base sm:text-lg font-black text-white font-mono">
-                    {formatDuration(currentAct.moving_time || currentAct.elapsed_time)}
-                  </span>
-                </div>
-              ) : null}
+                    {currentAct.total_elevation_gain ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                          Elevation
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-[#6DD58C] font-mono">
+                          {formatElevation(currentAct.total_elevation_gain, useImperial)}
+                        </span>
+                      </div>
+                    ) : null}
 
-              {currentAct.total_elevation_gain ? (
-                <div className="bg-[#26272D] p-2.5 sm:p-3 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Dislivello
-                  </span>
-                  <span className="text-base sm:text-lg font-black text-[#6DD58C] font-mono">
-                    {formatElevation(currentAct.total_elevation_gain, useImperial)}
-                  </span>
-                </div>
-              ) : null}
+                    {currentAct.icu_training_load !== undefined && currentAct.icu_training_load !== null ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                          Load (TSS)
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-[#FC5200] font-mono">
+                          {Math.round(currentAct.icu_training_load)}
+                        </span>
+                      </div>
+                    ) : null}
 
-              {currentAct.icu_training_load !== undefined && currentAct.icu_training_load !== null ? (
-                <div className="bg-[#26272D] p-2.5 sm:p-3 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Carico (TSS)
-                  </span>
-                  <span className="text-base sm:text-lg font-black text-[#FC5200] font-mono">
-                    {Math.round(currentAct.icu_training_load)}
-                  </span>
-                </div>
-              ) : null}
+                    {currentAct.average_watts ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          Avg Power
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {formatWatts(currentAct.average_watts)}
+                        </span>
+                        {currentAct.weighted_average_watts ? (
+                          <span className="text-[9px] text-[#FC5200] font-semibold ml-1">
+                            NP {Math.round(currentAct.weighted_average_watts)}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {isRun && currentAct.average_speed ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          Avg Pace
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {formatPace(currentAct.average_speed, useImperial)}
+                        </span>
+                      </div>
+                    ) : currentAct.average_speed ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          Avg Speed
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {formatSpeed(currentAct.average_speed, useImperial)}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {currentAct.average_heartrate ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          Avg HR
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {formatHeartRate(currentAct.average_heartrate)}
+                        </span>
+                        {currentAct.max_heartrate ? (
+                          <span className="text-[9px] text-red-400 font-semibold ml-1">
+                            Max {Math.round(currentAct.max_heartrate)}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {currentAct.icu_average_cadence ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          Cadence
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {Math.round(currentAct.icu_average_cadence)} <span className="text-[9px] font-normal text-slate-400">rpm</span>
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {currentAct.icu_intensity ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          IF
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-[#FDD663] font-mono">
+                          {(currentAct.icu_intensity > 2 ? currentAct.icu_intensity / 100 : currentAct.icu_intensity).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {currentAct.icu_joules ? (
+                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                          Work
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                          {Math.round(currentAct.icu_joules / 1000)} <span className="text-[9px] font-normal text-slate-400">kJ</span>
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+              )}
+
+              {/* Heart Rate Zones (below map) */}
+              {hasHrZones && (
+                hrHistogram ? (
+                  <ZoneHistogramChart
+                    title="Heart Rate Zones"
+                    histogram={hrHistogram}
+                    icon={<Heart className="w-4 h-4 text-red-500" />}
+                    footnote="Computed from the recorded heart rate stream using your configured zones."
+                  />
+                ) : totalHrSecs > 0 ? (
+                  <div className="bg-[#1F2025] border border-[#383941] p-5 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-red-500" />
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                        Heart Rate Zones
+                      </h3>
+                    </div>
+
+                    <div className="flex h-3.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
+                      {hrZoneTimes.map((secs, idx) => {
+                        const pct = (secs / totalHrSecs) * 100;
+                        if (pct <= 0) return null;
+                        const color = userHrZones[idx]?.color || defaultZoneColors[idx % defaultZoneColors.length];
+                        return (
+                          <div
+                            key={idx}
+                            style={{ width: `${pct}%`, backgroundColor: color }}
+                            className="h-full transition-all"
+                            title={`${formatDuration(secs)} (${Math.round(pct)}%)`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      {hrZoneTimes.map((secs, idx) => {
+                        const pct = (secs / totalHrSecs) * 100;
+                        const userZ = userHrZones[idx];
+                        const label = userZ?.name || defaultZoneLabels[idx] || `Zona ${idx + 1}`;
+                        const color = userZ?.color || defaultZoneColors[idx % defaultZoneColors.length];
+                        const bpmRange = userZ
+                          ? `${userZ.minBpm}-${userZ.maxBpm} bpm`
+                          : currentAct.icu_hr_zones && currentAct.icu_hr_zones[idx]
+                          ? `< ${currentAct.icu_hr_zones[idx]} bpm`
+                          : '';
+
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
+                              <span className="text-slate-200 font-semibold">{label}</span>
+                              {bpmRange && <span className="text-[10px] text-slate-400 font-mono">({bpmRange})</span>}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-slate-400 font-mono">{formatDuration(secs)}</span>
+                              <span className="font-bold text-white w-9 text-right font-mono">{Math.round(pct)}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : currentAct.average_heartrate ? (
+                  <div className="bg-[#1F2025] border border-[#383941] p-5 rounded-3xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-red-500" />
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                        Frequenza Cardiaca
+                      </h3>
+                    </div>
+                    <div className="bg-[#26272D] p-4 rounded-2xl border border-white/5 text-xs text-slate-400 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        <span>Media Registrata: <strong className="text-white">{currentAct.average_heartrate} bpm</strong></span>
+                      </div>
+                      <span className="text-[11px] text-slate-400">Distribuzione non presente</span>
+                    </div>
+                  </div>
+                ) : null
+              )}
+
+              {/* Power Zones (below HR zones) */}
+              {hasPowerZones && (
+                powerHistogram ? (
+                  <ZoneHistogramChart
+                    title="Power Zones"
+                    histogram={powerHistogram}
+                    icon={<Zap className="w-4 h-4 text-[#FC5200]" />}
+                    footnote={`Computed from the recorded power stream using your ${settings?.ftp ?? '--'} W FTP.`}
+                  />
+                ) : totalPowerSecs > 0 ? (
+                  <div className="bg-[#1F2025] border border-[#383941] p-5 rounded-3xl space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-[#FC5200]" />
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                        Power Zones
+                      </h3>
+                    </div>
+
+                    <div className="flex h-3.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
+                      {powerZoneTimes.map((secs, idx) => {
+                        const pct = (secs / totalPowerSecs) * 100;
+                        if (pct <= 0) return null;
+                        const colors = ['#94A3B8', '#38BDF8', '#4ADE80', '#FACC15', '#FB923C', '#F87171', '#C084FC'];
+                        return (
+                          <div
+                            key={idx}
+                            style={{ width: `${pct}%`, backgroundColor: colors[idx % colors.length] }}
+                            className="h-full transition-all"
+                            title={`${formatDuration(secs)} (${Math.round(pct)}%)`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                      {powerZoneTimes.map((secs, idx) => {
+                        const pct = (secs / totalPowerSecs) * 100;
+                        const powerNames = [
+                          'Z1 Recupero Attivo',
+                          'Z2 Fondo / Resistenza',
+                          'Z3 Medio / Tempo',
+                          'Z4 Soglia Funzionale',
+                          'Z5 VO2 Max',
+                          'Z6 Capacità Anaerobica',
+                          'Z7 Neuromuscolare',
+                        ];
+                        const colors = ['#94A3B8', '#38BDF8', '#4ADE80', '#FACC15', '#FB923C', '#F87171', '#C084FC'];
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: colors[idx % colors.length] }} />
+                              <span className="text-slate-200 font-semibold">{powerNames[idx] || `Zona ${idx + 1}`}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-slate-400 font-mono">{formatDuration(secs)}</span>
+                              <span className="font-bold text-white w-9 text-right font-mono">{Math.round(pct)}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null
+              )}
             </div>
           )}
 
-          {/* Performance & Physiological Metrics Grid */}
-          {hasPerformanceMetrics && (
-            <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-2.5 ${hasHeroMetrics ? 'pt-2.5 border-t border-white/5' : ''}`}>
-              {/* Average Watts */}
-              {currentAct.average_watts ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Potenza Media</span>
-                  <span className="text-sm sm:text-base font-black text-white font-mono">{formatWatts(currentAct.average_watts)}</span>
-                  {currentAct.weighted_average_watts && (
-                    <span className="text-[10px] text-[#FC5200] font-semibold block truncate">
-                      NP {Math.round(currentAct.weighted_average_watts)}W
-                    </span>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Speed / Pace */}
-              {isRun && currentAct.average_speed ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Passo Medio</span>
-                  <span className="text-sm sm:text-base font-black text-white font-mono">
-                    {formatPace(currentAct.average_speed, useImperial)}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block truncate">
-                    {formatSpeed(currentAct.average_speed, useImperial)}
-                  </span>
-                </div>
-              ) : currentAct.average_speed ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Velocità Media</span>
-                  <span className="text-sm sm:text-base font-black text-white font-mono">
-                    {formatSpeed(currentAct.average_speed, useImperial)}
-                  </span>
-                  {currentAct.max_speed && (
-                    <span className="text-[10px] text-slate-400 block truncate">
-                      Max {formatSpeed(currentAct.max_speed, useImperial)}
-                    </span>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Heart Rate */}
-              {currentAct.average_heartrate ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Battito Medio</span>
-                  <span className="text-sm sm:text-base font-black text-white font-mono">
-                    {formatHeartRate(currentAct.average_heartrate)}
-                  </span>
-                  {currentAct.max_heartrate && (
-                    <span className="text-[10px] text-red-400 font-semibold block truncate">
-                      Max {formatHeartRate(currentAct.max_heartrate)}
-                    </span>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Cadence */}
-              {currentAct.icu_average_cadence ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Cadenza Media</span>
-                  <span className="text-sm sm:text-base font-black text-white font-mono">
-                    {Math.round(currentAct.icu_average_cadence)} <span className="text-[10px] font-normal text-slate-400">rpm</span>
-                  </span>
-                </div>
-              ) : null}
-
-              {/* Intensity Factor */}
-              {currentAct.icu_intensity ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Intensity (IF)</span>
-                  <span className="text-sm sm:text-base font-black text-[#FDD663] font-mono">
-                    {(currentAct.icu_intensity > 2 ? currentAct.icu_intensity / 100 : currentAct.icu_intensity).toFixed(2)}
-                  </span>
-                </div>
-              ) : null}
-
-              {/* Energy kJ */}
-              {currentAct.icu_joules ? (
-                <div className="bg-[#26272D]/80 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase block truncate">Lavoro Speso</span>
-                  <span className="text-sm sm:text-base font-black text-white font-mono">
-                    {Math.round(currentAct.icu_joules / 1000)} <span className="text-[10px] font-normal text-slate-400">kJ</span>
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Recorded grandeurs over time: one chart per grandeur present */}
-      {hasStreamCharts && (
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <ActivityIcon className="w-4 h-4 text-[#00E5A3]" />
-            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-              Andamento nel Tempo
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {altitudeRows.length > 0 && (
-              <ActivityStreamChart
-                title="Altitudine"
-                unit="m"
-                color="#6DD58C"
-                gradientId="streamAltitude"
-                rows={altitudeRows}
-                icon={<Mountain className="w-4 h-4 text-[#6DD58C]" />}
-                onHoverPoint={setHoveredCoordinate}
-              />
-            )}
-            {heartrateRows.length > 0 && (
-              <ActivityStreamChart
-                title="Frequenza Cardiaca"
-                unit="bpm"
-                color="#F28B82"
-                gradientId="streamHeartrate"
-                rows={heartrateRows}
-                icon={<Heart className="w-4 h-4 text-[#F28B82]" />}
-                onHoverPoint={setHoveredCoordinate}
-              />
-            )}
-            {wattsRows.length > 0 && (
-              <ActivityStreamChart
-                title="Potenza"
-                unit="W"
-                color="#FC5200"
-                gradientId="streamWatts"
-                rows={wattsRows}
-                icon={<Zap className="w-4 h-4 text-[#FC5200]" />}
-                footnote="Filtro anti-dropout (≤ 10s): pause brevi interpolate, soste prolungate azzerate"
-                onHoverPoint={setHoveredCoordinate}
-              />
-            )}
-            {cadenceRows.length > 0 && (
-              <ActivityStreamChart
-                title="Cadenza"
-                unit="rpm"
-                color="#A8C7FA"
-                gradientId="streamCadence"
-                rows={cadenceRows}
-                icon={<RotateCw className="w-4 h-4 text-[#A8C7FA]" />}
-                footnote="Filtro anti-dropout (≤ 10s): pause brevi interpolate, soste prolungate azzerate"
-                onHoverPoint={setHoveredCoordinate}
-              />
-            )}
-            {speedRows.length > 0 && (
-              <ActivityStreamChart
-                title="Velocità"
-                unit={useImperial ? 'mph' : 'km/h'}
-                color="#38BDF8"
-                gradientId="streamSpeed"
-                rows={speedRows}
-                decimals={1}
-                icon={<Gauge className="w-4 h-4 text-[#38BDF8]" />}
-                onHoverPoint={setHoveredCoordinate}
-              />
-            )}
-          </div>
-
-          {/* W'bal: only if data exists and criticalPower estimate is valid */}
-          {wbalRows.length > 0 && criticalPower.status === 'ok' && (
-            <ActivityStreamChart
-              title="Riserva W′bal"
-              unit="kJ"
-              color="#A855F7"
-              gradientId="streamWbal"
-              rows={wbalRows}
-              decimals={1}
-              icon={<BatteryLow className="w-4 h-4 text-[#A855F7]" />}
-              highlight={{ color: '#FC5200', label: 'Sotto un quarto della riserva' }}
-              reference={{
-                y: (criticalPower.estimate.wPrimeJoules * WBAL_LOW_FRACTION) / 1000,
-                label: 'Un quarto',
-                color: '#FC5200',
-              }}
-              footnote={`Calcolata con CP ${criticalPower.estimate.cpWatts} W e W′ ${(
-                criticalPower.estimate.wPrimeJoules / 1000
-              ).toFixed(1)} kJ, stimati dalla tua curva di potenza di Intervals.icu.`}
-              onHoverPoint={setHoveredCoordinate}
-            />
-          )}
-        </section>
-      )}
-
-      {/* Aerobic decoupling: only rendered if available and valid */}
-      {series && decoupling.status === 'ok' && (
-        <section className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-3">
-          <div className="flex items-center gap-2">
-            <TrendingDown className="w-4 h-4 text-[#FDD663]" />
-            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-              Disaccoppiamento Aerobico
-            </h3>
-          </div>
-
-          <div className="flex items-end gap-3 flex-wrap">
-            <span
-              className="text-3xl sm:text-4xl font-black"
-              style={{
-                color:
-                  decoupling.percent > DECOUPLING_THRESHOLD_PERCENT ? '#FC5200' : '#00E5A3',
-              }}
-            >
-              {decoupling.percent.toFixed(1)}%
-            </span>
-            <span className="text-[11px] text-slate-400 pb-1.5">
-              su {formatDuration(Math.round(decoupling.durationSecs))} con potenza e battito
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { label: 'Prima metà', half: decoupling.first },
-              { label: 'Seconda metà', half: decoupling.second },
-            ].map((entry) => (
-              <div
-                key={entry.label}
-                className="bg-[#26272D] p-3.5 rounded-2xl border border-white/5"
-              >
-                <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                  {entry.label}
-                </span>
-                <div className="flex items-center gap-4 text-xs">
-                  <span className="text-white font-black text-base">
-                    {Math.round(entry.half.watts)}{' '}
-                    <span className="text-[11px] font-semibold text-slate-400">W</span>
-                  </span>
-                  <span className="text-[#F28B82] font-black text-base">
-                    {Math.round(entry.half.bpm)}{' '}
-                    <span className="text-[11px] font-semibold text-slate-400">bpm</span>
-                  </span>
-                  <span className="text-[#FDD663] font-bold font-mono">
-                    {entry.half.ratio.toFixed(2)} W/bpm
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {decoupling.percent > DECOUPLING_THRESHOLD_PERCENT && (
-            <p className="text-xs text-[#FC5200] font-semibold bg-[#FC5200]/10 border border-[#FC5200]/20 rounded-2xl p-3">
-              Oltre il 5 per cento: la tua resistenza aerobica non regge ancora questa durata.
-              Nella seconda metà il battito è salito rispetto alla potenza.
-            </p>
-          )}
-
-          <p className="text-[11px] text-slate-400">
-            Rapporto fra potenza e battito nella prima e nella seconda metà
-            dell&apos;uscita, calcolato sui dati registrati. Riferimento: sotto il 5 per cento.
-          </p>
-        </section>
-      )}
-
-      {/* Heart Rate & Power Zones Section: only rendered if data exists */}
-      {(hasHrZones || hasPowerZones) && (
-        <div className={`grid gap-6 ${hasHrZones && hasPowerZones ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-          {/* Heart Rate Zones */}
-          {hasHrZones && (
-            hrHistogram ? (
-              <ZoneHistogramChart
-                title="Tempo nelle Zone di Battito"
-                histogram={hrHistogram}
-                icon={<Heart className="w-4 h-4 text-red-500" />}
-                footnote="Calcolato dall'app sulla serie del battito registrata, con le zone delle tue impostazioni."
-              />
-            ) : totalHrSecs > 0 ? (
-              <div className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-4">
-                <div className="flex items-center justify-between">
+          {/* RIGHT COLUMN: Telemetry Charts Over Time + Aerobic Decoupling */}
+          <div className={`${hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-5`}>
+            {hasStreamCharts && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-red-500" />
+                    <ActivityIcon className="w-4 h-4 text-[#00E5A3]" />
                     <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-                      Distribuzione Zone Frequenza Cardiaca
+                      Telemetry Over Time
                     </h3>
                   </div>
                 </div>
 
-                {/* Stacked bar */}
-                <div className="flex h-3.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
-                  {hrZoneTimes.map((secs, idx) => {
-                    const pct = (secs / totalHrSecs) * 100;
-                    if (pct <= 0) return null;
-                    const color = userHrZones[idx]?.color || defaultZoneColors[idx % defaultZoneColors.length];
-                    return (
-                      <div
-                        key={idx}
-                        style={{ width: `${pct}%`, backgroundColor: color }}
-                        className="h-full transition-all"
-                        title={`${formatDuration(secs)} (${Math.round(pct)}%)`}
-                      />
-                    );
-                  })}
+                <div className="grid grid-cols-1 gap-4">
+                  {altitudeRows.length > 0 && (
+                    <ActivityStreamChart
+                      title="Altitude"
+                      unit="m"
+                      color="#6DD58C"
+                      gradientId="streamAltitude"
+                      rows={altitudeRows}
+                      icon={<Mountain className="w-4 h-4 text-[#6DD58C]" />}
+                      onHoverPoint={setHoveredCoordinate}
+                    />
+                  )}
+                  {heartrateRows.length > 0 && (
+                    <ActivityStreamChart
+                      title="Heart Rate"
+                      unit="bpm"
+                      color="#F28B82"
+                      gradientId="streamHeartrate"
+                      rows={heartrateRows}
+                      icon={<Heart className="w-4 h-4 text-[#F28B82]" />}
+                      onHoverPoint={setHoveredCoordinate}
+                    />
+                  )}
+                  {wattsRows.length > 0 && (
+                    <ActivityStreamChart
+                      title="Power"
+                      unit="W"
+                      color="#FC5200"
+                      gradientId="streamWatts"
+                      rows={wattsRows}
+                      icon={<Zap className="w-4 h-4 text-[#FC5200]" />}
+                      footnote="Short dropout filter (≤ 10s): brief drops smoothed, extended stops remain at 0"
+                      onHoverPoint={setHoveredCoordinate}
+                    />
+                  )}
+                  {cadenceRows.length > 0 && (
+                    <ActivityStreamChart
+                      title="Cadence"
+                      unit="rpm"
+                      color="#A8C7FA"
+                      gradientId="streamCadence"
+                      rows={cadenceRows}
+                      icon={<RotateCw className="w-4 h-4 text-[#A8C7FA]" />}
+                      footnote="Short dropout filter (≤ 10s): brief drops smoothed, extended stops remain at 0"
+                      onHoverPoint={setHoveredCoordinate}
+                    />
+                  )}
+                  {speedRows.length > 0 && (
+                    <ActivityStreamChart
+                      title="Speed"
+                      unit={useImperial ? 'mph' : 'km/h'}
+                      color="#38BDF8"
+                      gradientId="streamSpeed"
+                      rows={speedRows}
+                      decimals={1}
+                      icon={<Gauge className="w-4 h-4 text-[#38BDF8]" />}
+                      onHoverPoint={setHoveredCoordinate}
+                    />
+                  )}
+                  {wbalRows.length > 0 && criticalPower.status === 'ok' && (
+                    <ActivityStreamChart
+                      title="W′bal Reserve"
+                      unit="kJ"
+                      color="#A855F7"
+                      gradientId="streamWbal"
+                      rows={wbalRows}
+                      decimals={1}
+                      icon={<BatteryLow className="w-4 h-4 text-[#A855F7]" />}
+                      highlight={{ color: '#FC5200', label: 'Below 25% reserve' }}
+                      reference={{
+                        y: (criticalPower.estimate.wPrimeJoules * WBAL_LOW_FRACTION) / 1000,
+                        label: '25%',
+                        color: '#FC5200',
+                      }}
+                      footnote={`Computed with CP ${criticalPower.estimate.cpWatts} W and W′ ${(
+                        criticalPower.estimate.wPrimeJoules / 1000
+                      ).toFixed(1)} kJ estimated from your Intervals.icu power curve.`}
+                      onHoverPoint={setHoveredCoordinate}
+                    />
+                  )}
                 </div>
+              </section>
+            )}
 
-                {/* Rows */}
-                <div className="space-y-2 text-xs">
-                  {hrZoneTimes.map((secs, idx) => {
-                    const pct = (secs / totalHrSecs) * 100;
-                    const userZ = userHrZones[idx];
-                    const label = userZ?.name || defaultZoneLabels[idx] || `Zona ${idx + 1}`;
-                    const color = userZ?.color || defaultZoneColors[idx % defaultZoneColors.length];
-                    const bpmRange = userZ
-                      ? `${userZ.minBpm}-${userZ.maxBpm} bpm`
-                      : currentAct.icu_hr_zones && currentAct.icu_hr_zones[idx]
-                      ? `< ${currentAct.icu_hr_zones[idx]} bpm`
-                      : '';
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
-                          <span className="text-slate-200 font-semibold">{label}</span>
-                          {bpmRange && <span className="text-[10px] text-slate-400 font-mono">({bpmRange})</span>}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-400 font-mono">{formatDuration(secs)}</span>
-                          <span className="font-bold text-white w-9 text-right font-mono">{Math.round(pct)}%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : currentAct.average_heartrate ? (
-              <div className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-4">
+            {/* Aerobic decoupling: only rendered if available and valid */}
+            {series && decoupling.status === 'ok' && (
+              <section className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-3">
                 <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-red-500" />
+                  <TrendingDown className="w-4 h-4 text-[#FDD663]" />
                   <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-                    Frequenza Cardiaca
+                    Aerobic Decoupling
                   </h3>
                 </div>
-                <div className="bg-[#26272D] p-4 rounded-2xl border border-white/5 text-xs text-slate-400 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-red-500" />
-                    <span>Media Registrata: <strong className="text-white">{currentAct.average_heartrate} bpm</strong></span>
-                  </div>
-                  <span className="text-[11px] text-slate-400">Distribuzione streaming non presente</span>
-                </div>
-              </div>
-            ) : null
-          )}
 
-          {/* Power Zones */}
-          {hasPowerZones && (
-            powerHistogram ? (
-              <ZoneHistogramChart
-                title="Tempo nelle Zone di Potenza"
-                histogram={powerHistogram}
-                icon={<Zap className="w-4 h-4 text-[#FC5200]" />}
-                footnote={`Calcolato dall'app sulla serie della potenza registrata, con le zone sul tuo FTP di ${settings?.ftp ?? '--'} W delle impostazioni.`}
-              />
-            ) : totalPowerSecs > 0 ? (
-              <div className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#FC5200]" />
-                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-                    Distribuzione Zone di Potenza
-                  </h3>
+                <div className="flex items-end gap-3 flex-wrap">
+                  <span
+                    className="text-3xl sm:text-4xl font-black"
+                    style={{
+                      color:
+                        decoupling.percent > DECOUPLING_THRESHOLD_PERCENT ? '#FC5200' : '#00E5A3',
+                    }}
+                  >
+                    {decoupling.percent.toFixed(1)}%
+                  </span>
+                  <span className="text-[11px] text-slate-400 pb-1.5">
+                    over {formatDuration(Math.round(decoupling.durationSecs))} with power &amp; heart rate
+                  </span>
                 </div>
 
-                {/* Stacked bar */}
-                <div className="flex h-3.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
-                  {powerZoneTimes.map((secs, idx) => {
-                    const pct = (secs / totalPowerSecs) * 100;
-                    if (pct <= 0) return null;
-                    const colors = ['#94A3B8', '#38BDF8', '#4ADE80', '#FACC15', '#FB923C', '#F87171', '#C084FC'];
-                    return (
-                      <div
-                        key={idx}
-                        style={{ width: `${pct}%`, backgroundColor: colors[idx % colors.length] }}
-                        className="h-full transition-all"
-                        title={`${formatDuration(secs)} (${Math.round(pct)}%)`}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Rows */}
-                <div className="space-y-1.5 text-xs">
-                  {powerZoneTimes.map((secs, idx) => {
-                    const pct = (secs / totalPowerSecs) * 100;
-                    const powerNames = [
-                      'Z1 Recupero Attivo',
-                      'Z2 Fondo / Resistenza',
-                      'Z3 Medio / Tempo',
-                      'Z4 Soglia Funzionale',
-                      'Z5 VO2 Max',
-                      'Z6 Capacità Anaerobica',
-                      'Z7 Neuromuscolare',
-                    ];
-                    const colors = ['#94A3B8', '#38BDF8', '#4ADE80', '#FACC15', '#FB923C', '#F87171', '#C084FC'];
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: colors[idx % colors.length] }} />
-                          <span className="text-slate-200 font-semibold">{powerNames[idx] || `Zona ${idx + 1}`}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-400 font-mono">{formatDuration(secs)}</span>
-                          <span className="font-bold text-white w-9 text-right font-mono">{Math.round(pct)}%</span>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { label: 'First half', half: decoupling.first },
+                    { label: 'Second half', half: decoupling.second },
+                  ].map((entry) => (
+                    <div
+                      key={entry.label}
+                      className="bg-[#26272D] p-3.5 rounded-2xl border border-white/5"
+                    >
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                        {entry.label}
+                      </span>
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="text-white font-black text-base">
+                          {Math.round(entry.half.watts)}{' '}
+                          <span className="text-[11px] font-semibold text-slate-400">W</span>
+                        </span>
+                        <span className="text-[#F28B82] font-black text-base">
+                          {Math.round(entry.half.bpm)}{' '}
+                          <span className="text-[11px] font-semibold text-slate-400">bpm</span>
+                        </span>
+                        <span className="text-[#FDD663] font-bold font-mono">
+                          {entry.half.ratio.toFixed(2)} W/bpm
+                        </span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ) : null
-          )}
+
+                {decoupling.percent > DECOUPLING_THRESHOLD_PERCENT && (
+                  <p className="text-xs text-[#FC5200] font-semibold bg-[#FC5200]/10 border border-[#FC5200]/20 rounded-2xl p-3">
+                    Above 5%: heart rate drifted upward relative to power in the second half.
+                  </p>
+                )}
+
+                <p className="text-[11px] text-slate-400">
+                  Power-to-heart-rate ratio comparison between the first and second half of the ride. Target: under 5%.
+                </p>
+              </section>
+            )}
+          </div>
         </div>
       )}
 
@@ -977,7 +948,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
           <div className="flex items-center gap-2">
             <Repeat className="w-4 h-4 text-[#00E5A3]" />
             <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-              Ripetute & Intervalli Strutturati ({currentAct.intervals.length})
+              Structured Intervals ({currentAct.intervals.length})
             </h3>
           </div>
 
@@ -992,7 +963,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                         : 'bg-[#00E5A3]/10 text-[#00E5A3] border border-[#00E5A3]/20'
                     }`}
                   >
-                    {int.type || `Intervallo ${idx + 1}`}
+                    {int.type || `Interval ${idx + 1}`}
                   </span>
                   <span className="text-white font-bold text-sm">
                     {formatDuration(int.moving_time || int.elapsed_time || 0)}
@@ -1003,13 +974,13 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                   {int.average_watts && (
                     <div>
                       <span className="font-black text-white text-sm">{Math.round(int.average_watts)}W</span>
-                      <span className="text-[10px] text-slate-400 block">Potenza Media</span>
+                      <span className="text-[10px] text-slate-400 block">Avg Power</span>
                     </div>
                   )}
                   {int.average_heartrate && (
                     <div>
                       <span className="font-black text-red-400 text-sm">{Math.round(int.average_heartrate)} bpm</span>
-                      <span className="text-[10px] text-slate-400 block">Cardio Medio</span>
+                      <span className="text-[10px] text-slate-400 block">Avg HR</span>
                     </div>
                   )}
                 </div>
@@ -1025,7 +996,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-slate-400" />
             <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-              Note Atleta & Percezione dello Sforzo
+              Athlete Notes &amp; Perceived Exertion
             </h3>
           </div>
 
@@ -1038,15 +1009,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
           <div className="flex items-center gap-6 pt-1 text-xs">
             {currentAct.rpe && (
               <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-0.5">Sforzo Percepito (RPE)</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-0.5">Perceived Exertion (RPE)</span>
                 <span className="text-white font-black text-base">{currentAct.rpe} / 10</span>
               </div>
             )}
             {currentAct.feel && (
               <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-0.5">Sensazione</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-0.5">Feel</span>
                 <span className="text-[#00E5A3] font-bold text-base">
-                  {currentAct.feel === 5 ? 'Ottima ⚡' : currentAct.feel === 4 ? 'Buona 👍' : 'Normale'}
+                  {currentAct.feel === 5 ? 'Great' : currentAct.feel === 4 ? 'Good' : 'Normal'}
                 </span>
               </div>
             )}

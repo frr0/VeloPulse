@@ -2,14 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>VeloPulse | Indoor training studio and Intervals.icu analytics</title>
-    <meta name="description" content="VeloPulse brings together an indoor cycling training studio and the performance analytics of Intervals.icu. For web, Android, Windows, macOS and Linux." />
+    <title>VeloPulse | Indoor training studio and cycling analytics</title>
+    <meta name="description" content="VeloPulse brings together an indoor cycling training studio and deep performance analytics. Connect Bluetooth trainers, Strava, Intervals.icu, and Garmin .fit files on web, Android, Windows, macOS and Linux." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#131316" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="VeloPulse | Indoor training studio and Intervals.icu analytics" />
-    <meta property="og:description" content="Your trainer and your Intervals.icu data in one app. Bluetooth sensors, automatic power control, fitness and recovery analytics." />
+    <meta property="og:title" content="VeloPulse | Indoor training studio and cycling analytics" />
+    <meta property="og:description" content="Your trainer, your rides, and your fitness in one app. Bluetooth sensors, automatic power control, ride telemetry, and recovery analytics." />
     <meta property="og:image" content="screenshots/ride-studio.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -37,7 +37,10 @@
           <a href="#features">Features</a>
           <a href="#fitness">Fitness</a>
           <a href="#get-started">How to get started</a>
-          <a href="#download" class="btn btn-primary">Download</a>
+          <div class="nav-auth">
+            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signin" class="btn btn-ghost">Log in</a>
+            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signup" class="btn btn-primary">Sign up</a>
+          </div>
         </nav>
       </div>
     </header>
@@ -47,17 +50,17 @@
         <div class="container hero-inner">
           <div>
             <p class="eyebrow">Indoor training studio + performance analytics</p>
-            <h1>Your trainer and your Intervals.icu data in one app</h1>
+            <h1>Your trainer, your rides, and your fitness in one app</h1>
             <p class="lead">
               VeloPulse brings together an indoor cycling training studio and
-              the performance analytics of Intervals.icu. Connect the Bluetooth
-              sensors on your trainer, ride a workout and watch your fitness
-              change over time.
+              deep performance analytics. Connect the Bluetooth sensors on your
+              trainer, sync rides from Strava, Intervals.icu, or Garmin .fit
+              files, and watch your fitness evolve over time.
             </p>
             <div class="hero-actions">
               <a href="#download" class="btn btn-primary btn-lg">Download VeloPulse</a>
               <a href="#features" class="btn btn-ghost btn-lg">See the features</a>
-              <a href="https://velopulse-demo.institorai.app/" class="btn btn-primary btn-lg">Try the demo in your browser</a>
+              <a href="https://velopulse.velopulse-app.workers.dev/demo" class="btn btn-primary btn-lg">Try the demo in your browser</a>
             </div>
           </div>
           <figure class="hero-visual">
@@ -197,8 +200,8 @@
                 </div>
               </div>
               <p style="color: var(--text-muted); font-size: 0.92rem; margin: 16px 0 0">
-                VeloPulse estimates CP and W' from the power curve that
-                Intervals.icu builds from your activities.
+                VeloPulse estimates CP and W' directly from your power duration
+                curve.
               </p>
             </div>
             <figure class="route-card">
@@ -245,16 +248,17 @@
             <article class="feature-card">
               <h3>Sleep, HRV, VO2max and resting heart rate</h3>
               <p>
-                VeloPulse tracks sleep stages, heart rate variability (HRV),
-                estimated VO2max and resting heart rate over time, with the
-                data that comes from Intervals.icu.
+                VeloPulse tracks sleep duration and quality, heart rate
+                variability (HRV), VO2max, and resting heart rate over time
+                using only recorded metrics.
               </p>
             </article>
             <article class="feature-card">
-              <h3>Data from Intervals.icu</h3>
+              <h3>Seamless data imports</h3>
               <p>
-                Your athlete data comes from your Intervals.icu account through
-                the API key, or from demo mode.
+                Connect Intervals.icu or Strava, import Garmin .fit files
+                directly from your bike computer, or explore right away in demo
+                mode.
               </p>
             </article>
           </div>
@@ -359,7 +363,7 @@
               <img
                 class="shot shot-mobile"
                 src="screenshots/mobile-training-plan.jpg"
-                alt="The training plan of VeloPulse on a phone, with the sessions scheduled from Intervals.icu: a Sweet Spot workout, a zone 2 ride and a recovery day."
+                alt="The training plan of VeloPulse on a phone, with upcoming sessions in the calendar: a Sweet Spot workout, a zone 2 ride and a recovery day."
                 width="1151"
                 height="2560"
                 loading="lazy"
@@ -379,7 +383,7 @@
             because this page also runs on GitHub Pages.
           -->
           <div class="hero-actions" style="justify-content: center; margin: 28px 0 32px">
-            <a class="btn btn-primary btn-lg" href="https://velopulse-demo.institorai.app/">Try the demo in your browser</a>
+            <a class="btn btn-primary btn-lg" href="https://velopulse.velopulse-app.workers.dev/demo">Try the demo in your browser</a>
           </div>
 
           <div class="download-box">
@@ -477,10 +481,10 @@
               </p>
             </li>
             <li>
-              <h3>Add your Intervals.icu key or try the demo</h3>
+              <h3>Connect your sources or try the demo</h3>
               <p>
-                Enter the API key of your Intervals.icu account to see your own
-                data, or use demo mode with sample data.
+                Sign in to connect Intervals.icu, Strava, or upload Garmin .fit
+                files—or jump straight into demo mode with sample rides.
               </p>
             </li>
           </ol>

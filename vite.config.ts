@@ -21,6 +21,8 @@ const vendorGroups: Array<{ chunk: string; packages: RegExp }> = [
   { chunk: 'fitsdk', packages: /^@garmin$/ },
   // Icon set: large, and only the used icons survive tree shaking.
   { chunk: 'icons', packages: /^lucide-react$/ },
+  // Supabase Auth & Postgres client.
+  { chunk: 'supabase', packages: /^@supabase$/ },
 ];
 
 // Returns the top-level package name of a module inside node_modules

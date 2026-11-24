@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Navigation, Compass, WifiOff, X } from 'lucide-react';
+import { Navigation, Compass, WifiOff, X, Maximize2 } from 'lucide-react';
 import { Activity } from '../types/intervals';
 import { formatDistance, formatElevation } from '../utils/formatters';
 
@@ -69,6 +69,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
 
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets');
   const [hasTileError, setHasTileError] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleRecenter = () => {
     if (!mapInstanceRef.current || !polylineLayerRef.current) return;
@@ -78,13 +79,34 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     });
   };
 
-  // Invalidate Leaflet canvas size when pinned/sticky mode toggles
+  // Close expanded map on Escape
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setIsExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExpanded]);
+
+  // Invalidate Leaflet canvas size when pinned/expanded mode toggles
   useEffect(() => {
     const timer = setTimeout(() => {
-      mapInstanceRef.current?.invalidateSize();
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+        if (polylineLayerRef.current) {
+          mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), {
+            padding: [45, 45],
+            animate: false,
+          });
+        }
+      }
     }, 150);
     return () => clearTimeout(timer);
-  }, [isPinned]);
+  }, [isPinned, isExpanded]);
 
   // Initialize Leaflet map and route overlay
   useEffect(() => {
@@ -271,103 +293,129 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
 
   return (
     <div
-      ref={wrapperRef}
-      className="relative bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl transition-all w-full rounded-3xl"
+      data-chart-modal={isExpanded ? 'true' : undefined}
+      className={
+        isExpanded
+          ? 'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6'
+          : 'relative isolate z-0 w-full'
+      }
+      onClick={isExpanded ? () => setIsExpanded(false) : undefined}
     >
-      {/* Top Map Header Bar / Badge */}
-      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2 max-w-[45%] sm:max-w-none">
-        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#1F2025]/95 backdrop-blur-md border border-[#383941] shadow-xl text-xs font-semibold text-white truncate">
-          <Navigation className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
-          <span className="hidden sm:inline">Traccia Percorso GPS</span>
-          <span className="text-slate-300 font-mono text-[11px] sm:border-l sm:border-white/10 sm:pl-2 truncate">
-            {formatDistance(activity.distance, useImperial)}
-            {activity.total_elevation_gain ? ` • +${formatElevation(activity.total_elevation_gain, useImperial)}` : ''}
-          </span>
-        </div>
-      </div>
-
-      {/* Floating Controls: Layer Selector + Recenter + Close */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1 sm:gap-1.5 justify-end">
-        {/* Map Layer Mode Selector (Mappa, Satellite, OSM) */}
-        <div className="flex items-center bg-[#1F2025] border border-[#383941] rounded-xl p-1 shadow-xl text-xs">
-          <button
-            type="button"
-            onClick={() => setMapStyle('streets')}
-            title="Mappa stradale reale con toponimi e rilievi"
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-              mapStyle === 'streets'
-                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            Mappa
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapStyle('satellite')}
-            title="Vista aerea satellitare ad alta definizione"
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-              mapStyle === 'satellite'
-                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            Satellite
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapStyle('osm')}
-            title="OpenStreetMap Standard"
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-              mapStyle === 'osm'
-                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            OSM
-          </button>
-        </div>
-
-        {/* Recenter Button */}
-        <button
-          type="button"
-          onClick={handleRecenter}
-          title="Centra percorso"
-          className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-slate-200 hover:text-white shadow-xl transition-colors cursor-pointer"
-        >
-          <Compass className="w-4 h-4" />
-        </button>
-
-        {/* Close Button to dismiss/hide map and scroll graphs alone */}
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            title="Chiudi mappa (scorri solo i grafici)"
-            className="p-2 rounded-xl bg-[#1F2025] hover:bg-rose-500/25 hover:text-rose-400 border border-[#383941] text-slate-200 shadow-xl transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Offline / missing tiles notice */}
-      {hasTileError && (
-        <div className="absolute bottom-4 left-4 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] shadow-lg text-[11px] font-semibold text-slate-300">
-          <WifiOff className="w-3.5 h-3.5 text-[#F28B82]" />
-          <span>Sfondo mappa non disponibile: il percorso resta visibile</span>
-        </div>
-      )}
-
-      {/* Map Leaflet Container */}
       <div
-        ref={mapContainerRef}
-        className={`w-full bg-[#1a1b20] transition-all [&_.leaflet-control-attribution]:bg-[#1F2025]/90 [&_.leaflet-control-attribution]:text-slate-400 [&_.leaflet-control-attribution]:backdrop-blur [&_.leaflet-control-attribution_a]:text-[#00E5A3] ${
-          isPinned
-            ? 'h-56 sm:h-64 md:h-72 max-h-[36vh]'
-            : 'h-80 sm:h-[400px] md:h-[460px]'
+        ref={wrapperRef}
+        onClick={isExpanded ? (e) => e.stopPropagation() : undefined}
+        className={`relative isolate bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl transition-all rounded-3xl ${
+          isExpanded ? 'w-full max-w-6xl' : 'w-full'
         }`}
-      />
+      >
+        {/* Top Map Header Bar / Badge */}
+        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2 max-w-[45%] sm:max-w-none">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#1F2025]/95 backdrop-blur-md border border-[#383941] shadow-xl text-xs font-semibold text-white truncate">
+            <Navigation className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
+            <span className="hidden sm:inline">GPS Route</span>
+            <span className="text-slate-300 font-mono text-[11px] sm:border-l sm:border-white/10 sm:pl-2 truncate">
+              {formatDistance(activity.distance, useImperial)}
+              {activity.total_elevation_gain ? ` • +${formatElevation(activity.total_elevation_gain, useImperial)}` : ''}
+            </span>
+          </div>
+        </div>
+
+        {/* Floating Controls: Layer Selector + Recenter + Expand/Close */}
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1 sm:gap-1.5 justify-end">
+          {/* Map Layer Mode Selector (Map, Satellite, OSM) */}
+          <div className="flex items-center bg-[#1F2025] border border-[#383941] rounded-xl p-1 shadow-xl text-xs">
+            <button
+              type="button"
+              onClick={() => setMapStyle('streets')}
+              title="Street map"
+              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                mapStyle === 'streets'
+                  ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Map
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle('satellite')}
+              title="Satellite imagery"
+              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                mapStyle === 'satellite'
+                  ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Satellite
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle('osm')}
+              title="OpenStreetMap"
+              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                mapStyle === 'osm'
+                  ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              OSM
+            </button>
+          </div>
+
+          {/* Recenter Button */}
+          <button
+            type="button"
+            onClick={handleRecenter}
+            title="Recenter route"
+            className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-slate-200 hover:text-white shadow-xl transition-colors cursor-pointer"
+          >
+            <Compass className="w-4 h-4" />
+          </button>
+
+          {/* Expand / Collapse Map Button */}
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            title={isExpanded ? 'Close expanded map' : 'Expand map'}
+            aria-label={isExpanded ? 'Close expanded map' : 'Expand map'}
+            className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-[#00E5A3] hover:text-white shadow-xl transition-colors cursor-pointer"
+          >
+            {isExpanded ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          {/* Optional Close Button (only when not expanded) */}
+          {onClose && !isExpanded && (
+            <button
+              type="button"
+              onClick={onClose}
+              title="Hide map"
+              className="p-2 rounded-xl bg-[#1F2025] hover:bg-rose-500/25 hover:text-rose-400 border border-[#383941] text-slate-200 shadow-xl transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Offline / missing tiles notice */}
+        {hasTileError && (
+          <div className="absolute bottom-4 left-4 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] shadow-lg text-[11px] font-semibold text-slate-300">
+            <WifiOff className="w-3.5 h-3.5 text-[#F28B82]" />
+            <span>Map tiles unavailable: route remains visible</span>
+          </div>
+        )}
+
+        {/* Map Leaflet Container */}
+        <div
+          ref={mapContainerRef}
+          className={`w-full bg-[#1a1b20] transition-all [&_.leaflet-control-attribution]:bg-[#1F2025]/90 [&_.leaflet-control-attribution]:text-slate-400 [&_.leaflet-control-attribution]:backdrop-blur [&_.leaflet-control-attribution_a]:text-[#00E5A3] ${
+            isExpanded
+              ? 'h-[80vh] min-h-[420px]'
+              : isPinned
+              ? 'h-56 sm:h-64 md:h-72 max-h-[36vh]'
+              : 'h-72 sm:h-80'
+          }`}
+        />
+      </div>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import React from 'react';
 import { DEMO_ONLY } from '../../config/demoOnly';
 import { useApp } from '../../context/AppContext';
 import { UserSettings } from '../../types';
+import { DataSourcesCard } from '../DataSourcesCard';
 
 interface ProfileViewProps {
   settings?: UserSettings;
@@ -26,6 +27,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenBluetooth,
 }) => {
   const {
+    isSupabaseMode,
+    authUser,
     athlete,
     credentials,
     useImperial,
@@ -37,10 +40,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const isDemo = credentials?.isDemo;
   const displayName = athlete?.name || athlete?.firstname || 'Athlete';
-  const effectiveFtp = athlete?.ftp || settings?.ftp || 250;
-  const effectiveMaxHr = athlete?.maxHR || settings?.maxHeartRate || 190;
-  const effectiveRestHr = athlete?.restingHR || settings?.restingHeartRate || 55;
-  const effectiveWeightKg = athlete?.weight || settings?.riderWeightKg || 75;
+  const effectiveFtp = athlete?.ftp || settings?.ftp || null;
+  const effectiveMaxHr = athlete?.maxHR || settings?.maxHeartRate || null;
+  const effectiveRestHr = athlete?.restingHR || settings?.restingHeartRate || null;
+  const effectiveWeightKg = athlete?.weight || settings?.riderWeightKg || null;
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto animate-fadeIn">
@@ -80,7 +83,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               FTP
             </div>
             <span className="text-lg font-black text-white">
-              {effectiveFtp} W
+              {effectiveFtp !== null ? `${effectiveFtp} W` : '--'}
             </span>
           </div>
 
@@ -90,7 +93,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               Rest HR
             </div>
             <span className="text-lg font-black text-white">
-              {effectiveRestHr} bpm
+              {effectiveRestHr !== null ? `${effectiveRestHr} bpm` : '--'}
             </span>
           </div>
 
@@ -100,7 +103,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               Max HR
             </div>
             <span className="text-lg font-black text-white">
-              {effectiveMaxHr} bpm
+              {effectiveMaxHr !== null ? `${effectiveMaxHr} bpm` : '--'}
             </span>
           </div>
 
@@ -110,7 +113,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               Weight
             </div>
             <span className="text-lg font-black text-white">
-              {useImperial
+              {effectiveWeightKg === null
+                ? '--'
+                : useImperial
                 ? `${(effectiveWeightKg * 2.20462).toFixed(1)} lbs`
                 : `${effectiveWeightKg.toFixed(1)} kg`}
             </span>
@@ -177,10 +182,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         )}
       </div>
 
+      {/* Data Sources (Intervals.icu, Strava, Garmin .FIT) in Supabase mode */}
+      <DataSourcesCard />
+
       {/* Preferences & Units */}
       <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 shadow-xl space-y-5">
         <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
-          Preferences & Intervals.icu Sync
+          {isSupabaseMode ? 'Preferences & Sync' : 'Preferences & Intervals.icu Sync'}
         </h3>
 
         <div className="flex items-center justify-between py-2 border-b border-white/5">
@@ -202,7 +210,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div>
             <span className="text-sm font-bold text-white block">Connection Type</span>
             <span className="text-xs text-slate-400">
-              {isDemo ? 'Running in Simulated Demo Mode' : 'Connected directly to Intervals.icu API'}
+              {isDemo
+                ? 'Running in Simulated Demo Mode'
+                : isSupabaseMode
+                ? `Supabase Account (${authUser?.email || 'authenticated'})`
+                : 'Connected directly to Intervals.icu API'}
             </span>
           </div>
           <span
@@ -210,7 +222,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               isDemo ? 'bg-amber-500/10 text-amber-400' : 'bg-[#00E5A3]/10 text-[#00E5A3]'
             }`}
           >
-            {isDemo ? 'Demo Mode' : 'Live Sync'}
+            {isDemo ? 'Demo Mode' : isSupabaseMode ? 'Supabase DB' : 'Live Sync'}
           </span>
         </div>
 
@@ -239,7 +251,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className="inline-flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-2xl transition-all"
           >
             <LogOut className="w-4 h-4" />
-            <span>Disconnect Intervals.icu Account</span>
+            <span>{isSupabaseMode ? 'Sign Out' : 'Disconnect Intervals.icu Account'}</span>
           </button>
         )}
         <span className="text-[11px] text-slate-500 block mt-2">

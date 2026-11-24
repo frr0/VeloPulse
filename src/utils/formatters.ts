@@ -151,33 +151,43 @@ export function getFormStatus(tsb: number): FormStatus {
   };
 }
 
-export function computeRecoveryScore(wellness?: Wellness): number {
-  if (!wellness) return 82;
-  if (wellness.readiness && wellness.readiness > 0) {
+export function computeRecoveryScore(wellness?: Wellness): number | null {
+  if (!wellness) return null;
+  if (typeof wellness.readiness === 'number' && wellness.readiness > 0) {
     return Math.min(100, Math.max(0, Math.round(wellness.readiness)));
+  }
+
+  const hasHrv = typeof wellness.hrv === 'number' && wellness.hrv > 0;
+  const hasSleepScore = typeof wellness.sleepScore === 'number' && wellness.sleepScore > 0;
+  const hasSleepSecs = typeof wellness.sleepSecs === 'number' && wellness.sleepSecs > 0;
+  const hasRhr = typeof wellness.restingHR === 'number' && wellness.restingHR > 0;
+
+  // Do not invent a recovery score when no biometric metrics exist
+  if (!hasHrv && !hasSleepScore && !hasSleepSecs && !hasRhr) {
+    return null;
   }
 
   let score = 70;
 
-  if (wellness.hrv && wellness.hrv > 0) {
-    if (wellness.hrv > 75) score += 14;
-    else if (wellness.hrv > 60) score += 8;
-    else if (wellness.hrv < 40) score -= 16;
-    else if (wellness.hrv < 50) score -= 8;
+  if (hasHrv) {
+    if (wellness.hrv! > 75) score += 14;
+    else if (wellness.hrv! > 60) score += 8;
+    else if (wellness.hrv! < 40) score -= 16;
+    else if (wellness.hrv! < 50) score -= 8;
   }
 
-  if (wellness.sleepScore && wellness.sleepScore > 0) {
-    score = score * 0.4 + wellness.sleepScore * 0.6;
-  } else if (wellness.sleepSecs && wellness.sleepSecs > 0) {
-    const hours = wellness.sleepSecs / 3600;
+  if (hasSleepScore) {
+    score = score * 0.4 + wellness.sleepScore! * 0.6;
+  } else if (hasSleepSecs) {
+    const hours = wellness.sleepSecs! / 3600;
     if (hours >= 7.5) score += 10;
     else if (hours < 6) score -= 14;
     else if (hours < 7) score -= 6;
   }
 
-  if (wellness.restingHR && wellness.restingHR > 0) {
-    if (wellness.restingHR < 50) score += 6;
-    else if (wellness.restingHR > 65) score -= 8;
+  if (hasRhr) {
+    if (wellness.restingHR! < 50) score += 6;
+    else if (wellness.restingHR! > 65) score -= 8;
   }
 
   return Math.min(99, Math.max(15, Math.round(score)));

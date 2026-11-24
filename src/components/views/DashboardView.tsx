@@ -30,6 +30,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateAnalytics,
 }) => {
   const {
+    isSupabaseMode,
+    providerConnections,
     athlete,
     latestWellness,
     activities,
@@ -37,10 +39,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     recoveryScore,
   } = useApp();
 
-  const ctl = latestWellness?.ctl ?? 78;
-  const atl = latestWellness?.atl ?? 82;
-  const tsb = latestWellness?.tsb ?? (ctl - atl);
-  const formStatus = getFormStatus(tsb);
+  const ctl = typeof latestWellness?.ctl === 'number' ? latestWellness.ctl : null;
+  const atl = typeof latestWellness?.atl === 'number' ? latestWellness.atl : null;
+  const tsb =
+    typeof latestWellness?.tsb === 'number'
+      ? latestWellness.tsb
+      : ctl !== null && atl !== null
+      ? ctl - atl
+      : null;
+  const formStatus = tsb !== null ? getFormStatus(tsb) : null;
+
+  const rhrValue = latestWellness?.restingHR ?? athlete?.restingHR ?? null;
+  const vo2Value = latestWellness?.vo2max ?? athlete?.vo2max ?? null;
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayEvent = events.find((e) =>
@@ -55,41 +65,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       label: 'Sleep',
       value: latestWellness?.sleepSecs
         ? formatDuration(latestWellness.sleepSecs)
-        : '7h 45m',
+        : '--',
       subValue: latestWellness?.sleepScore
         ? `${latestWellness.sleepScore}% Sleep Score`
-        : 'Good Quality',
+        : latestWellness?.sleepSecs
+        ? 'Recorded'
+        : 'No data',
       icon: <Moon className="w-4 h-4" />,
       accentColor: '#818CF8',
     },
     {
       id: 'hrv' as const,
       label: 'HRV (rMSSD)',
-      value: latestWellness?.hrv ? `${latestWellness.hrv}` : '64',
-      unit: 'ms',
-      subValue: 'Within baseline',
+      value: latestWellness?.hrv ? `${latestWellness.hrv}` : '--',
+      unit: latestWellness?.hrv ? 'ms' : undefined,
+      subValue: latestWellness?.hrv ? 'Recorded rMSSD' : 'No data',
       icon: <Heart className="w-4 h-4" />,
       accentColor: '#00E5A3',
     },
     {
       id: 'resting_hr' as const,
       label: 'Resting HR',
-      value: latestWellness?.restingHR || athlete?.restingHR || 46,
-      unit: 'bpm',
-      subValue: 'Low & recovered',
+      value: rhrValue !== null ? rhrValue : '--',
+      unit: rhrValue !== null ? 'bpm' : undefined,
+      subValue: rhrValue !== null ? 'Resting pulse' : 'No data',
       icon: <PulseIcon className="w-4 h-4" />,
       accentColor: '#00B4D8',
     },
     {
       id: 'vo2max' as const,
       label: 'VO2 Max',
-      value: latestWellness?.vo2max
-        ? `${latestWellness.vo2max}`
-        : athlete?.vo2max
-        ? `${athlete.vo2max}`
-        : '56.4',
-      unit: 'ml/kg',
-      subValue: 'Superior fitness',
+      value: vo2Value !== null ? `${vo2Value}` : '--',
+      unit: vo2Value !== null ? 'ml/kg' : undefined,
+      subValue: vo2Value !== null ? 'Recorded VO2 Max' : 'No data',
       icon: <TrendingUp className="w-4 h-4" />,
       accentColor: '#A855F7',
     },
@@ -128,7 +136,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Fitness
               </span>
               <span className="text-xl font-black text-[#38BDF8] block tracking-tight">
-                {Math.round(ctl)}
+                {ctl !== null ? Math.round(ctl) : '--'}
               </span>
               <span className="text-[9px] font-bold text-slate-400 block">CTL (42d)</span>
             </div>
@@ -138,29 +146,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Fatigue
               </span>
               <span className="text-xl font-black text-[#A855F7] block tracking-tight">
-                {Math.round(atl)}
+                {atl !== null ? Math.round(atl) : '--'}
               </span>
               <span className="text-[9px] font-bold text-slate-400 block">ATL (7d)</span>
             </div>
 
             <div
               className="bg-[#26272D] p-2 rounded-xl border text-center"
-              style={{ borderColor: `${formStatus.color}30` }}
+              style={{ borderColor: `${formStatus?.color ?? '#64748B'}30` }}
             >
               <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
                 Form
               </span>
               <span
                 className="text-xl font-black block tracking-tight"
-                style={{ color: formStatus.color }}
+                style={{ color: formStatus?.color ?? '#94A3B8' }}
               >
-                {tsb > 0 ? `+${Math.round(tsb)}` : Math.round(tsb)}
+                {tsb === null ? '--' : tsb > 0 ? `+${Math.round(tsb)}` : Math.round(tsb)}
               </span>
               <span
                 className="text-[9px] font-bold block capitalize"
-                style={{ color: formStatus.color }}
+                style={{ color: formStatus?.color ?? '#94A3B8' }}
               >
-                {formStatus.label}
+                {formStatus?.label ?? 'No data'}
               </span>
             </div>
           </div>
@@ -281,6 +289,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {isSupabaseMode && providerConnections.length === 0 && (
+        <div className="bg-[#1F2025] border border-[#00E5A3]/30 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00E5A3] block mb-1">
+              Welcome to VeloPulse
+            </span>
+            <p className="text-sm font-bold text-white">
+              Connect a data source to start syncing your activities
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Choose Intervals.icu, Strava, or import Garmin .FIT files directly into your Supabase database.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('profile')}
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-[#00E5A3] hover:bg-[#00c98f] text-[#131316] font-extrabold text-xs uppercase tracking-wider transition-colors"
+          >
+            Connect Data Sources
+          </button>
+        </div>
+      )}
+
       {/* Top Grid: Recovery Ring + Fitness Triplet */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Recovery Hero Card (5 cols on lg) */}
@@ -307,7 +338,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           />
 
           <p className="text-xs text-slate-400 text-center mt-4 max-w-xs leading-relaxed">
-            {recoveryScore >= 67
+            {recoveryScore === null
+              ? 'No biometric recovery data (HRV, sleep, resting HR, or readiness) available yet.'
+              : recoveryScore >= 67
               ? 'Your central nervous system is primed for high-strain training and intensity.'
               : recoveryScore >= 34
               ? 'Moderate readiness. Stick to aerobic baseline workouts or sweetspot.'
@@ -324,7 +357,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Fitness
               </span>
               <span className="text-3xl sm:text-4xl font-black text-[#38BDF8] block tracking-tight">
-                {Math.round(ctl)}
+                {ctl !== null ? Math.round(ctl) : '--'}
               </span>
               <span className="text-[11px] font-bold text-slate-400 mt-1 block">CTL (42d)</span>
             </div>
@@ -334,29 +367,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Fatigue
               </span>
               <span className="text-3xl sm:text-4xl font-black text-[#A855F7] block tracking-tight">
-                {Math.round(atl)}
+                {atl !== null ? Math.round(atl) : '--'}
               </span>
               <span className="text-[11px] font-bold text-slate-400 mt-1 block">ATL (7d)</span>
             </div>
 
             <div
               className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border text-center shadow-lg"
-              style={{ borderColor: `${formStatus.color}30` }}
+              style={{ borderColor: `${formStatus?.color ?? '#64748B'}30` }}
             >
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                 Form
               </span>
               <span
                 className="text-3xl sm:text-4xl font-black block tracking-tight"
-                style={{ color: formStatus.color }}
+                style={{ color: formStatus?.color ?? '#94A3B8' }}
               >
-                {tsb > 0 ? `+${Math.round(tsb)}` : Math.round(tsb)}
+                {tsb === null ? '--' : tsb > 0 ? `+${Math.round(tsb)}` : Math.round(tsb)}
               </span>
               <span
                 className="text-[11px] font-bold mt-1 block capitalize"
-                style={{ color: formStatus.color }}
+                style={{ color: formStatus?.color ?? '#94A3B8' }}
               >
-                {formStatus.label}
+                {formStatus?.label ?? 'No data'}
               </span>
             </div>
           </div>
@@ -425,12 +458,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             value={
               latestWellness?.sleepSecs
                 ? formatDuration(latestWellness.sleepSecs)
-                : '7h 45m'
+                : '--'
             }
             subValue={
               latestWellness?.sleepScore
                 ? `${latestWellness.sleepScore}% Sleep Score`
-                : 'Good Quality'
+                : latestWellness?.sleepSecs
+                ? 'Recorded'
+                : 'No data'
             }
             icon={<Moon className="w-4 h-4" />}
             accentColor="#818CF8"
@@ -439,9 +474,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <MetricCard
             label="HRV (rMSSD)"
-            value={latestWellness?.hrv ? `${latestWellness.hrv}` : '64'}
-            unit="ms"
-            subValue="Within baseline"
+            value={latestWellness?.hrv ? `${latestWellness.hrv}` : '--'}
+            unit={latestWellness?.hrv ? 'ms' : undefined}
+            subValue={latestWellness?.hrv ? 'Recorded rMSSD' : 'No data'}
             icon={<Heart className="w-4 h-4" />}
             accentColor="#00E5A3"
             onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('hrv') : onNavigateTab('fitness'))}
@@ -449,9 +484,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <MetricCard
             label="Resting HR"
-            value={latestWellness?.restingHR || athlete?.restingHR || 46}
-            unit="bpm"
-            subValue="Low & recovered"
+            value={rhrValue !== null ? rhrValue : '--'}
+            unit={rhrValue !== null ? 'bpm' : undefined}
+            subValue={rhrValue !== null ? 'Resting pulse' : 'No data'}
             icon={<PulseIcon className="w-4 h-4" />}
             accentColor="#00B4D8"
             onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('resting_hr') : onNavigateTab('fitness'))}
@@ -459,9 +494,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <MetricCard
             label="VO2 Max"
-            value={latestWellness?.vo2max ? `${latestWellness.vo2max}` : athlete?.vo2max ? `${athlete.vo2max}` : '56.4'}
-            unit="ml/kg"
-            subValue="Superior fitness"
+            value={vo2Value !== null ? `${vo2Value}` : '--'}
+            unit={vo2Value !== null ? 'ml/kg' : undefined}
+            subValue={vo2Value !== null ? 'Recorded VO2 Max' : 'No data'}
             icon={<TrendingUp className="w-4 h-4" />}
             accentColor="#A855F7"
             onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('vo2max') : onNavigateTab('fitness'))}

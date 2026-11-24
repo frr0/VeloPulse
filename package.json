@@ -69,6 +69,7 @@
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.6.0",
     "@garmin/fitsdk": "^21.218.0",
+    "@supabase/supabase-js": "^2.119.2",
     "@types/leaflet": "^1.9.22",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",

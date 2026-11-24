@@ -8,7 +8,7 @@
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![Garmin FIT SDK](https://img.shields.io/badge/Garmin_FIT_SDK-21.2-00508F)](https://developer.garmin.com/fit/overview/)
 
-**VeloPulse** is a modern, unified indoor cycling studio and athletic performance analytics platform. It combines real-time smart trainer control with direct **Intervals.icu** training analysis, biometrics tracking, and workout execution across all platforms.
+**VeloPulse** is a modern, unified indoor cycling studio and athletic performance analytics platform. It combines real-time smart trainer control, structured workout execution, and deep ride & recovery analytics—with support for **Strava**, **Intervals.icu**, and **Garmin `.fit`** files across all platforms.
 
 Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316`, surface containers, pill navigation, and Material You accents).
 
@@ -85,49 +85,47 @@ the address shows a "Private demo" page instead of the app.
   <img src="docs/screenshots/activity-map-telemetry.png" alt="Activity Detail - Interactive GPS Route Map & Telemetry" width="100%" />
 </p>
 
-* **Dedicated Full-Page View**:
-  * Opening any activity from the Dashboard or Activities list navigates to a dedicated page (`ActivityDetailView`) instead of a modal popup.
-  * Integrated breadcrumb navigation with a quick `← Back to Activities / Dashboard` button and `Escape` keyboard shortcut.
+* **Dedicated Two-Column Activity View**:
+  * Opening any activity from the Dashboard or Activities list navigates to a dedicated page (`ActivityDetailView`) with integrated breadcrumb navigation and `Escape` keyboard shortcut.
+  * **Left column**: interactive GPS route map (expandable to fullscreen), compact key metrics summary, and Heart Rate & Power zone distributions.
+  * **Right column**: synchronized telemetry charts over time (altitude, heart rate, power, cadence, speed, and W'bal reserve), each expandable to fullscreen, plus aerobic decoupling analysis.
 * **Interactive Leaflet Route Map**:
-  * Decodes Google/Strava summary polylines and Intervals.icu stream coordinates.
-  * **CartoDB Dark Matter** dark tiles matching the Material 3 Dark UI, with 1-click toggle to standard OpenStreetMap tiles.
-  * Custom **START** (green pill) and **FINISH** (coral checkered flag) markers.
-  * Recenter, zoom, and fullscreen controls.
+  * Decodes GPS tracks from `.fit` files, Strava polylines, and Intervals.icu streams.
+  * Street, Satellite, and OpenStreetMap layer switcher with recenter and fullscreen expand controls.
+  * Custom **START** and **FINISH** markers plus a live cursor synced with the telemetry charts.
   * Distance & elevation badge overlays.
-  * Smart detection for **Indoor Sessions** (displays trainer workout info when no GPS track is present).
 * **Comprehensive Metrics**:
-  * Distance, moving time, elapsed time, elevation gain, average/max watts, Normalized Power (NP), Intensity Factor (IF), work (kJ), speed, cadence, and heart rate.
-  * **Heart Rate Zones Distribution**: stacked bar and detailed time-in-zone breakdown.
-  * **Power Zones Distribution**: 7-zone Coggan power model.
-  * **Interval Repeats**: structured table showing work and recovery intervals with average wattage and heart rate.
-  * **Athlete Notes & Exertion**: RPE (1-10) and feeling indicators.
+  * Distance, duration, elevation gain, TSS, average/normalized power (NP), Intensity Factor (IF), work (kJ), speed, cadence, and heart rate.
+  * **Heart Rate Zones**: stacked distribution and detailed time-in-zone breakdown.
+  * **Power Zones**: 7-zone Coggan power model.
+  * **Structured Intervals**: work and recovery intervals table with average wattage and heart rate.
+  * **Athlete Notes & Exertion**: RPE (1-10) and feel indicators.
 
 ---
 
-### 3. Athletic Performance & Recovery Analytics (Intervals.icu)
+### 3. Athletic Performance & Recovery Analytics
 
 <p align="center">
   <img src="docs/screenshots/fitness-form.png" alt="Fitness & Form Analytics - CTL vs ATL Modeling" width="100%" />
 </p>
 
-* **Direct Intervals.icu Sync or 1-Click Demo Mode**:
-  * Authenticate using your Intervals.icu API Key, or explore immediately using the simulated pro athlete dataset.
-* **Customizable Heart Rate Zones**:
-  * Configure custom HR zones (min/max BPM, names, colors) in Settings.
-  * Automatically imports and syncs athlete sport settings from Intervals.icu.
-* **Daily Readiness & Recovery Ring (WHOOP Style)**:
-  * Daily recovery score computed from HRV ($rMSSD$), resting heart rate, sleep metrics, and Form ($TSB$).
+* **Multi-Source Sync & Demo Mode**:
+  * Connect **Intervals.icu**, link **Strava** via OAuth, or import **Garmin `.fit`** files directly—or explore immediately in demo mode.
+* **Customizable Heart Rate & Power Zones**:
+  * Configure custom HR zones (min/max BPM, names, colors) and FTP in Settings.
+* **Daily Readiness & Recovery Ring**:
+  * Daily recovery score computed from real recorded HRV ($rMSSD$), resting heart rate, sleep metrics, and readiness.
 * **Fitness & Form Modeling (CTL / ATL / TSB)**:
   * **Fitness (CTL)**: 42-day rolling chronic training load.
   * **Fatigue (ATL)**: 7-day rolling acute training load.
   * **Form (TSB)**: $CTL - ATL$ with highlighted optimal performance zones.
-* **Accurate Power Duration Curve**:
-  * Realistic critical power duration curve breakdown across Sprint (5s/15s), Anaerobic (30s/1m), VO2 Max (2m/5m), Threshold (10m/20m), and Endurance (1h).
+* **Power Duration Curve & Critical Power**:
+  * Mean maximal power curve across Sprint (5s/15s), Anaerobic (30s/1m), VO2 Max (2m/5m), Threshold (10m/20m), and Endurance (1h), with 2-parameter Critical Power (CP) and W' estimation.
 * **Biometrics & Wellness Trends**:
-  * Longitudinal tracking for VO2max, HRV ($rMSSD$), Resting Heart Rate, and Sleep Duration/Quality.
+  * Longitudinal tracking for VO2max, HRV ($rMSSD$), Resting Heart Rate, and Sleep Duration/Quality—displaying only recorded values with zero fabricated fallbacks.
 * **Calendar & Workout Planner**:
-  * View scheduled workouts from Intervals.icu with planned TSS and targets.
-  * **"Ride in Studio"** button: instantly converts any scheduled workout into ERG intervals and loads it directly into the Smart Trainer HUD!
+  * View scheduled workouts with planned TSS and targets.
+  * **"Ride in Studio"** button: instantly converts any scheduled workout into ERG intervals and loads it directly into the Smart Trainer HUD.
 
 ---
 
@@ -255,14 +253,14 @@ Cycling/
 │   │   ├── Navbar.tsx           # Google Material 3 pill navigation bar
 │   │   ├── MetricCard.tsx       # Studio HUD telemetry cards
 │   │   └── ...                  # Modals (Bluetooth, Settings, SessionSummary)
-│   ├── context/                 # AppContext (Intervals.icu synchronization, auth credentials)
+│   ├── context/                 # AppContext (authentication, multi-provider sync, app state)
 │   ├── services/
 │   │   ├── bluetooth/           # FTMS, Cycling Power, Cadence, HR BLE client & simulator
 │   │   ├── physics/             # Real-time cycling physics engine (aero drag, rolling resistance, slope)
 │   │   ├── workout/             # Zwift .zwo XML parser & real-time ERG workout runner
-│   │   ├── fit/                 # Garmin .FIT binary encoder (@garmin/fitsdk)
-│   │   └── intervals/           # Intervals.icu REST client & mock datasets
-│   └── utils/                   # HR & Coggan power zones, polyline decoder, formatters
+│   │   ├── fit/                 # Garmin .FIT binary encoder & parser (@garmin/fitsdk)
+│   │   └── intervals/           # Intervals.icu integration & demo datasets
+│   └── utils/                   # HR & Coggan power zones, critical power, polyline decoder, formatters
 ├── VeloPulse.apk                # Pre-compiled Android APK
 ├── VeloPulse-Linux.sh           # Universal launcher script for Linux systems
 ├── package.json                 # Project dependencies and build scripts

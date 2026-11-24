@@ -38,8 +38,13 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
   }, [data, range]);
 
   const latest = chartData[chartData.length - 1];
-  const latestTsb = latest?.tsb ?? (latest?.ctl && latest?.atl ? latest.ctl - latest.atl : 0);
-  const formStatus = getFormStatus(latestTsb);
+  const latestTsb =
+    typeof latest?.tsb === 'number'
+      ? latest.tsb
+      : typeof latest?.ctl === 'number' && typeof latest?.atl === 'number'
+      ? latest.ctl - latest.atl
+      : null;
+  const formStatus = latestTsb !== null ? getFormStatus(latestTsb) : null;
   const isAndroidApp = isAndroid();
 
   return (
@@ -51,12 +56,18 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
             <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
               Fitness & Form
             </span>
-            <span
-              className="px-2 py-0.5 rounded text-[10px] font-bold"
-              style={{ backgroundColor: formStatus.badgeBg, color: formStatus.color }}
-            >
-              {formStatus.label}
-            </span>
+            {formStatus ? (
+              <span
+                className="px-2 py-0.5 rounded text-[10px] font-bold"
+                style={{ backgroundColor: formStatus.badgeBg, color: formStatus.color }}
+              >
+                {formStatus.label}
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-slate-400">
+                No data
+              </span>
+            )}
           </div>
           <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
             Chronic Training Load (CTL) vs Acute Fatigue (ATL)
@@ -126,7 +137,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
           >
             <span className="w-2.5 h-2.5 rounded-full bg-[#00E5A3]" />
             <span className="font-semibold">Form (TSB)</span>
-            {latestTsb !== undefined && (
+            {latestTsb !== null && formStatus && (
               <span className="font-bold ml-1" style={{ color: formStatus.color }}>
                 {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
               </span>
@@ -259,7 +270,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Periodo:
+                Range:
               </span>
               <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
                 {(['14', '30', '90', '180', 'ALL'] as RangeOption[]).map((r) => (
@@ -319,7 +330,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
               >
                 <span className="w-2 h-2 rounded-full bg-[#00E5A3]" />
                 <span className="font-bold">TSB</span>
-                {latestTsb !== undefined && (
+                {latestTsb !== null && formStatus && (
                   <span className="ml-0.5" style={{ color: formStatus.color }}>
                     {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
                   </span>
@@ -335,7 +346,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
                 Fitness (CTL)
               </span>
               <span className="text-lg font-black text-[#38BDF8] block">
-                {latest?.ctl !== undefined ? Math.round(latest.ctl) : '--'}
+                {typeof latest?.ctl === 'number' ? Math.round(latest.ctl) : '--'}
               </span>
               <span className="text-[9px] text-slate-400">42d Rolling</span>
             </div>
@@ -345,23 +356,23 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
                 Fatigue (ATL)
               </span>
               <span className="text-lg font-black text-[#A855F7] block">
-                {latest?.atl !== undefined ? Math.round(latest.atl) : '--'}
+                {typeof latest?.atl === 'number' ? Math.round(latest.atl) : '--'}
               </span>
               <span className="text-[9px] text-slate-400">7d Acute</span>
             </div>
 
             <div
               className="bg-[#26272D] p-2 rounded-xl border text-center"
-              style={{ borderColor: `${formStatus.color}30` }}
+              style={{ borderColor: `${formStatus?.color ?? '#64748B'}30` }}
             >
               <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
                 Form (TSB)
               </span>
-              <span className="text-lg font-black block" style={{ color: formStatus.color }}>
-                {latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
+              <span className="text-lg font-black block" style={{ color: formStatus?.color ?? '#94A3B8' }}>
+                {latestTsb === null ? '--' : latestTsb > 0 ? `+${Math.round(latestTsb)}` : Math.round(latestTsb)}
               </span>
-              <span className="text-[9px] capitalize" style={{ color: formStatus.color }}>
-                {formStatus.label}
+              <span className="text-[9px] capitalize" style={{ color: formStatus?.color ?? '#94A3B8' }}>
+                {formStatus?.label ?? 'No data'}
               </span>
             </div>
           </div>
@@ -369,10 +380,16 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
       ) : (
         <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: formStatus.color }} />
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: formStatus?.color ?? '#64748B' }} />
             <span>
-              Current Zone: <strong className="text-white">{formStatus.label}</strong> (
-              {formStatus.description})
+              {formStatus ? (
+                <>
+                  Current Zone: <strong className="text-white">{formStatus.label}</strong> (
+                  {formStatus.description})
+                </>
+              ) : (
+                'No CTL/ATL/TSB data available'
+              )}
             </span>
           </div>
           <span className="text-slate-500 text-[11px]">Hover or tap on points for daily breakdown</span>

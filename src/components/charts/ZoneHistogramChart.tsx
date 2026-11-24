@@ -17,9 +17,7 @@ interface HistogramRow extends ZoneBucket {
 }
 
 /**
- * Histogram of the time spent in each zone, with the duration and the share of
- * every zone. The numbers arrive already computed by the app on the recorded
- * series, so a session without a ready made split still gets its bars.
+ * Zone distribution chart showing time and percentage spent in each zone.
  */
 export const ZoneHistogramChart: React.FC<ZoneHistogramChartProps> = ({
   title,
@@ -33,16 +31,16 @@ export const ZoneHistogramChart: React.FC<ZoneHistogramChartProps> = ({
   }));
 
   return (
-    <div className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-4">
+    <div className="bg-[#1F2025] border border-[#383941] p-4 sm:p-5 rounded-3xl space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           {icon}
-          <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+          <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300 truncate">
             {title}
           </h3>
         </div>
         <span className="text-[10px] font-bold text-slate-400 shrink-0">
-          Tempo registrato {formatDuration(Math.round(histogram.totalSeconds))}
+          Recorded {formatDuration(Math.round(histogram.totalSeconds))}
         </span>
       </div>
 

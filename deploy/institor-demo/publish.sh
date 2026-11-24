@@ -89,7 +89,8 @@ apply_configmap() {
 }
 
 echo "1. Build"
-VITE_DEMO_ONLY=1 npm --prefix "${PROJECT_DIR}" run build
+# Full web app build (uses .env.local for Supabase Auth + DB, and supports ?demo=1 for instant demo mode)
+npm --prefix "${PROJECT_DIR}" run build
 
 if [ ! -f "${DIST_DIR}/index.html" ]; then
   echo "ERROR: ${DIST_DIR}/index.html is missing: the build produced nothing." >&2
