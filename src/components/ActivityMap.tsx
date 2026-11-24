@@ -17,7 +17,7 @@ interface TileStyle {
 
 const TILE_STYLES: Record<MapStyle, TileStyle> = {
   streets: {
-    name: 'Mappa',
+    name: 'Map',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     maxZoom: 19,
     attribution: 'Tiles &copy; Esri',
@@ -36,40 +36,40 @@ const TILE_STYLES: Record<MapStyle, TileStyle> = {
   },
 };
 
-interface ActivityMapProps {
+interface MapCardProps {
   activity: Activity;
-  /**
-   * Real GPS track of the activity, at least two points.
-   */
   coordinates: [number, number][];
   useImperial?: boolean;
-  cartoApiKey?: string;
-  /** Current point hovered on one of the telemetry charts [lat, lng]. */
   hoveredCoordinate?: [number, number] | null;
-  /** Whether the map is in fixed/sticky position while scrolling charts */
-  isPinned?: boolean;
-  /** Close / dismiss the map to scroll charts alone */
+  mapStyle: MapStyle;
+  onChangeStyle: (style: MapStyle) => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onClose?: () => void;
 }
 
-export const ActivityMap: React.FC<ActivityMapProps> = ({
+/**
+ * Self-contained Leaflet map card. Rendering the inline map and the expanded
+ * modal as separate instances ensures expanding never mutates or corrupts the
+ * inline map's tile pane.
+ */
+const MapCard: React.FC<MapCardProps> = ({
   activity,
   coordinates,
   useImperial = false,
   hoveredCoordinate,
-  isPinned = false,
+  mapStyle,
+  onChangeStyle,
+  isExpanded,
+  onToggleExpand,
   onClose,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const polylineLayerRef = useRef<L.Polyline | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const hoverMarkerRef = useRef<L.Marker | null>(null);
-
-  const [mapStyle, setMapStyle] = useState<MapStyle>('streets');
   const [hasTileError, setHasTileError] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleRecenter = () => {
     if (!mapInstanceRef.current || !polylineLayerRef.current) return;
@@ -79,55 +79,23 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     });
   };
 
-  // Close expanded map on Escape
-  useEffect(() => {
-    if (!isExpanded) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        setIsExpanded(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isExpanded]);
-
-  // Invalidate Leaflet canvas size when pinned/expanded mode toggles
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-        if (polylineLayerRef.current) {
-          mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), {
-            padding: [45, 45],
-            animate: false,
-          });
-        }
-      }
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [isPinned, isExpanded]);
-
   // Initialize Leaflet map and route overlay
   useEffect(() => {
     if (!mapContainerRef.current || coordinates.length < 2) return;
 
     setHasTileError(false);
 
-    // If map already exists, remove it before reinitializing
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
     }
 
-    // Initialize Leaflet Map
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
       attributionControl: true,
     });
     mapInstanceRef.current = map;
 
-    // Initial base tile layer (streets by default)
     const style = TILE_STYLES[mapStyle] || TILE_STYLES.streets;
     const tileLayer = L.tileLayer(style.url, {
       maxZoom: style.maxZoom,
@@ -140,7 +108,6 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     tileLayer.addTo(map);
     tileLayerRef.current = tileLayer;
 
-    // High-contrast casing / border for the route line
     L.polyline(coordinates, {
       color: '#000000',
       weight: 6,
@@ -149,7 +116,6 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
       lineCap: 'round',
     }).addTo(map);
 
-    // Main neon route line
     const mainPolyline = L.polyline(coordinates, {
       color: '#00E5A3',
       weight: 4,
@@ -159,8 +125,6 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     }).addTo(map);
     polylineLayerRef.current = mainPolyline;
 
-    // Start Marker: simple clean green dot
-    const startPoint = coordinates[0];
     const startIcon = L.divIcon({
       className: 'custom-map-marker-start',
       html: `
@@ -176,10 +140,8 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
       iconSize: [14, 14],
       iconAnchor: [7, 7],
     });
-    L.marker(startPoint, { icon: startIcon }).addTo(map);
+    L.marker(coordinates[0], { icon: startIcon }).addTo(map);
 
-    // Finish Marker: simple clean red dot
-    const endPoint = coordinates[coordinates.length - 1];
     const finishIcon = L.divIcon({
       className: 'custom-map-marker-finish',
       html: `
@@ -195,20 +157,20 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
       iconSize: [14, 14],
       iconAnchor: [7, 7],
     });
-    L.marker(endPoint, { icon: finishIcon }).addTo(map);
+    L.marker(coordinates[coordinates.length - 1], { icon: finishIcon }).addTo(map);
 
-    // Zoom and pan to fit entire route
     map.fitBounds(mainPolyline.getBounds(), {
       padding: [45, 45],
+      animate: false,
     });
 
-    // Invalidate size after layout completes
     const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
+      map.invalidateSize({ animate: false });
+      map.fitBounds(mainPolyline.getBounds(), { padding: [45, 45], animate: false });
+    }, 120);
 
     const handleResize = () => {
-      map.invalidateSize();
+      map.invalidateSize({ animate: false });
     };
     window.addEventListener('resize', handleResize);
 
@@ -222,6 +184,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
         mapInstanceRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coordinates]);
 
   // Dynamically swap tile layers without destroying the map
@@ -288,134 +251,187 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
     }
   }, [hoveredCoordinate]);
 
-  // Defensive guard: the parent shows the empty state when there is no track.
+  return (
+    <div
+      className={`relative isolate bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl rounded-3xl ${
+        isExpanded ? 'w-full max-w-6xl' : 'w-full'
+      }`}
+    >
+      {/* Top Map Header Bar / Badge */}
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2 max-w-[45%] sm:max-w-none">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#1F2025]/95 backdrop-blur-md border border-[#383941] shadow-xl text-xs font-semibold text-white truncate">
+          <Navigation className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
+          <span className="hidden sm:inline">GPS Route</span>
+          <span className="text-slate-300 font-mono text-[11px] sm:border-l sm:border-white/10 sm:pl-2 truncate">
+            {formatDistance(activity.distance, useImperial)}
+            {activity.total_elevation_gain ? ` • +${formatElevation(activity.total_elevation_gain, useImperial)}` : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Floating Controls: Layer Selector + Recenter + Expand/Close */}
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1 sm:gap-1.5 justify-end">
+        <div className="flex items-center bg-[#1F2025] border border-[#383941] rounded-xl p-1 shadow-xl text-xs">
+          <button
+            type="button"
+            onClick={() => onChangeStyle('streets')}
+            title="Street map"
+            className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              mapStyle === 'streets'
+                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Map
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeStyle('satellite')}
+            title="Satellite imagery"
+            className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              mapStyle === 'satellite'
+                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Satellite
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeStyle('osm')}
+            title="OpenStreetMap"
+            className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              mapStyle === 'osm'
+                ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            OSM
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleRecenter}
+          title="Recenter route"
+          className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-slate-200 hover:text-white shadow-xl transition-colors cursor-pointer"
+        >
+          <Compass className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          title={isExpanded ? 'Close expanded map' : 'Expand map'}
+          aria-label={isExpanded ? 'Close expanded map' : 'Expand map'}
+          className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-[#00E5A3] hover:text-white shadow-xl transition-colors cursor-pointer"
+        >
+          {isExpanded ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+
+        {onClose && !isExpanded && (
+          <button
+            type="button"
+            onClick={onClose}
+            title="Hide map"
+            className="p-2 rounded-xl bg-[#1F2025] hover:bg-rose-500/25 hover:text-rose-400 border border-[#383941] text-slate-200 shadow-xl transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Offline / missing tiles notice */}
+      {hasTileError && (
+        <div className="absolute bottom-4 left-4 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] shadow-lg text-[11px] font-semibold text-slate-300">
+          <WifiOff className="w-3.5 h-3.5 text-[#F28B82]" />
+          <span>Map tiles unavailable: route remains visible</span>
+        </div>
+      )}
+
+      {/* Map Leaflet Container */}
+      <div
+        ref={mapContainerRef}
+        className={`w-full bg-[#1a1b20] [&_.leaflet-control-attribution]:bg-[#1F2025]/90 [&_.leaflet-control-attribution]:text-slate-400 [&_.leaflet-control-attribution]:backdrop-blur [&_.leaflet-control-attribution_a]:text-[#00E5A3] ${
+          isExpanded ? 'h-[80vh] min-h-[420px]' : 'h-72 sm:h-80'
+        }`}
+      />
+    </div>
+  );
+};
+
+interface ActivityMapProps {
+  activity: Activity;
+  /** Real GPS track of the activity, at least two points. */
+  coordinates: [number, number][];
+  useImperial?: boolean;
+  cartoApiKey?: string;
+  /** Current point hovered on one of the telemetry charts [lat, lng]. */
+  hoveredCoordinate?: [number, number] | null;
+  isPinned?: boolean;
+  onClose?: () => void;
+}
+
+export const ActivityMap: React.FC<ActivityMapProps> = ({
+  activity,
+  coordinates,
+  useImperial = false,
+  hoveredCoordinate,
+  onClose,
+}) => {
+  const [mapStyle, setMapStyle] = useState<MapStyle>('streets');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setIsExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExpanded]);
+
   if (coordinates.length < 2) return null;
 
   return (
-    <div
-      data-chart-modal={isExpanded ? 'true' : undefined}
-      className={
-        isExpanded
-          ? 'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6'
-          : 'relative isolate z-0 w-full'
-      }
-      onClick={isExpanded ? () => setIsExpanded(false) : undefined}
-    >
-      <div
-        ref={wrapperRef}
-        onClick={isExpanded ? (e) => e.stopPropagation() : undefined}
-        className={`relative isolate bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl transition-all rounded-3xl ${
-          isExpanded ? 'w-full max-w-6xl' : 'w-full'
-        }`}
-      >
-        {/* Top Map Header Bar / Badge */}
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-[500] flex items-center gap-2 max-w-[45%] sm:max-w-none">
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#1F2025]/95 backdrop-blur-md border border-[#383941] shadow-xl text-xs font-semibold text-white truncate">
-            <Navigation className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
-            <span className="hidden sm:inline">GPS Route</span>
-            <span className="text-slate-300 font-mono text-[11px] sm:border-l sm:border-white/10 sm:pl-2 truncate">
-              {formatDistance(activity.distance, useImperial)}
-              {activity.total_elevation_gain ? ` • +${formatElevation(activity.total_elevation_gain, useImperial)}` : ''}
-            </span>
-          </div>
-        </div>
-
-        {/* Floating Controls: Layer Selector + Recenter + Expand/Close */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[500] flex items-center gap-1 sm:gap-1.5 justify-end">
-          {/* Map Layer Mode Selector (Map, Satellite, OSM) */}
-          <div className="flex items-center bg-[#1F2025] border border-[#383941] rounded-xl p-1 shadow-xl text-xs">
-            <button
-              type="button"
-              onClick={() => setMapStyle('streets')}
-              title="Street map"
-              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                mapStyle === 'streets'
-                  ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Map
-            </button>
-            <button
-              type="button"
-              onClick={() => setMapStyle('satellite')}
-              title="Satellite imagery"
-              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                mapStyle === 'satellite'
-                  ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Satellite
-            </button>
-            <button
-              type="button"
-              onClick={() => setMapStyle('osm')}
-              title="OpenStreetMap"
-              className={`px-2 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                mapStyle === 'osm'
-                  ? 'bg-[#00E5A3] text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              OSM
-            </button>
-          </div>
-
-          {/* Recenter Button */}
-          <button
-            type="button"
-            onClick={handleRecenter}
-            title="Recenter route"
-            className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-slate-200 hover:text-white shadow-xl transition-colors cursor-pointer"
-          >
-            <Compass className="w-4 h-4" />
-          </button>
-
-          {/* Expand / Collapse Map Button */}
-          <button
-            type="button"
-            onClick={() => setIsExpanded((prev) => !prev)}
-            title={isExpanded ? 'Close expanded map' : 'Expand map'}
-            aria-label={isExpanded ? 'Close expanded map' : 'Expand map'}
-            className="p-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] text-[#00E5A3] hover:text-white shadow-xl transition-colors cursor-pointer"
-          >
-            {isExpanded ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-
-          {/* Optional Close Button (only when not expanded) */}
-          {onClose && !isExpanded && (
-            <button
-              type="button"
-              onClick={onClose}
-              title="Hide map"
-              className="p-2 rounded-xl bg-[#1F2025] hover:bg-rose-500/25 hover:text-rose-400 border border-[#383941] text-slate-200 shadow-xl transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Offline / missing tiles notice */}
-        {hasTileError && (
-          <div className="absolute bottom-4 left-4 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1F2025]/90 backdrop-blur-md border border-[#383941] shadow-lg text-[11px] font-semibold text-slate-300">
-            <WifiOff className="w-3.5 h-3.5 text-[#F28B82]" />
-            <span>Map tiles unavailable: route remains visible</span>
-          </div>
-        )}
-
-        {/* Map Leaflet Container */}
-        <div
-          ref={mapContainerRef}
-          className={`w-full bg-[#1a1b20] transition-all [&_.leaflet-control-attribution]:bg-[#1F2025]/90 [&_.leaflet-control-attribution]:text-slate-400 [&_.leaflet-control-attribution]:backdrop-blur [&_.leaflet-control-attribution_a]:text-[#00E5A3] ${
-            isExpanded
-              ? 'h-[80vh] min-h-[420px]'
-              : isPinned
-              ? 'h-56 sm:h-64 md:h-72 max-h-[36vh]'
-              : 'h-72 sm:h-80'
-          }`}
+    <>
+      <div className="relative isolate z-0 w-full">
+        <MapCard
+          activity={activity}
+          coordinates={coordinates}
+          useImperial={useImperial}
+          hoveredCoordinate={hoveredCoordinate}
+          mapStyle={mapStyle}
+          onChangeStyle={setMapStyle}
+          isExpanded={false}
+          onToggleExpand={() => setIsExpanded(true)}
+          onClose={onClose}
         />
       </div>
-    </div>
+
+      {isExpanded && (
+        <div
+          data-chart-modal="true"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setIsExpanded(false)}
+        >
+          <div className="w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
+            <MapCard
+              activity={activity}
+              coordinates={coordinates}
+              useImperial={useImperial}
+              hoveredCoordinate={hoveredCoordinate}
+              mapStyle={mapStyle}
+              onChangeStyle={setMapStyle}
+              isExpanded={true}
+              onToggleExpand={() => setIsExpanded(false)}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };

@@ -152,31 +152,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#00E5A3]' : ''}`} />
             </button>
 
-            {/* Athlete Avatar (clickable for Profile) */}
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-              <button
-                type="button"
-                onClick={() => onSelectTab('profile')}
-                title="Vai al profilo atleta"
-                className={`rounded-full transition-all cursor-pointer ${
-                  currentTab === 'profile'
-                    ? 'ring-2 ring-[#00E5A3] ring-offset-2 ring-offset-[#131316]'
-                    : 'hover:opacity-85'
-                }`}
-              >
-                {athlete?.profile_medium ? (
-                  <img
-                    src={athlete.profile_medium}
-                    alt={displayName}
-                    className="w-8 h-8 rounded-full border border-[#00E5A3] object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#2F3037] border border-[#383941] flex items-center justify-center text-[#00E5A3] font-bold text-xs">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </button>
-            </div>
+            {/* Athlete Avatar (clickable for Profile; hidden in Demo mode) */}
+            {!isDemo && (
+              <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+                <button
+                  type="button"
+                  onClick={() => onSelectTab('profile')}
+                  title="Athlete Profile"
+                  className={`rounded-full transition-all cursor-pointer ${
+                    currentTab === 'profile'
+                      ? 'ring-2 ring-[#00E5A3] ring-offset-2 ring-offset-[#131316]'
+                      : 'hover:opacity-85'
+                  }`}
+                >
+                  {athlete?.profile_medium ? (
+                    <img
+                      src={athlete.profile_medium}
+                      alt={displayName}
+                      className="w-8 h-8 rounded-full border border-[#00E5A3] object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-[#2F3037] border border-[#383941] flex items-center justify-center text-[#00E5A3] font-bold text-xs">
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
