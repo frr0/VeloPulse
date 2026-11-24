@@ -232,7 +232,7 @@ function MainApp() {
               <CalendarView onRideWorkout={handleRideCalendarWorkout} />
             )}
 
-            {currentTab === 'profile' && (
+            {currentTab === 'profile' && !credentials?.isDemo && (
               <ProfileView
                 settings={settings}
                 onOpenSettings={() => setIsSettingsModalOpen(true)}

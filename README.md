@@ -201,6 +201,22 @@ npm run dev
 ```
 Open [http://localhost:5173](http://localhost:5173) in Chrome, Edge, or Chromium.
 
+### Run with Docker (Recommended for Local Dev)
+Copy `.env.example` to `.env.local` (add your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`), then:
+```bash
+# Start local dev server with hot-reload (http://localhost:5173)
+make up        # or: docker compose up
+
+# Rebuild image and start dev server (e.g. after package.json changes)
+make build     # or: docker compose up --build
+
+# Build and preview production bundle via nginx (http://localhost:8080)
+make prod      # or: docker compose --profile prod up --build
+
+# Stop containers
+make down      # or: docker compose --profile prod down
+```
+
 ### Build Production Web Assets
 ```bash
 npm run build
@@ -263,6 +279,9 @@ Cycling/
 │   └── utils/                   # HR & Coggan power zones, critical power, polyline decoder, formatters
 ├── VeloPulse.apk                # Pre-compiled Android APK
 ├── VeloPulse-Linux.sh           # Universal launcher script for Linux systems
+├── Dockerfile                   # Multi-stage Docker image (dev Vite HMR + prod nginx)
+├── docker-compose.yml           # Local dev and production preview services
+├── Makefile                     # Shortcuts: make up, make build, make prod, make down
 ├── package.json                 # Project dependencies and build scripts
 ├── tailwind.config.js           # Material 3 Dark color theme definitions
 └── README.md                    # Project documentation
