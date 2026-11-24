@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface RecoveryRingProps {
-  score: number;
+  score: number | null;
   size?: number;
   strokeWidth?: number;
   restingHR?: number;
@@ -17,7 +17,8 @@ export const RecoveryRing: React.FC<RecoveryRingProps> = ({
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const clampedScore = Math.min(100, Math.max(0, score));
+  const hasScore = typeof score === 'number' && Number.isFinite(score);
+  const clampedScore = hasScore ? Math.min(100, Math.max(0, score)) : 0;
   const strokeDashoffset = circumference - (clampedScore / 100) * circumference;
 
   let colorStart = '#00E5A3';
@@ -25,7 +26,12 @@ export const RecoveryRing: React.FC<RecoveryRingProps> = ({
   let statusText = 'PRIME / RECOVERED';
   let badgeBg = 'rgba(0, 229, 163, 0.15)';
 
-  if (clampedScore < 34) {
+  if (!hasScore) {
+    colorStart = '#64748B';
+    colorEnd = '#475569';
+    statusText = 'NO DATA';
+    badgeBg = 'rgba(100, 116, 139, 0.15)';
+  } else if (clampedScore < 34) {
     colorStart = '#EF4444';
     colorEnd = '#F97316';
     statusText = 'RECOVERY NEEDED';
@@ -80,7 +86,7 @@ export const RecoveryRing: React.FC<RecoveryRingProps> = ({
           className={`font-black tracking-tight ${size < 170 ? 'text-3xl' : 'text-4xl sm:text-5xl'}`}
           style={{ color: colorStart }}
         >
-          {clampedScore}%
+          {hasScore ? `${clampedScore}%` : '--'}
         </span>
         <span
           className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider mt-0.5"

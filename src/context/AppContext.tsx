@@ -15,6 +15,17 @@ import {
   MOCK_WELLNESS,
   SIMULATED_DEMO_POWER_CURVE,
 } from '../services/intervals/mockData';
+import { isSupabaseConfigured, supabase } from '../services/supabase/client';
+import {
+  connectAndSyncIntervals,
+  disconnectProviderConnection,
+  importFitFileToDatabase,
+  loadUserBundle,
+  saveUserUnits,
+  syncStravaViaBackend,
+  UserDatabaseBundle,
+} from '../services/supabase/database';
+import { DataProvider, ProviderConnection } from '../services/supabase/types';
 import {
   Activity,
   Athlete,
@@ -28,7 +39,15 @@ import {
 } from '../types/intervals';
 import { computeRecoveryScore } from '../utils/formatters';
 
+export interface AuthUserSummary {
+  id: string;
+  email?: string;
+}
+
 interface AppContextType {
+  isSupabaseMode: boolean;
+  authUser: AuthUserSummary | null;
+  providerConnections: ProviderConnection[];
   credentials: AuthCredentials | null;
   athlete: Athlete | null;
   wellness: Wellness[];
@@ -37,7 +56,7 @@ interface AppContextType {
   powerCurve: PowerCurveData;
   isPowerCurveLoading: boolean;
   latestWellness: Wellness | null;
-  recoveryScore: number;
+  recoveryScore: number | null;
   weeklyLoad: number;
   weeklyDurationSecs: number;
   weeklyDistanceMeters: number;
@@ -45,8 +64,24 @@ interface AppContextType {
   isRefreshing: boolean;
   error: string | null;
   useImperial: boolean;
+  // Legacy / non-Supabase auth
   login: (apiKey: string, athleteId?: string) => Promise<void>;
   loginDemo: () => Promise<void>;
+  // Supabase Auth
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    fullName?: string
+  ) => Promise<{ needsEmailConfirmation: boolean }>;
+  signInWithGoogle: () => Promise<void>;
+  // Data Providers (Supabase DB)
+  connectIntervals: (apiKey: string, athleteId?: string) => Promise<void>;
+  disconnectProvider: (provider: DataProvider) => Promise<void>;
+  connectStrava: () => Promise<void>;
+  syncStrava: () => Promise<number>;
+  importGarminFit: (file: File) => Promise<Activity>;
+  // Common actions
   logout: () => void;
   refreshData: () => Promise<void>;
   toggleUnits: () => void;
@@ -95,10 +130,6 @@ function createDemoCredentials(): AuthCredentials {
   };
 }
 
-/**
- * Reads the cached curve. Returns null when the cache is empty, old or broken:
- * a cache that cannot be read never becomes a number on the chart.
- */
 function parseCachedPowerCurve(raw: string | null): PowerCurveData | null {
   if (!raw) return null;
   try {
@@ -121,6 +152,11 @@ function parseCachedPowerCurve(raw: string | null): PowerCurveData | null {
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isSupabaseMode = isSupabaseConfigured && !DEMO_ONLY;
+
+  const [authUser, setAuthUser] = useState<AuthUserSummary | null>(null);
+  const [providerConnections, setProviderConnections] = useState<ProviderConnection[]>([]);
+
   // DEMO_ONLY (the published demo site only): the demo athlete and its mock
   // data are ready from the very first render, so the app never shows the
   // login screen, not even for an instant.
@@ -144,13 +180,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [error, setError] = useState<string | null>(null);
   const [useImperial, setUseImperial] = useState<boolean>(false);
 
-  // Restore stored session from localStorage on startup
+  const applySupabaseBundle = (bundle: UserDatabaseBundle, userId: string) => {
+    setProviderConnections(bundle.connections);
+    setAthlete(bundle.athlete);
+    setWellness(bundle.wellness);
+    setActivities(bundle.activities);
+    setEvents(bundle.events);
+    setPowerCurve(bundle.powerCurve);
+    if (bundle.profile && typeof bundle.profile.use_imperial === 'boolean') {
+      setUseImperial(bundle.profile.use_imperial);
+    }
+
+    const intervalsConn = bundle.connections.find(
+      (c) => c.provider === 'intervals' && c.status === 'connected' && c.api_key
+    );
+    setCredentials({
+      apiKey: intervalsConn?.api_key || '',
+      athleteId: intervalsConn?.external_athlete_id || userId,
+      isDemo: false,
+    });
+  };
+
+  // Startup & session restoration
   useEffect(() => {
     if (DEMO_ONLY) {
-      // A visitor who once pasted a real API key, or an account from a
-      // previous build, must not find it again: the demo always starts from
-      // the credentials created above, never from a stored session, and
-      // leaves nothing of a real account in the browser.
       localStorage.removeItem(STORAGE_KEYS.AUTH);
       localStorage.removeItem(STORAGE_KEYS.ATHLETE);
       localStorage.removeItem(STORAGE_KEYS.WELLNESS);
@@ -158,8 +211,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem(STORAGE_KEYS.EVENTS);
       localStorage.removeItem(STORAGE_KEYS.POWER_CURVE);
 
-      // The unit preference is not account data: it is the visitor's own
-      // choice in the Profile page, and it has to survive a reload here too.
       const savedUnits = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (savedUnits) {
         try {
@@ -170,6 +221,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return;
     }
+
+    // --- SUPABASE MODE ---
+    if (isSupabaseMode && supabase) {
+      let active = true;
+
+      const hydrateSession = async (userId: string, email?: string) => {
+        try {
+          const bundle = await loadUserBundle(userId, email);
+          if (!active) return;
+          applySupabaseBundle(bundle, userId);
+        } catch (err: any) {
+          if (!active) return;
+          console.error('Failed to load Supabase bundle:', err);
+          setError(err?.message || 'Impossibile caricare i dati dal database.');
+          // Still grant access to the app shell so user can manage connections
+          setCredentials({ apiKey: '', athleteId: userId, isDemo: false });
+        } finally {
+          if (active) setIsLoading(false);
+        }
+      };
+
+      const wantsDemo =
+        typeof window !== 'undefined' &&
+        (window.location.pathname.replace(/\/+$/, '') === '/demo' ||
+          new URLSearchParams(window.location.search).get('demo') === '1');
+
+      if (wantsDemo) {
+        setAuthUser(null);
+        setCredentials(createDemoCredentials());
+        setAthlete(MOCK_ATHLETE);
+        setWellness(MOCK_WELLNESS);
+        setActivities(MOCK_ACTIVITIES);
+        setEvents(MOCK_CALENDAR_EVENTS);
+        setPowerCurve(SIMULATED_DEMO_POWER_CURVE);
+        setIsLoading(false);
+        return;
+      }
+
+      supabase.auth.getSession().then(({ data }) => {
+        if (!active) return;
+        const user = data.session?.user;
+        if (user) {
+          setAuthUser({ id: user.id, email: user.email });
+          hydrateSession(user.id, user.email);
+        } else {
+          setAuthUser(null);
+          setCredentials(null);
+          setIsLoading(false);
+        }
+      });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!active) return;
+        const user = session?.user;
+        if (user) {
+          setAuthUser({ id: user.id, email: user.email });
+          hydrateSession(user.id, user.email);
+        } else {
+          setAuthUser(null);
+          setProviderConnections([]);
+          setCredentials(null);
+          setAthlete(null);
+          setWellness([]);
+          setActivities([]);
+          setEvents([]);
+          setPowerCurve(EMPTY_POWER_CURVE);
+          setIsLoading(false);
+        }
+      });
+
+      return () => {
+        active = false;
+        subscription.unsubscribe();
+      };
+    }
+
+    // --- LEGACY LOCAL MODE (no Supabase env configured) ---
     try {
       const savedAuth = localStorage.getItem(STORAGE_KEYS.AUTH);
       const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -199,7 +329,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (cachedActivities) setActivities(JSON.parse(cachedActivities));
         if (cachedEvents) setEvents(JSON.parse(cachedEvents));
 
-        // Background sync
         fetchFullData(parsedAuth, false);
       }
     } catch (e) {
@@ -207,7 +336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isSupabaseMode]);
 
   async function fetchFullData(auth: AuthCredentials, showSpinner = false) {
     if (showSpinner) setIsLoading(true);
@@ -234,8 +363,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           getCalendarEvents(auth.apiKey, auth.athleteId),
         ]);
 
-      // Weight of the Intervals.icu profile: it feeds the W/kg fallback when
-      // the curve has no watts_per_kg. Without a weight the W/kg stay empty.
       const profileWeight = fetchedAthlete?.weight ?? athlete?.weight ?? null;
 
       const fetchedPowerCurve = await getPowerCurves(
@@ -272,6 +399,128 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  // --- Supabase Auth methods ---
+  const signInWithEmail = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase non configurato.');
+    setError(null);
+    const { error: authErr } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (authErr) {
+      setError(authErr.message);
+      throw authErr;
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string, fullName?: string) => {
+    if (!supabase) throw new Error('Supabase non configurato.');
+    setError(null);
+    const { data, error: authErr } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: fullName?.trim() ? { full_name: fullName.trim() } : undefined,
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    if (authErr) {
+      setError(authErr.message);
+      throw authErr;
+    }
+    return { needsEmailConfirmation: !data.session };
+  };
+
+  const signInWithGoogle = async () => {
+    if (!supabase) throw new Error('Supabase non configurato.');
+    setError(null);
+    const { error: authErr } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (authErr) {
+      setError(authErr.message);
+      throw authErr;
+    }
+  };
+
+  // --- Data provider methods (Supabase DB) ---
+  const connectIntervals = async (apiKey: string, athleteId = '0') => {
+    if (!authUser) throw new Error('Devi accedere prima di collegare Intervals.icu.');
+    setIsRefreshing(true);
+    setIsPowerCurveLoading(true);
+    setError(null);
+    try {
+      const bundle = await connectAndSyncIntervals(
+        authUser.id,
+        apiKey,
+        athleteId,
+        authUser.email
+      );
+      applySupabaseBundle(bundle, authUser.id);
+    } catch (err: any) {
+      const msg = err?.message || 'Errore connessione a Intervals.icu.';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setIsRefreshing(false);
+      setIsPowerCurveLoading(false);
+    }
+  };
+
+  const disconnectProvider = async (provider: DataProvider) => {
+    if (!authUser) return;
+    setError(null);
+    await disconnectProviderConnection(authUser.id, provider);
+    const bundle = await loadUserBundle(authUser.id, authUser.email);
+    applySupabaseBundle(bundle, authUser.id);
+  };
+
+  const connectStrava = async () => {
+    if (!supabase) throw new Error('Supabase non configurato.');
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error('Sessione scaduta. Effettua di nuovo il login.');
+    window.location.href = `/api/strava/auth?token=${encodeURIComponent(token)}`;
+  };
+
+  const syncStrava = async () => {
+    if (!authUser) throw new Error('Devi accedere prima di sincronizzare Strava.');
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      const result = await syncStravaViaBackend();
+      const bundle = await loadUserBundle(authUser.id, authUser.email);
+      applySupabaseBundle(bundle, authUser.id);
+      return result.synced;
+    } catch (err: any) {
+      const msg = err?.message || 'Errore sincronizzazione Strava.';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const importGarminFit = async (file: File) => {
+    if (!authUser) throw new Error('Devi accedere prima di importare un file .FIT.');
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      const activity = await importFitFileToDatabase(authUser.id, file);
+      const bundle = await loadUserBundle(authUser.id, authUser.email);
+      applySupabaseBundle(bundle, authUser.id);
+      return activity;
+    } catch (err: any) {
+      const msg = err?.message || 'Errore importazione file .FIT.';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // --- Legacy login methods ---
   const login = async (apiKey: string, athleteId = '0') => {
     setIsLoading(true);
     setError(null);
@@ -319,15 +568,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
-    // DEMO_ONLY: there is no account to disconnect, and no logout control is
-    // shown; this guard only protects against a stray call.
     if (DEMO_ONLY) return;
+
+    if (isSupabaseMode && supabase) {
+      supabase.auth.signOut().catch((e) => console.warn('Sign out error:', e));
+    }
+
     localStorage.removeItem(STORAGE_KEYS.AUTH);
     localStorage.removeItem(STORAGE_KEYS.ATHLETE);
     localStorage.removeItem(STORAGE_KEYS.WELLNESS);
     localStorage.removeItem(STORAGE_KEYS.ACTIVITIES);
     localStorage.removeItem(STORAGE_KEYS.EVENTS);
     localStorage.removeItem(STORAGE_KEYS.POWER_CURVE);
+    setAuthUser(null);
+    setProviderConnections([]);
     setCredentials(null);
     setAthlete(null);
     setWellness([]);
@@ -339,6 +593,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const refreshData = async () => {
+    if (isSupabaseMode && authUser) {
+      setIsRefreshing(true);
+      setError(null);
+      try {
+        const intervalsConn = providerConnections.find(
+          (c) => c.provider === 'intervals' && c.status === 'connected' && c.api_key
+        );
+        if (intervalsConn?.api_key) {
+          const bundle = await connectAndSyncIntervals(
+            authUser.id,
+            intervalsConn.api_key,
+            intervalsConn.external_athlete_id || '0',
+            authUser.email
+          );
+          applySupabaseBundle(bundle, authUser.id);
+        } else {
+          const bundle = await loadUserBundle(authUser.id, authUser.email);
+          applySupabaseBundle(bundle, authUser.id);
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Errore durante la sincronizzazione.');
+      } finally {
+        setIsRefreshing(false);
+      }
+      return;
+    }
+
     if (!credentials) return;
     await fetchFullData(credentials, false);
   };
@@ -347,6 +628,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = !useImperial;
     setUseImperial(updated);
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ useImperial: updated }));
+    if (isSupabaseMode && authUser) {
+      saveUserUnits(authUser.id, updated).catch(() => {});
+    }
   };
 
   const clearError = () => setError(null);
@@ -390,6 +674,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        isSupabaseMode,
+        authUser,
+        providerConnections,
         credentials,
         athlete,
         wellness,
@@ -408,6 +695,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         useImperial,
         login,
         loginDemo,
+        signInWithEmail,
+        signUpWithEmail,
+        signInWithGoogle,
+        connectIntervals,
+        disconnectProvider,
+        connectStrava,
+        syncStrava,
+        importGarminFit,
         logout,
         refreshData,
         toggleUnits,

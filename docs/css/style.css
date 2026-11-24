@@ -123,6 +123,17 @@ a {
   gap: 28px;
 }
 
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-auth .btn {
+  padding: 9px 18px;
+  font-size: 0.9rem;
+}
+
 .main-nav a:not(.btn) {
   text-decoration: none;
   color: var(--text-muted);
@@ -711,6 +722,15 @@ h2 {
   .main-nav .btn {
     margin-top: 14px;
     align-self: flex-start;
+  }
+
+  .nav-auth {
+    margin-top: 14px;
+    gap: 10px;
+  }
+
+  .nav-auth .btn {
+    margin-top: 0;
   }
 
   .nav-toggle {

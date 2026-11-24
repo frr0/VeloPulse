@@ -52,6 +52,13 @@ data:
         try_files $uri =404;
       }
 
+      # Support /demo/ (with trailing slash) resolving relative ./assets/ paths
+      location ^~ /demo/assets/ {
+        alias /usr/share/nginx/html/assets/;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+      }
+
       # The legal pages are real files in the root, so `try_files` serves them
       # directly and never falls back to index.html.
       location / {

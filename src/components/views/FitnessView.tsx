@@ -53,14 +53,19 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
   }, [wellness]);
 
   const latest = sortedWellness[0];
-  const ctl = latest?.ctl ?? 78;
-  const atl = latest?.atl ?? 82;
-  const tsb = latest?.tsb ?? (ctl - atl);
-  const formStatus = getFormStatus(tsb);
+  const ctl = typeof latest?.ctl === 'number' ? latest.ctl : null;
+  const atl = typeof latest?.atl === 'number' ? latest.atl : null;
+  const tsb =
+    typeof latest?.tsb === 'number'
+      ? latest.tsb
+      : ctl !== null && atl !== null
+      ? ctl - atl
+      : null;
+  const formStatus = tsb !== null ? getFormStatus(tsb) : null;
   // FTP of the Intervals.icu profile: no fallback value, the chart shows `--`
   // when the profile has no FTP.
   const ftp = athlete?.ftp ?? null;
-  const vo2max = latest?.vo2max ?? athlete?.vo2max ?? 56.4;
+  const vo2max = latest?.vo2max ?? athlete?.vo2max ?? null;
 
   const tabOptions = [
     { id: 'fitness' as const, label: 'Fitness & Form', icon: TrendingUp, color: '#38BDF8' },
@@ -81,7 +86,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
         <PowerCurveChart data={powerCurve} ftp={ftp} isLoading={isPowerCurveLoading} />
         <Vo2MaxChart data={wellness} currentVo2Max={vo2max} />
         <HrvChart data={wellness} />
-        <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? 46} />
+        <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? null} />
         <SleepChart data={wellness} />
       </div>
     );
@@ -132,7 +137,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <HrvChart data={wellness} />
-            <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? 46} />
+            <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? null} />
           </div>
 
           <SleepChart data={wellness} />
@@ -148,7 +153,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <MetricCard
               label="Fitness (CTL)"
-              value={Math.round(ctl)}
+              value={ctl !== null ? Math.round(ctl) : '--'}
               subValue="42-day rolling base"
               icon={<TrendingUp className="w-4 h-4" />}
               accentColor="#38BDF8"
@@ -156,7 +161,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
 
             <MetricCard
               label="Fatigue (ATL)"
-              value={Math.round(atl)}
+              value={atl !== null ? Math.round(atl) : '--'}
               subValue="7-day acute stress"
               icon={<Flame className="w-4 h-4" />}
               accentColor="#A855F7"
@@ -164,16 +169,16 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
 
             <MetricCard
               label="Form (TSB)"
-              value={tsb > 0 ? `+${tsb.toFixed(1)}` : tsb.toFixed(1)}
-              subValue={formStatus.label}
+              value={tsb === null ? '--' : tsb > 0 ? `+${tsb.toFixed(1)}` : tsb.toFixed(1)}
+              subValue={formStatus?.label ?? 'No data'}
               icon={<Zap className="w-4 h-4" />}
-              accentColor={formStatus.color}
+              accentColor={formStatus?.color ?? '#94A3B8'}
             />
 
             <MetricCard
               label="eFTP"
-              value={athlete?.ftp ? `${athlete.ftp} W` : '295 W'}
-              subValue="Estimated Threshold"
+              value={athlete?.ftp ? `${athlete.ftp} W` : '--'}
+              subValue="Profile Threshold"
               icon={<Activity className="w-4 h-4" />}
               accentColor="#FC5200"
             />
@@ -390,7 +395,7 @@ export const FitnessView: React.FC<FitnessViewProps> = ({ initialTab = 'fitness'
       {/* RENDER VIEW: RESTING HR */}
       {activeTab === 'resting_hr' && (
         <div className="space-y-6">
-          <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? 46} />
+          <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? null} />
 
           <div className="bg-[#1F2025] border border-[#383941] rounded-2xl p-5 shadow-lg transition-all">
             <button

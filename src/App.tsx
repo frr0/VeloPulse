@@ -189,7 +189,7 @@ function MainApp() {
           <ActivityDetailView
             activity={selectedActivity}
             onBack={handleBackFromActivity}
-            returnTabName={returnTab === 'dashboard' ? 'Dashboard' : 'Attività'}
+            returnTabName={returnTab === 'dashboard' ? 'Dashboard' : 'Activities'}
             useImperial={useImperial}
             settings={settings}
           />

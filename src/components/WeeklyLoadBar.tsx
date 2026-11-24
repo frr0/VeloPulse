@@ -12,7 +12,7 @@ export const WeeklyLoadBar: React.FC<WeeklyLoadBarProps> = ({ activities }) => {
     const today = new Date();
     const result = [];
     let sum = 0;
-    let max = 60;
+    let max = 0;
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
@@ -41,8 +41,7 @@ export const WeeklyLoadBar: React.FC<WeeklyLoadBarProps> = ({ activities }) => {
     return { weekData: result, totalLoad: Math.round(sum), maxDayLoad: max };
   }, [activities]);
 
-  const targetWeeklyLoad = 550;
-  const progressRatio = totalLoad / targetWeeklyLoad;
+  const activeDays = weekData.filter((d) => d.load > 0).length;
 
   return (
     <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
@@ -53,17 +52,9 @@ export const WeeklyLoadBar: React.FC<WeeklyLoadBarProps> = ({ activities }) => {
           </span>
           <div className="flex items-baseline gap-2 mt-0.5">
             <span className="text-3xl font-black text-white">{totalLoad}</span>
-            <span className="text-xs text-slate-400 font-semibold">/ ~{targetWeeklyLoad} Target</span>
+            <span className="text-xs text-slate-400 font-semibold">TSS ({activeDays}/7 days)</span>
           </div>
         </div>
-
-        <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#00E5A3]/10 text-[#00E5A3] border border-[#00E5A3]/20">
-          {progressRatio >= 0.85 && progressRatio <= 1.15
-            ? 'OPTIMAL LOAD'
-            : progressRatio > 1.15
-            ? 'HIGH STRAIN'
-            : 'RECOVERY / BUILDING'}
-        </span>
       </div>
 
       {/* 7 Bars */}
@@ -79,13 +70,15 @@ export const WeeklyLoadBar: React.FC<WeeklyLoadBarProps> = ({ activities }) => {
           return (
             <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
               <div className="w-full max-w-[28px] bg-white/5 rounded-t-lg h-24 flex items-end overflow-hidden p-0.5 relative">
-                <div
-                  className="w-full rounded-t-md transition-all duration-500 ease-out"
-                  style={{
-                    height: `${Math.max(d.load > 0 ? 15 : 6, heightPct)}%`,
-                    backgroundColor: d.load > 0 ? barColor : 'rgba(255, 255, 255, 0.1)',
-                  }}
-                />
+                {d.load > 0 && (
+                  <div
+                    className="w-full rounded-t-md transition-all duration-500 ease-out"
+                    style={{
+                      height: `${Math.max(4, heightPct)}%`,
+                      backgroundColor: barColor,
+                    }}
+                  />
+                )}
               </div>
               <span className={`text-[11px] font-bold mt-2 ${d.isToday ? 'text-[#00E5A3]' : 'text-slate-400'}`}>
                 {d.dayLabel}

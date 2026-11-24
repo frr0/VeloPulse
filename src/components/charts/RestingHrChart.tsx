@@ -17,14 +17,14 @@ import { isAndroid } from '../../utils/platform';
 
 interface RestingHrChartProps {
   data: Wellness[];
-  defaultRHR?: number;
+  defaultRHR?: number | null;
 }
 
 type RangeOption = '14' | '30' | '90';
 
 export const RestingHrChart: React.FC<RestingHrChartProps> = ({
   data,
-  defaultRHR = 46,
+  defaultRHR = null,
 }) => {
   const [range, setRange] = useState<RangeOption>('30');
 
@@ -32,7 +32,7 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
     if (!data || data.length === 0) return [];
 
     const sorted = [...data]
-      .filter((d) => d.restingHR !== undefined)
+      .filter((d) => typeof d.restingHR === 'number' && Number.isFinite(d.restingHR) && d.restingHR > 0)
       .sort((a, b) => new Date(a.id).getTime() - new Date(b.id).getTime());
 
     const limit = parseInt(range, 10);
@@ -42,24 +42,30 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
       const windowStart = Math.max(0, idx - 6);
       const windowItems = sliced.slice(windowStart, idx + 1);
       const avg7d =
-        windowItems.reduce((acc, curr) => acc + (curr.restingHR ?? 46), 0) / windowItems.length;
+        windowItems.reduce((acc, curr) => acc + (curr.restingHR as number), 0) /
+        windowItems.length;
 
       return {
         id: item.id,
-        restingHR: item.restingHR ?? defaultRHR,
+        restingHR: item.restingHR as number,
         rhr7d: Math.round(avg7d * 10) / 10,
       };
     });
-  }, [data, range, defaultRHR]);
+  }, [data, range]);
 
   const { latestRhr, lowestRhr, avg7d, overallAvg, rhrAlert } = useMemo(() => {
+    const profileFallback =
+      typeof defaultRHR === 'number' && Number.isFinite(defaultRHR) && defaultRHR > 0
+        ? defaultRHR
+        : null;
+
     if (chartData.length === 0) {
       return {
-        latestRhr: defaultRHR,
-        lowestRhr: defaultRHR - 3,
-        avg7d: defaultRHR,
-        overallAvg: defaultRHR,
-        rhrAlert: null,
+        latestRhr: profileFallback,
+        lowestRhr: null as number | null,
+        avg7d: null as number | null,
+        overallAvg: null as number | null,
+        rhrAlert: null as { title: string; message: string; color: string } | null,
       };
     }
 
@@ -69,20 +75,20 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
     const mean = Math.round((sum / rhrValues.length) * 10) / 10;
 
     const latest = chartData[chartData.length - 1];
-    const latestVal = latest?.restingHR ?? defaultRHR;
-    const latest7d = latest?.rhr7d ?? latestVal;
+    const latestVal = latest.restingHR;
+    const latest7d = latest.rhr7d;
 
     let alert = null;
     if (latestVal > latest7d + 3) {
       alert = {
         title: 'Elevated Resting HR',
-        message: 'Elevated by +3-5 bpm. Indicates acute fatigue, heat strain, or immune response.',
+        message: 'Elevated by +3 bpm or more above 7-day average.',
         color: '#F59E0B',
       };
     } else if (latestVal <= min + 1) {
       alert = {
         title: 'Deep Recovery',
-        message: 'Near all-time low. Cardiovascular efficiency is primed for performance.',
+        message: 'Near period low. Cardiovascular efficiency is primed.',
         color: '#00E5A3',
       };
     }
@@ -144,10 +150,14 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               Latest Pulse
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-white">{latestRhr}</span>
-              <span className="text-xs text-slate-400 font-bold">bpm</span>
+              <span className="text-2xl font-black text-white">
+                {latestRhr !== null ? latestRhr : '--'}
+              </span>
+              {latestRhr !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
             </div>
-            <span className="text-[11px] text-[#00B4D8] font-semibold">Morning waking pulse</span>
+            <span className="text-[11px] text-[#00B4D8] font-semibold">
+              {chartData.length > 0 ? 'Morning waking pulse' : latestRhr !== null ? 'Profile value' : 'No data'}
+            </span>
           </div>
 
           <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
@@ -155,8 +165,10 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               7-Day Rolling Avg
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#00B4D8]">{avg7d}</span>
-              <span className="text-xs text-slate-400 font-bold">bpm</span>
+              <span className="text-2xl font-black text-[#00B4D8]">
+                {avg7d !== null ? avg7d : '--'}
+              </span>
+              {avg7d !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
             </div>
             <span className="text-[11px] text-slate-400 font-medium">Smoothed baseline</span>
           </div>
@@ -166,10 +178,12 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               Lowest Recorded
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#00E5A3]">{lowestRhr}</span>
-              <span className="text-xs text-slate-400 font-bold">bpm</span>
+              <span className="text-2xl font-black text-[#00E5A3]">
+                {lowestRhr !== null ? lowestRhr : '--'}
+              </span>
+              {lowestRhr !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
             </div>
-            <span className="text-[11px] text-slate-400 font-medium">Peak adaptation</span>
+            <span className="text-[11px] text-slate-400 font-medium">Period minimum</span>
           </div>
 
           <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
@@ -177,8 +191,10 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
               Period Average
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-white">{overallAvg}</span>
-              <span className="text-xs text-slate-400 font-bold">bpm</span>
+              <span className="text-2xl font-black text-white">
+                {overallAvg !== null ? overallAvg : '--'}
+              </span>
+              {overallAvg !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
             </div>
             <span className="text-[11px] text-slate-400 font-medium">{range}-day mean</span>
           </div>
@@ -187,101 +203,112 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
 
       {/* Chart Canvas */}
       <div className={`w-full ${isAndroidApp ? 'h-[250px]' : 'h-[280px]'}`}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={chartData}
-            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="rhrCyan" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00B4D8" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#00B4D8" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="rhrCyan" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#00B4D8" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#00B4D8" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#383941" vertical={false} />
 
-            {/* Optimal Range Reference Band (lowest to lowest+6) */}
-            <ReferenceArea
-              y1={lowestRhr}
-              y2={lowestRhr + 6}
-              fill="rgba(0, 180, 216, 0.08)"
-              strokeOpacity={0}
-            />
+              {/* Optimal Range Reference Band (lowest to lowest+6) */}
+              {lowestRhr !== null && (
+                <ReferenceArea
+                  y1={lowestRhr}
+                  y2={lowestRhr + 6}
+                  fill="rgba(0, 180, 216, 0.08)"
+                  strokeOpacity={0}
+                />
+              )}
 
-            <XAxis
-              dataKey="id"
-              tickFormatter={(v) => formatDateShort(v)}
-              stroke="#64748B"
-              fontSize={10}
-              tickLine={false}
-              axisLine={{ stroke: '#383941' }}
-            />
-            <YAxis
-              domain={['dataMin - 5', 'dataMax + 5']}
-              stroke="#64748B"
-              tick={{ fill: '#94A3B8', fontSize: 10 }}
-              fontSize={10}
-              width={32}
-              tickLine={false}
-              axisLine={{ stroke: '#383941' }}
-            />
+              <XAxis
+                dataKey="id"
+                tickFormatter={(v) => formatDateShort(v)}
+                stroke="#64748B"
+                fontSize={10}
+                tickLine={false}
+                axisLine={{ stroke: '#383941' }}
+              />
+              <YAxis
+                domain={['dataMin - 5', 'dataMax + 5']}
+                stroke="#64748B"
+                tick={{ fill: '#94A3B8', fontSize: 10 }}
+                fontSize={10}
+                width={32}
+                tickLine={false}
+                axisLine={{ stroke: '#383941' }}
+              />
 
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const d = payload[0].payload as { id: string; restingHR: number; rhr7d: number };
-                  return (
-                    <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
-                      <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
-                        {d.id}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between gap-4 text-[#00B4D8]">
-                          <span>Resting HR:</span>
-                          <strong className="text-white">{d.restingHR} bpm</strong>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const d = payload[0].payload as { id: string; restingHR: number; rhr7d: number };
+                    return (
+                      <div className="bg-[#2F3037] border border-[#383941] p-3 rounded-xl shadow-2xl text-xs">
+                        <div className="font-bold text-white border-b border-white/10 pb-1.5 mb-1.5">
+                          {d.id}
                         </div>
-                        <div className="flex justify-between gap-4 text-slate-300">
-                          <span>7-Day Average:</span>
-                          <strong className="text-white">{d.rhr7d} bpm</strong>
+                        <div className="space-y-1">
+                          <div className="flex justify-between gap-4 text-[#00B4D8]">
+                            <span>Resting HR:</span>
+                            <strong className="text-white">{d.restingHR} bpm</strong>
+                          </div>
+                          <div className="flex justify-between gap-4 text-slate-300">
+                            <span>7-Day Average:</span>
+                            <strong className="text-white">{d.rhr7d} bpm</strong>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
+                    );
+                  }
+                  return null;
+                }}
+              />
 
-            <Area
-              type="monotone"
-              dataKey="restingHR"
-              stroke="#00B4D8"
-              strokeWidth={2.5}
-              fill="url(#rhrCyan)"
-              name="Resting HR"
-            />
+              <Area
+                type="monotone"
+                dataKey="restingHR"
+                stroke="#00B4D8"
+                strokeWidth={2.5}
+                fill="url(#rhrCyan)"
+                name="Resting HR"
+              />
 
-            <Line
-              type="monotone"
-              dataKey="rhr7d"
-              stroke="#38BDF8"
-              strokeWidth={2}
-              strokeDasharray="4 4"
-              dot={false}
-              name="7-Day Avg"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+              <Line
+                type="monotone"
+                dataKey="rhr7d"
+                stroke="#38BDF8"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+                name="7-Day Avg"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-center gap-1.5 bg-[#26272D] rounded-xl border border-[#383941] px-6">
+            <Activity className="w-5 h-5 text-slate-500" />
+            <span className="text-sm font-bold text-white">No Resting HR data available</span>
+            <span className="text-xs text-slate-400 max-w-md">
+              No daily Resting HR values were found in your synced wellness history.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Android Controls & Compact Stats Below Chart */}
       {isAndroidApp ? (
         <div className="mt-3 pt-3 border-t border-white/5 space-y-2.5">
-          {/* Controls: Range Selector */}
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Periodo:
+              Range:
             </span>
             <div className="flex items-center bg-[#2F3037] p-0.5 rounded-xl border border-[#383941]">
               {(['14', '30', '90'] as RangeOption[]).map((r) => (
@@ -300,15 +327,16 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
             </div>
           </div>
 
-          {/* Compact Hero Stats Below Chart */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Latest Pulse
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-black text-white">{latestRhr}</span>
-                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+                <span className="text-lg font-black text-white">
+                  {latestRhr !== null ? latestRhr : '--'}
+                </span>
+                {latestRhr !== null && <span className="text-[10px] text-slate-400 font-bold">bpm</span>}
               </div>
               <span className="text-[10px] text-[#00B4D8] font-semibold">Morning</span>
             </div>
@@ -318,8 +346,10 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
                 7-Day Avg
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-black text-[#00B4D8]">{avg7d}</span>
-                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+                <span className="text-lg font-black text-[#00B4D8]">
+                  {avg7d !== null ? avg7d : '--'}
+                </span>
+                {avg7d !== null && <span className="text-[10px] text-slate-400 font-bold">bpm</span>}
               </div>
               <span className="text-[10px] text-slate-400 font-medium">Smoothed</span>
             </div>
@@ -329,10 +359,12 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
                 Lowest
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-black text-[#00E5A3]">{lowestRhr}</span>
-                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+                <span className="text-lg font-black text-[#00E5A3]">
+                  {lowestRhr !== null ? lowestRhr : '--'}
+                </span>
+                {lowestRhr !== null && <span className="text-[10px] text-slate-400 font-bold">bpm</span>}
               </div>
-              <span className="text-[10px] text-slate-400">Adaptation</span>
+              <span className="text-[10px] text-slate-400">Minimum</span>
             </div>
 
             <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
@@ -340,8 +372,10 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
                 Period Mean
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-black text-white">{overallAvg}</span>
-                <span className="text-[10px] text-slate-400 font-bold">bpm</span>
+                <span className="text-lg font-black text-white">
+                  {overallAvg !== null ? overallAvg : '--'}
+                </span>
+                {overallAvg !== null && <span className="text-[10px] text-slate-400 font-bold">bpm</span>}
               </div>
               <span className="text-[10px] text-slate-400">{range}d Avg</span>
             </div>
@@ -356,15 +390,17 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
                 <strong style={{ color: rhrAlert.color }}>
                   {rhrAlert.title}: {rhrAlert.message}
                 </strong>
-              ) : (
+              ) : lowestRhr !== null ? (
                 <span>
-                  Resting pulse is steady within optimal baseline range ({lowestRhr}–{lowestRhr + 6} bpm)
+                  Resting pulse is steady within range ({lowestRhr}–{lowestRhr + 6} bpm)
                 </span>
+              ) : (
+                <span>No daily Resting HR data recorded</span>
               )}
             </span>
           </div>
           <span className="text-slate-500 text-[11px]">
-            Lower values correlate with aerobic adaptation
+            Recorded Resting HR values from your wellness log
           </span>
         </div>
       )}
