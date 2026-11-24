@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+release
+android
+ios
+.git
+.env.local
+*.apk
+*.AppImage
+*.log
+docs/screenshots
