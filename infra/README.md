@@ -1,18 +1,18 @@
 # VeloPulse Infrastructure as Code (`infra/`)
 
-Questa cartella contiene la configurazione **Terraform** di esempio/laboratorio per gestire dichiarativamente le risorse Cloudflare invece di configurarle manualmente da dashboard.
+This directory contains the **Terraform** configuration to manage Cloudflare resources declaratively instead of configuring them manually in the dashboard.
 
-## Uso in locale
+## Local Usage
 
-1. Copia il file delle variabili di esempio (escluso da Git):
+1. Copy the example variables file (`.tfvars` files are gitignored):
    ```bash
    cp terraform.tfvars.example terraform.tfvars
    ```
-2. Inizializza e verifica il piano:
+2. Initialize and inspect the plan:
    ```bash
    terraform init
    terraform fmt -check
    terraform validate
    terraform plan
    ```
-3. Per risorse già create a mano (es. KV namespace o Worker), usa `terraform import` per collegarle allo state prima di `terraform apply`.
+3. For resources created manually beforehand (e.g. a KV namespace or Worker), run `terraform import` to bring them under Terraform state before running `terraform apply`.

@@ -234,7 +234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (err: any) {
           if (!active) return;
           console.error('Failed to load Supabase bundle:', err);
-          setError(err?.message || 'Impossibile caricare i dati dal database.');
+          setError(err?.message || 'Unable to load data from the database.');
           // Still grant access to the app shell so user can manage connections
           setCredentials({ apiKey: '', athleteId: userId, isDemo: false });
         } finally {
@@ -401,7 +401,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- Supabase Auth methods ---
   const signInWithEmail = async (email: string, password: string) => {
-    if (!supabase) throw new Error('Supabase non configurato.');
+    if (!supabase) throw new Error('Supabase is not configured.');
     setError(null);
     const { error: authErr } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -414,7 +414,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const signUpWithEmail = async (email: string, password: string, fullName?: string) => {
-    if (!supabase) throw new Error('Supabase non configurato.');
+    if (!supabase) throw new Error('Supabase is not configured.');
     setError(null);
     const { data, error: authErr } = await supabase.auth.signUp({
       email: email.trim(),
@@ -432,7 +432,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const signInWithGoogle = async () => {
-    if (!supabase) throw new Error('Supabase non configurato.');
+    if (!supabase) throw new Error('Supabase is not configured.');
     setError(null);
     const { error: authErr } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -446,7 +446,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- Data provider methods (Supabase DB) ---
   const connectIntervals = async (apiKey: string, athleteId = '0') => {
-    if (!authUser) throw new Error('Devi accedere prima di collegare Intervals.icu.');
+    if (!authUser) throw new Error('Please sign in before connecting Intervals.icu.');
     setIsRefreshing(true);
     setIsPowerCurveLoading(true);
     setError(null);
@@ -459,7 +459,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
       applySupabaseBundle(bundle, authUser.id);
     } catch (err: any) {
-      const msg = err?.message || 'Errore connessione a Intervals.icu.';
+      const msg = err?.message || 'Failed to connect to Intervals.icu.';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -477,15 +477,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const connectStrava = async () => {
-    if (!supabase) throw new Error('Supabase non configurato.');
+    if (!supabase) throw new Error('Supabase is not configured.');
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    if (!token) throw new Error('Sessione scaduta. Effettua di nuovo il login.');
+    if (!token) throw new Error('Session expired. Please sign in again.');
     window.location.href = `/api/strava/auth?token=${encodeURIComponent(token)}`;
   };
 
   const syncStrava = async () => {
-    if (!authUser) throw new Error('Devi accedere prima di sincronizzare Strava.');
+    if (!authUser) throw new Error('Please sign in before syncing Strava.');
     setIsRefreshing(true);
     setError(null);
     try {
@@ -494,7 +494,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       applySupabaseBundle(bundle, authUser.id);
       return result.synced;
     } catch (err: any) {
-      const msg = err?.message || 'Errore sincronizzazione Strava.';
+      const msg = err?.message || 'Strava sync failed.';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -503,7 +503,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const importGarminFit = async (file: File) => {
-    if (!authUser) throw new Error('Devi accedere prima di importare un file .FIT.');
+    if (!authUser) throw new Error('Please sign in before importing a .FIT file.');
     setIsRefreshing(true);
     setError(null);
     try {
@@ -512,7 +512,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       applySupabaseBundle(bundle, authUser.id);
       return activity;
     } catch (err: any) {
-      const msg = err?.message || 'Errore importazione file .FIT.';
+      const msg = err?.message || 'Failed to import .FIT file.';
       setError(msg);
       throw new Error(msg);
     } finally {
@@ -613,7 +613,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           applySupabaseBundle(bundle, authUser.id);
         }
       } catch (err: any) {
-        setError(err?.message || 'Errore durante la sincronizzazione.');
+        setError(err?.message || 'Sync failed.');
       } finally {
         setIsRefreshing(false);
       }

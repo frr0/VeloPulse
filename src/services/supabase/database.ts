@@ -30,7 +30,7 @@ export interface UserDatabaseBundle {
 
 function requireSupabase() {
   if (!supabase) {
-    throw new Error('Supabase non configurato. Imposta VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   }
   return supabase;
 }
@@ -250,7 +250,7 @@ export async function connectAndSyncIntervals(
     },
     { onConflict: 'user_id,provider' }
   );
-  if (connErr) throw new Error(`Errore salvataggio connessione: ${connErr.message}`);
+  if (connErr) throw new Error(`Failed to save connection: ${connErr.message}`);
 
   // 3. Upsert profile
   await client.from('profiles').upsert({
@@ -433,7 +433,7 @@ export async function importFitFileToDatabase(userId: string, file: File): Promi
     { onConflict: 'user_id,provider,external_id' }
   );
 
-  if (error) throw new Error(`Errore salvataggio attività .FIT: ${error.message}`);
+  if (error) throw new Error(`Failed to save .FIT activity: ${error.message}`);
 
   await client.from('provider_connections').upsert(
     {
@@ -456,7 +456,7 @@ export async function syncStravaViaBackend(): Promise<{ synced: number }> {
   const client = requireSupabase();
   const { data } = await client.auth.getSession();
   const token = data.session?.access_token;
-  if (!token) throw new Error('Sessione scaduta. Effettua di nuovo il login.');
+  if (!token) throw new Error('Session expired. Please sign in again.');
 
   const res = await fetch('/api/strava/sync', {
     method: 'POST',
@@ -469,7 +469,7 @@ export async function syncStravaViaBackend(): Promise<{ synced: number }> {
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(
-      (payload as { error?: string }).error || `Errore sync Strava (HTTP ${res.status})`
+      (payload as { error?: string }).error || `Strava sync error (HTTP ${res.status})`
     );
   }
   return { synced: Number((payload as { synced?: number }).synced || 0) };

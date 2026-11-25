@@ -1,22 +1,20 @@
-# Guida Setup da Zero: Supabase (Auth + DB) + Cloudflare Pages
+# Setup Guide from Scratch: Supabase (Auth + DB) + Cloudflare
 
-Questa guida ti permette di configurare da zero la webapp autenticata di **VeloPulse** su **Supabase** + **Cloudflare Pages**, mantenendo completamente separati:
-- la landing page su GitHub Pages (`docs/` → `frr0.github.io/VeloPulse`)
-- la demo pubblica bloccata (`VITE_DEMO_ONLY=1` → `velopulse-demo.institorai.app`)
+This guide walks through configuring the authenticated **VeloPulse** webapp on **Supabase** + **Cloudflare**, keeping the landing page (`docs/` → `frr0.github.io/VeloPulse`) and public demo (`/demo`) cleanly separated.
 
 ---
 
-## 1. Crea il progetto su Supabase (gratis)
+## 1. Create a Supabase Project (Free Tier)
 
-1. Vai su [supabase.com](https://supabase.com) e crea un account / accedi.
-2. Clicca **New Project**, scegli un nome (es. `velopulse`), imposta una password per Postgres e scegli la region più vicina (es. `eu-central-1` / Francoforte).
-3. Attendi 1-2 minuti che il database sia pronto.
+1. Go to [supabase.com](https://supabase.com) and sign in.
+2. Click **New Project**, choose a name (e.g. `velopulse`), set a Postgres password, and pick the closest region (e.g. `eu-central-1` / Frankfurt).
+3. Wait 1–2 minutes for the database to provision.
 
-### 1.1 Applica lo schema del database
-1. Nel pannello Supabase apri **SQL Editor** → **New query**.
-2. Copia l'intero contenuto del file `supabase/migrations/0001_initial_schema.sql` di questo repository.
-3. Incollalo nell'editor e clicca **Run**.
-4. Verifica in **Table Editor** che siano state create le 6 tabelle protette da Row Level Security (RLS):
+### 1.1 Apply the Database Schema
+1. In the Supabase dashboard, open **SQL Editor → New query**.
+2. Paste the full contents of `supabase/migrations/0001_initial_schema.sql`.
+3. Click **Run**.
+4. Verify in **Table Editor** that all 6 RLS-protected tables exist:
    - `profiles`
    - `provider_connections`
    - `activities`
@@ -24,76 +22,68 @@ Questa guida ti permette di configurare da zero la webapp autenticata di **VeloP
    - `calendar_events`
    - `power_curves`
 
-### 1.2 Recupera URL e Chiavi API
-1. Vai in **Project Settings → API**.
-2. Copia:
-   - **Project URL** (`https://xxxxx.supabase.co`) → sarà `VITE_SUPABASE_URL`
-   - **anon / public key** → sarà `VITE_SUPABASE_ANON_KEY`
-   - *(solo se attivi Strava OAuth)* **service_role key** → sarà `SUPABASE_SERVICE_ROLE_KEY` (solo lato server su Cloudflare, mai nel frontend!)
+### 1.2 Retrieve Project URL and API Keys
+1. Go to **Project Settings → API**.
+2. Copy:
+   - **Project URL** (`https://xxxxx.supabase.co`) → `VITE_SUPABASE_URL`
+   - **Publishable / anon key** (`sb_publishable_...`) → `VITE_SUPABASE_ANON_KEY`
+   - *(Optional, for server-side Strava OAuth)* **Secret / service_role key** → `SUPABASE_SERVICE_ROLE_KEY` (server-side only, never expose in frontend!)
 
-### 1.3 Configura l'autenticazione
-1. Vai in **Authentication → Providers**:
-   - **Email** è attivo di default (Email + Password).
-   - *(Opzionale)* Puoi abilitare **Google** inserendo Client ID/Secret da Google Cloud Console.
-2. Vai in **Authentication → URL Configuration**:
-   - **Site URL**: `http://localhost:5173` (poi cambierai con il tuo dominio Cloudflare, es. `https://velopulse-app.pages.dev`).
-   - **Redirect URLs**: aggiungi sia `http://localhost:5173/**` che `https://<tuo-dominio-cloudflare>/**`.
+### 1.3 Configure Authentication
+1. Go to **Authentication → Providers**:
+   - **Email** is enabled by default (Email + Password).
+   - *(Optional)* Enable **Google** by adding your Client ID/Secret from Google Cloud Console.
+2. Go to **Authentication → URL Configuration**:
+   - **Site URL**: `https://<your-cloudflare-domain>`
+   - **Redirect URLs**: add both `https://<your-cloudflare-domain>/**` and `http://localhost:5173/**`.
 
 ---
 
-## 2. Test in locale
+## 2. Local Development
 
-1. Copia `.env.example` in `.env.local`:
+1. Copy `.env.example` to `.env.local`:
    ```bash
    cp .env.example .env.local
    ```
-2. Inserisci in `.env.local` i valori del tuo progetto Supabase:
+2. Add your Supabase values to `.env.local`:
    ```env
    VITE_SUPABASE_URL=https://xxxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
+   VITE_SUPABASE_ANON_KEY=sb_publishable_...
    ```
-3. Avvia la webapp:
+3. Start the webapp (directly or via Docker):
    ```bash
-   npm run dev
+   npm run dev   # or: make up
    ```
-4. Apri `http://localhost:5173`: vedrai la schermata di **Login / Registrazione Supabase**.
-5. Dopo aver creato l'account e fatto login, vai su **Profile → Sorgenti Dati (Supabase DB)**:
-   - **Intervals.icu**: incolla la tua API Key e clicca *Salva e Sincronizza* → tutti i dati vengono salvati nel tuo database Postgres su Supabase.
-   - **Garmin (.FIT)**: carica qualsiasi file `.fit` esportato da Garmin Connect o dal ciclocomputer → viene parsato e salvato su Supabase.
-   - **Strava**: funziona dopo il deploy su Cloudflare Pages con le variabili Strava configurate (vedi sezione 4).
+4. Open `http://localhost:5173` to sign up / sign in, then go to **Profile → Data Sources (Supabase DB)** to connect **Intervals.icu** or import **Garmin `.FIT`** files.
 
 ---
 
-## 3. Deploy della Webapp su Cloudflare Pages (gratis)
+## 3. Deploy to Cloudflare
 
-1. Vai su [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-2. Seleziona il repository `Cycling` e il branch (es. `feat/supabase-db-auth` o `master` dopo il merge).
-3. Imposta i parametri di build:
-   - **Framework preset**: `Vite`
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → connect your GitHub repository (`frr0/VeloPulse`).
+2. Configure build settings:
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-4. In **Environment Variables** (Production & Preview) aggiungi:
+3. Add **Build variables**:
    - `VITE_SUPABASE_URL` = `https://xxxxx.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOi...`
-   - *(Non impostare `VITE_DEMO_ONLY`!)*
-5. Clicca **Save and Deploy**.
-6. Copia l'URL assegnato da Cloudflare (es. `https://velopulse-app.pages.dev` o un tuo dominio custom) e aggiungilo in **Supabase → Authentication → URL Configuration** (Site URL + Redirect URLs).
+   - `VITE_SUPABASE_ANON_KEY` = `sb_publishable_...`
+   - *(Do not set `VITE_DEMO_ONLY`!)*
+4. Save and deploy, then make sure your Cloudflare URL is listed in **Supabase → Authentication → URL Configuration**.
 
 ---
 
-## 4. (Opzionale) Attivare Strava OAuth su Cloudflare Pages
+## 4. (Optional) Enable Strava OAuth via Cloudflare Pages Functions
 
-Il progetto include già le **Cloudflare Pages Functions** pronte in `functions/api/strava/`:
+The repository includes ready-to-use **Cloudflare Pages Functions** in `functions/api/strava/`:
 - `GET /api/strava/auth`
 - `GET /api/strava/callback`
 - `POST /api/strava/sync`
 
-Per attivarle:
-1. Vai su [strava.com/settings/api](https://www.strava.com/settings/api) e crea una nuova app.
-2. Imposta **Authorization Callback Domain** con il tuo dominio Cloudflare (es. `velopulse-app.pages.dev`).
-3. Su **Cloudflare Pages → Settings → Environment Variables** aggiungi (come **Encrypted / Secret**):
+To enable them:
+1. Create an app at [strava.com/settings/api](https://www.strava.com/settings/api) and set **Authorization Callback Domain** to your Cloudflare domain.
+2. Add encrypted environment variables on Cloudflare Pages:
    - `STRAVA_CLIENT_ID`
    - `STRAVA_CLIENT_SECRET`
-   - `SUPABASE_URL` (lo stesso Project URL di Supabase)
-   - `SUPABASE_SERVICE_ROLE_KEY` (la service_role key di Supabase)
-4. Fai un re-deploy su Cloudflare Pages: il pulsante **Collega Strava** nella pagina Profile funzionerà end-to-end.
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+3. Redeploy to activate the **Connect Strava** button in Profile.
