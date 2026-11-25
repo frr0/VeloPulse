@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package velopulse.telemetry.v1;
+
+option go_package = "github.com/frr0/VeloPulse/services/telemetry/gen/telemetryv1;telemetryv1";
+
+service TelemetryService {
+  rpc RecordEvent (RecordEventRequest) returns (RecordEventResponse);
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message RecordEventRequest {
+  string user_id = 1;
+  string provider = 2;
+  string event_type = 3;
+  int64 duration_ms = 4;
+  bool success = 5;
+}
+
+message RecordEventResponse {
+  string trace_id = 1;
+  bool accepted = 2;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+}

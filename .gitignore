@@ -37,3 +37,10 @@ release/*
 !release/.gitkeep
 *.AppImage
 *.apk
+
+# Terraform local state and secret variable files
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfvars
+!infra/terraform.tfvars.example

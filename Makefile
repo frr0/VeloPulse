@@ -1,4 +1,4 @@
-.PHONY: up build down logs prod
+.PHONY: up build down logs prod platform
 
 # Start local dev environment (Vite HMR on http://localhost:5173)
 up:
@@ -12,9 +12,13 @@ build:
 prod:
 	docker compose --profile prod up --build
 
+# Start full platform stack (Vite app + Go gRPC/OTel telemetry + Jaeger UI on :16686)
+platform:
+	docker compose --profile platform up --build
+
 # Stop and remove containers
 down:
-	docker compose --profile prod down
+	docker compose --profile prod --profile platform down
 
 # Follow dev container logs
 logs:

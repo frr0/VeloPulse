@@ -1,0 +1,5 @@
+cloudflare_api_token  = "replace-with-cloudflare-api-token"
+cloudflare_account_id = "87b1b2f3c736c6fe0585f3b6b29af919"
+worker_name           = "velopulse"
+supabase_url          = "https://jennvtqwsulskgjofsry.supabase.co"
+supabase_anon_key     = "replace-with-publishable-key"

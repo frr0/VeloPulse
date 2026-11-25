@@ -1,0 +1,85 @@
+name: CI & Security Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 'feat/**'
+
+permissions:
+  contents: read
+
+jobs:
+  web-ci:
+    name: Web Type-Check, Unit Tests & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+
+  telemetry-go-ci:
+    name: Go Telemetry Service Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: services/telemetry/go.sum
+
+      - name: Run Go tests and vet
+        working-directory: services/telemetry
+        run: |
+          go vet ./...
+          go test -race ./...
+
+  security-scan:
+    name: Secret Scan & Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - name: Dependency Audit (High+)
+        run: npm audit --audit-level=high || true
+
+  terraform-validate:
+    name: Terraform Format & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - name: Check formatting and validate
+        working-directory: infra
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false
+          terraform validate

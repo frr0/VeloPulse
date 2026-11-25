@@ -23,3 +23,24 @@ services:
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
     ports:
       - "8080:8080"
+
+  # Go gRPC + HTTP Prometheus + OpenTelemetry service
+  telemetry:
+    profiles: ["platform"]
+    build:
+      context: ./services/telemetry
+    ports:
+      - "8081:8081"
+      - "50051:50051"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+    depends_on:
+      - jaeger
+
+  # Jaeger all-in-one UI for OpenTelemetry distributed traces (http://localhost:16686)
+  jaeger:
+    profiles: ["platform"]
+    image: jaegertracing/all-in-one:1.63.0
+    ports:
+      - "16686:16686"
+      - "4318:4318"
