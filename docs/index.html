@@ -2,19 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>VeloLab | Indoor training studio and cycling analytics</title>
-    <meta name="description" content="VeloLab brings together an indoor cycling training studio and deep performance analytics. Connect Bluetooth trainers, Strava, Intervals.icu, and Garmin .fit files on web, Android, Windows, macOS and Linux." />
+    <title>VeloLab | 3D Indoor Cycling Studio &amp; Athletic Analytics</title>
+    <meta
+      name="description"
+      content="VeloLab pairs a lightweight full-screen 3D cycling road and frameless HUD with deep ride telemetry, interactive GPS maps, and native Android/desktop apps."
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#131316" />
+    <meta name="theme-color" content="#090a0e" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="VeloLab | 3D Indoor Cycling Studio & Athletic Analytics" />
-    <meta property="og:description" content="Lightweight 3D virtual roads, frameless HUD, Bluetooth smart trainer ERG control, interactive GPS maps, and deep cycling analytics in one app." />
+    <meta property="og:title" content="VeloLab | 3D Indoor Cycling Studio &amp; Athletic Analytics" />
+    <meta
+      property="og:description"
+      content="Lightweight 3D virtual roads, frameless HUD, Bluetooth smart trainer ERG control, interactive GPS maps, and deep cycling analytics in one app."
+    />
     <meta property="og:image" content="screenshots/ride-studio-3d-road.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27><rect width=%2724%27 height=%2724%27 rx=%276%27 fill=%27%23131826%27/><path d=%27M5 6.5L12 18.5L19 6.5%27 fill=%27none%27 stroke=%27%23F1F5F9%27 stroke-width=%272.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/><path d=%27M9.5 10.5L12 14.5L14.5 10.5%27 fill=%27none%27 stroke=%27%2338BDF8%27 stroke-width=%272.2%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/></svg>" />
-    <link rel="stylesheet" href="css/style.css?v=3" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%23131826'/><path d='M5 6.5L12 18.5L19 6.5' fill='none' stroke='%23F1F5F9' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/><path d='M9.5 10.5L12 14.5L14.5 10.5' fill='none' stroke='%2338BDF8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+    />
+    <link rel="stylesheet" href="css/style.css?v=4" />
   </head>
   <body>
     <a class="skip-link" href="#content">Skip to content</a>
@@ -22,475 +32,327 @@
     <header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="#top">
-          <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="#F1F5F9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <svg
+            class="logo-mark"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#F1F5F9"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
             <path d="M4.5 6.5L12 18.5L19.5 6.5" />
             <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
           </svg>
-          VeloLab
+          <span>VeloLab</span>
         </a>
         <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
           Menu
         </button>
         <nav class="main-nav" id="nav-menu" aria-label="Main navigation">
-          <a href="#features">Features</a>
-          <a href="#fitness">Fitness</a>
-          <a href="#get-started">How to get started</a>
+          <a href="#studio">3D Studio</a>
+          <a href="#analytics">Analytics</a>
+          <a href="#mobile">Android &amp; Desktop</a>
           <div class="nav-auth">
-            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signin" class="btn btn-ghost">Log in</a>
-            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signup" class="btn btn-primary">Sign up</a>
+            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signin">Log in</a>
+            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signup" class="nav-accent">Sign up</a>
           </div>
         </nav>
       </div>
     </header>
 
     <main id="content">
+      <!-- HERO: Centered atmospheric showcase (no bulky buttons) -->
       <section class="hero" id="top">
-        <div class="container hero-inner">
-          <div>
-            <p class="eyebrow">3D indoor cycling studio + performance analytics</p>
-            <h1>Your trainer, 3D roads, and deep analytics in one app</h1>
-            <p class="lead">
-              VeloLab pairs a lightweight, full-screen 3D virtual road engine
-              and frameless telemetry HUD with pro-grade cycling analytics.
-              Pedal through New York, Rome, Paris, or an alpine valley with
-              automatic ERG control—then explore interactive GPS maps, power
-              zones, and 180-day fitness trends.
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="container">
+          <div class="hero-header">
+            <span class="kicker">3D Indoor Studio &middot; Athletic Analytics</span>
+            <h1>
+              Lightweight 3D roads.<br />
+              <span class="text-gradient">Pro cycling analytics.</span>
+            </h1>
+            <p class="hero-lead">
+              Pedal through New York, Rome, Paris, or an alpine valley with a
+              frameless HUD and automatic FTMS ERG control—then analyze every
+              watt, zone, and GPS track in one unified dark studio.
             </p>
-            <div class="hero-actions">
-              <a href="#download" class="btn btn-primary btn-lg">Download VeloLab</a>
-              <a href="#features" class="btn btn-ghost btn-lg">See the features</a>
-              <a href="https://velopulse.velopulse-app.workers.dev/demo" class="btn btn-primary btn-lg">Try the demo in your browser</a>
-            </div>
+            <p class="hero-links">
+              <a href="https://velopulse.velopulse-app.workers.dev/demo" class="link-primary">Try live demo &rarr;</a>
+              <span class="sep" aria-hidden="true">/</span>
+              <a href="#mobile">Get Android APK &amp; desktop builds</a>
+              <span class="sep" aria-hidden="true">/</span>
+              <a href="https://github.com/frr0/VeloPulse">GitHub &#8599;</a>
+            </p>
           </div>
-          <figure class="hero-visual">
+
+          <figure class="hero-frame">
             <img
-              class="shot shot-desktop"
+              class="shot"
               src="screenshots/ride-studio-3d-road.jpg"
-              alt="The 3D Road View in VeloLab Ride Studio: an articulated 3D cyclist riding down a stylized New York avenue with frameless side HUD metrics for power, target watts, cadence, heart rate, speed and W'bal, plus a transparent workout interval chart at the bottom left and compact controls at the bottom right."
+              alt="Full-screen 3D Road View in VeloLab Ride Studio: an articulated 3D cyclist riding through New York with borderless side telemetry, prominent target watts, transparent bottom-left workout profile, and compact controls."
               width="1920"
               height="1080"
               loading="eager"
               decoding="async"
             />
-            <figcaption>Full-screen 3D Road View in Ride Studio — crisp, frameless HUD over a lightweight Three.js world</figcaption>
           </figure>
         </div>
       </section>
 
-      <section id="features">
+      <!-- STUDIO HIGHLIGHTS: Clean two-column editorial rhythm (zero cards) -->
+      <section class="section" id="studio">
         <div class="container">
-          <div class="section-head">
-            <p class="section-tag">3D Ride Studio &amp; visual design</p>
-            <h2>Lightweight 3D graphics built for focus and speed</h2>
-            <p>
-              No heavy multi-gigabyte downloads or noisy overlays: VeloLab
-              renders stylized, low-poly 3D worlds right in your browser with
-              clean, high-contrast typography at the edges so the road and your
-              target power stay effortless to read.
+          <div class="section-split-head">
+            <div>
+              <span class="kicker">3D Graphics &amp; HUD</span>
+              <h2>Built for clarity, speed, and zero GPU bloat</h2>
+            </div>
+            <p class="section-desc">
+              No 10 GB downloads or muddy boxes blocking the view. VeloLab
+              generates stylized low-poly worlds procedurally in Three.js with
+              borderless typography anchored cleanly to the screen edges.
             </p>
           </div>
-          <div class="feature-grid">
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-12 4 8 3-4 5 8H3z"/></svg>
-              </div>
-              <h3>4 stylized 3D worlds &amp; landmarks</h3>
-              <p>
-                Ride through Valley, New York, Rome, or Paris—complete with the
-                Empire State Building, Statue of Liberty, Colosseum, St. Peter's
-                Dome, Eiffel Tower, and glowing illuminated buildings at night.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-              </div>
-              <h3>Frameless HUD &amp; Eco 30fps mode</h3>
-              <p>
-                Borderless floating metrics with crisp drop shadows keep live
-                power and target watts readable on any sky. Toggle Eco mode for
-                ultra-low GPU usage, press H to hide the HUD, or switch to
-                Classic view anytime.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 15l3-6h4"/><circle cx="16" cy="5" r="1.2"/></svg>
-              </div>
-              <h3>Articulated cyclist &amp; pedal-to-start</h3>
-              <p>
-                Your 3D road cyclist pedals in sync with your real speed and
-                shares the road with overtaking NPC riders. Start pedaling on
-                your FTMS trainer and the session launches automatically.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M9 9l2 2 2-4 2 3"/></svg>
-              </div>
-              <h3>12 built-in workouts &amp; .zwo runner</h3>
-              <p>
-                Browse structured sessions by category with mini power-profile
-                previews or drop in any Zwift .zwo file. VeloLab controls ERG
-                wattage automatically for every interval.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="5"/></svg>
-              </div>
-              <h3>Virtual GPS .fit &amp; Intervals.icu sync</h3>
-              <p>
-                Every ride generates a .fit file with a real scenic GPS route
-                map, saves permanently inside VeloLab with duplicate
-                protection, and uploads to Intervals.icu in one click.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l4-4 3 3 5-6 4 4"/><path d="M4 19h16"/></svg>
-              </div>
-              <h3>Live W'bal reserve</h3>
-              <p>
-                While you ride, VeloLab shows live how much anaerobic reserve
-                (W') you have left, so you can manage efforts above threshold.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
 
-      <section id="activities">
-        <div class="container">
-          <div class="activity-panel">
-            <div>
-              <p class="section-tag">The activity page</p>
-              <h2>Every session on a single page</h2>
-              <p class="lead" style="margin-bottom: 20px">
-                Every activity has a page with the GPS route map and charts over
-                time for elevation, heart rate, power and cadence. Next to them
-                you find the time spent in each zone and aerobic decoupling,
-                that is how much your heart rate drifts up at constant power.
-              </p>
-              <ul class="metric-list">
-                <li><span>Normalized power</span><span>NP</span></li>
-                <li><span>Intensity factor</span><span>IF</span></li>
-                <li><span>Work done</span><span>kJ</span></li>
-                <li><span>Time in each zone</span><span>power and heart rate</span></li>
-                <li><span>Aerobic decoupling</span><span>Pw:Hr</span></li>
-                <li><span>W'bal reserve</span><span>chart over time</span></li>
-              </ul>
-              <div class="definition-grid">
-                <div class="definition">
-                  <h3>Critical power (CP)</h3>
-                  <p>
-                    The highest power you can hold for a long time before you
-                    have to ease off.
-                  </p>
-                </div>
-                <div class="definition">
-                  <h3>W' reserve</h3>
-                  <p>
-                    How much energy you can spend above critical power before
-                    you run out.
-                  </p>
-                </div>
-              </div>
-              <p style="color: var(--text-muted); font-size: 0.92rem; margin: 16px 0 0">
-                VeloLab estimates CP and W' directly from your power duration
-                curve.
+          <div class="worlds-bar" aria-label="Included 3D worlds and lighting moods">
+            <span class="world-tag">Valley</span>
+            <span class="world-tag">New York</span>
+            <span class="world-tag">Rome</span>
+            <span class="world-tag">Paris</span>
+            <span class="world-divider" aria-hidden="true"></span>
+            <span class="mood-tag">Day</span>
+            <span class="mood-tag">Golden</span>
+            <span class="mood-tag">Mist</span>
+            <span class="mood-tag">Night</span>
+            <span class="mood-tag">Eco 30fps</span>
+          </div>
+
+          <div class="clean-list">
+            <div class="clean-row">
+              <h3>Four cities with iconic landmarks</h3>
+              <p>
+                Ride past the Empire State Building, Statue of Liberty, Colosseum,
+                St. Peter's Dome, Eiffel Tower, and Arc de Triomphe—with glowing
+                illuminated building windows at night.
               </p>
             </div>
-            <figure class="route-card">
+            <div class="clean-row">
+              <h3>Articulated cyclist &amp; pedal-to-start</h3>
+              <p>
+                An animated road cyclist pedals in exact sync with your speed while
+                overtaking NPC riders. Start pedaling on your FTMS trainer and the
+                session begins automatically without touching the screen.
+              </p>
+            </div>
+            <div class="clean-row">
+              <h3>Frameless HUD &amp; 12 structured workouts</h3>
+              <p>
+                High-contrast floating power and amber target watts stay sharp over
+                any sky. Pick from 12 built-in workouts or drop in any Zwift
+                <code>.zwo</code> file, press <code>H</code> for a clean road, or
+                toggle Classic mode anytime.
+              </p>
+            </div>
+            <div class="clean-row">
+              <h3>Virtual GPS .FIT &amp; permanent DB storage</h3>
+              <p>
+                Every session embeds a real scenic GPS loop in its <code>.fit</code>
+                file, saves permanently inside VeloLab with cross-provider
+                duplicate protection, and uploads to Intervals.icu in one click.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS SHOWCASE 1: Split GPS Map + Telemetry -->
+      <section class="section section-tinted" id="analytics">
+        <div class="container">
+          <div class="split-showcase">
+            <div class="split-copy">
+              <span class="kicker">Interactive Maps &amp; Telemetry</span>
+              <h2>Every climb, watt, and route synced in real time</h2>
+              <p>
+                Open any activity—recorded in VeloLab or synced from
+                Intervals.icu, Strava, and Garmin <code>.fit</code>—to inspect
+                interactive Leaflet GPS maps paired with altitude, power, speed,
+                heart rate, and cadence streams.
+              </p>
+              <dl class="inline-metrics">
+                <div>
+                  <dt>Map layers</dt>
+                  <dd>Street, Satellite &amp; OSM</dd>
+                </div>
+                <div>
+                  <dt>Storage</dt>
+                  <dd>Cached offline &amp; in DB</dd>
+                </div>
+                <div>
+                  <dt>Sync</dt>
+                  <dd>Intervals.icu, Strava, .FIT</dd>
+                </div>
+              </dl>
+            </div>
+            <figure class="split-media">
               <img
-                class="shot shot-desktop"
+                class="shot"
                 src="screenshots/activity-map-telemetry-new.jpg"
-                alt="The activity page of VeloLab in dark Material 3 styling: interactive Leaflet GPS route map across Manhattan and Brooklyn paired with synchronized altitude and power charts over time."
+                alt="VeloLab Activity Detail view showing an interactive Leaflet GPS route map across Manhattan and Brooklyn paired with synchronized Altitude and Power telemetry charts."
                 width="1920"
                 height="1080"
                 loading="lazy"
                 decoding="async"
               />
-              <figcaption>Interactive GPS route map paired with synchronized altitude and power telemetry</figcaption>
             </figure>
           </div>
-          <div style="margin-top: 28px">
-            <figure class="route-card">
+
+          <!-- ANALYTICS SHOWCASE 2: Reversed Split Power Zones + W'bal -->
+          <div class="split-showcase split-reverse">
+            <figure class="split-media">
               <img
-                class="shot shot-desktop"
+                class="shot"
                 src="screenshots/activity-zones-wbal.jpg"
-                alt="Activity analytics in VeloLab: 7-zone Coggan Power Zones histogram on the left, and synchronized Speed (with elevation backdrop and hover tooltip) and W'bal Reserve (kJ) charts on the right."
+                alt="VeloLab Activity Analytics showing the 7-zone Coggan Power Zones histogram, Speed chart with elevation backdrop and hover tooltip, and W'bal Reserve curve in kilojoules."
                 width="1920"
                 height="1080"
                 loading="lazy"
                 decoding="async"
               />
-              <figcaption>Color-coded Coggan Power Zones, Speed with elevation backdrop, and live W'bal reserve curve</figcaption>
             </figure>
+            <div class="split-copy">
+              <span class="kicker">Zones, W'bal &amp; 180-Day Fitness</span>
+              <h2>Deep physiology without spreadsheet clutter</h2>
+              <p>
+                Track time in all 7 Coggan power zones, monitor anaerobic
+                <strong>W'bal</strong> reserve estimated from your Critical Power
+                curve, and follow 180-day CTL/ATL fitness, HRV, sleep, and
+                aerobic decoupling trends.
+              </p>
+              <dl class="inline-metrics">
+                <div>
+                  <dt>Fitness window</dt>
+                  <dd>180D default CTL / ATL</dd>
+                </div>
+                <div>
+                  <dt>Anaerobic</dt>
+                  <dd>Live &amp; post-ride W'bal</dd>
+                </div>
+                <div>
+                  <dt>Deduplication</dt>
+                  <dd>Zero double uploads</dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="fitness">
+      <!-- MOBILE APK + DESKTOP DOWNLOADS: 2 sleek phone frames + clean rows -->
+      <section class="section" id="mobile">
         <div class="container">
-          <div class="section-head">
-            <p class="section-tag">Fitness analytics</p>
-            <h2>Understand your fitness, not just your workout</h2>
-            <p>
-              VeloLab works out your fitness and your fatigue and shows how
-              you recover between workouts.
-            </p>
-          </div>
-          <div class="feature-grid">
-            <article class="feature-card">
-              <h3>Fitness and fatigue (CTL, ATL, TSB)</h3>
-              <p>
-                CTL (fitness), ATL (fatigue) and TSB (form) tell you how much
-                load you have built up and how ready you are to push.
+          <div class="mobile-split">
+            <div class="mobile-copy">
+              <span class="kicker">Android APK &amp; Desktop</span>
+              <h2>Train on your desktop, laptop, or Android phone</h2>
+              <p class="section-desc">
+                Native Android APK with built-in Bluetooth LE, standalone desktop
+                builds for Linux, Windows, and macOS, or run straight in Chrome
+                and Edge with zero installation.
               </p>
-            </article>
-            <article class="feature-card">
-              <h3>Recovery ring</h3>
-              <p>
-                A recovery ring based on heart rate variability (HRV), resting
-                heart rate and sleep.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>Sleep, HRV, VO2max and resting heart rate</h3>
-              <p>
-                VeloLab tracks sleep duration and quality, heart rate
-                variability (HRV), VO2max, and resting heart rate over time
-                using only recorded metrics.
-              </p>
-            </article>
-            <article class="feature-card">
-              <h3>Seamless data imports</h3>
-              <p>
-                Connect Intervals.icu or Strava, import Garmin .fit files
-                directly from your bike computer, or explore right away in demo
-                mode.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
 
-      <section id="download">
-        <div class="container">
-          <div class="section-head">
-            <p class="section-tag">Where it runs</p>
-            <h2>One app, on every device you own</h2>
-            <p>VeloLab works on the web and as an installed app.</p>
-          </div>
-          <ul class="platform-list">
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              Web
-            </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 19h4"/></svg>
-              Android
-            </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 19h4"/></svg>
-              iPhone
-            </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              Windows
-            </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              macOS
-            </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              Linux
-            </li>
-          </ul>
+              <ul class="download-rows">
+                <li>
+                  <span class="dl-name">Android APK</span>
+                  <span class="dl-meta">~5 MB &middot; Native BLE</span>
+                  <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse.apk">Download &darr;</a>
+                </li>
+                <li>
+                  <span class="dl-name">Web App</span>
+                  <span class="dl-meta">Chrome / Edge</span>
+                  <a class="dl-link" href="https://velopulse.velopulse-app.workers.dev/">Launch &#8599;</a>
+                </li>
+                <li>
+                  <span class="dl-name">Linux (AppImage)</span>
+                  <span class="dl-meta">x86_64 &middot; ~134 MB</span>
+                  <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x86_64.AppImage">Download &darr;</a>
+                </li>
+                <li>
+                  <span class="dl-name">Windows 11</span>
+                  <span class="dl-meta">Portable zip &middot; ~163 MB</span>
+                  <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-win-x64.zip">Download &darr;</a>
+                </li>
+                <li>
+                  <span class="dl-name">macOS</span>
+                  <span class="dl-meta">App zip &middot; ~392 MB</span>
+                  <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-mac-x64.zip">Download &darr;</a>
+                </li>
+              </ul>
 
-          <div class="shots-row shots-row-mobile">
-            <figure>
-              <img
-                class="shot shot-mobile"
-                src="screenshots/mobile-dashboard.jpg"
-                alt="The Today page of VeloLab on a phone: the recovery ring at 82%, the cards for fitness, fatigue and form, and the sleep, HRV, resting heart rate and VO2max data."
-                width="1151"
-                height="2560"
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-            <figure>
-              <img
-                class="shot shot-mobile"
-                src="screenshots/mobile-ride-studio.jpg"
-                alt="The Ride Studio of VeloLab on a phone, with the power, cadence, heart rate and speed tiles, the chart of the interval workout and the tab bar at the bottom."
-                width="1151"
-                height="2560"
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-          </div>
-          <p class="shots-caption">
-            On a phone, a tab bar at the bottom takes you to Today, Studio,
-            Fitness, Activities and Plan.
-          </p>
-
-          <!--
-            The demo is private until the owner makes it visible to everyone
-            from the hosting page: whoever opens the link without permission
-            gets a "private demo" page instead. The address is absolute
-            because this page also runs on GitHub Pages.
-          -->
-          <div class="hero-actions" style="justify-content: center; margin: 28px 0 32px">
-            <a class="btn btn-primary btn-lg" href="https://velopulse.velopulse-app.workers.dev/demo">Try the demo in your browser</a>
-          </div>
-
-          <div class="download-box">
-            <ul class="download-list">
-              <li>
-                <div>
-                  <strong>Android</strong>
-                  <span class="download-size">about 5 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse.apk">
-                  Download the APK
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>Linux (AppImage)</strong>
-                  <span class="download-size">about 134 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x86_64.AppImage">
-                  Download the AppImage
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>Linux (tar.gz)</strong>
-                  <span class="download-size">about 128 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x64.tar.gz">
-                  Download the tar.gz
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>Windows</strong>
-                  <span class="download-size">about 163 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-win-x64.zip">
-                  Download the zip
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>macOS</strong>
-                  <span class="download-size">about 392 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-mac-x64.zip">
-                  Download the zip
-                </a>
-              </li>
-            </ul>
-            <ul class="download-notes">
-              <li>
-                The links always point to the latest version published on
-                GitHub. The macOS file is almost 400 MB: on a mobile network
-                it is better to wait for Wi-Fi.
-              </li>
-              <li>
-                On Android, the first time you open it your phone asks for
-                permission to install apps from this source.
-              </li>
-              <li>
-                For iPhone there is no file to download: you need Xcode to
-                install the app from the source code.
-              </li>
-              <li>
-                The web version runs in your browser with nothing to install,
-                but it needs Chrome, Edge or another Chromium-based browser:
-                only these give access to the Bluetooth sensors on your trainer.
-              </li>
-              <li>
-                The code of VeloLab is public on
-                <a href="https://github.com/frr0/VeloPulse">GitHub</a>.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section id="get-started">
-        <div class="container">
-          <div class="section-head">
-            <p class="section-tag">In three steps</p>
-            <h2>How to get started</h2>
-          </div>
-          <ol class="steps">
-            <li>
-              <h3>Open the site or install the app</h3>
-              <p>Use VeloLab from your browser, or install the app for your system.</p>
-            </li>
-            <li>
-              <h3>Connect your trainer or try the simulator</h3>
-              <p>
-                Connect your trainer and the Bluetooth sensors, or use the
-                simulator to ride a workout without any hardware.
+              <p class="footnote">
+                MIT open-source on <a href="https://github.com/frr0/VeloPulse">GitHub</a>.
+                iOS builds can be compiled from source via Xcode.
               </p>
-            </li>
-            <li>
-              <h3>Connect your sources or try the demo</h3>
-              <p>
-                Sign in to connect Intervals.icu, Strava, or upload Garmin .fit
-                files—or jump straight into demo mode with sample rides.
-              </p>
-            </li>
-          </ol>
+            </div>
+
+            <div class="phone-stage">
+              <figure class="phone-frame phone-front">
+                <img
+                  src="screenshots/mobile-dashboard.jpg"
+                  alt="VeloLab Android APK Today dashboard showing the daily recovery ring, Fitness CTL, Fatigue ATL, Form TSB, HRV, and sleep metrics."
+                  width="1151"
+                  height="2560"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </figure>
+              <figure class="phone-frame phone-back">
+                <img
+                  src="screenshots/mobile-ride-studio.jpg"
+                  alt="VeloLab Android APK Ride Studio showing live Bluetooth trainer power, cadence, heart rate, speed, and interval profile."
+                  width="1151"
+                  height="2560"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </figure>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <div>
-          <div class="footer-brand">
-            <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="#F1F5F9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <div class="footer-brand">
+          <svg
+            class="logo-mark"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#F1F5F9"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
             <path d="M4.5 6.5L12 18.5L19.5 6.5" />
             <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
           </svg>
-            VeloLab
-          </div>
-          <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 280px">
-            Indoor training studio and performance analytics for people who
-            ride a bike.
-          </p>
+          <span>VeloLab</span>
         </div>
-        <div class="footer-col">
-          <h4>The site</h4>
-          <ul>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#get-started">How to get started</a></li>
-          </ul>
+        <div class="footer-links">
+          <a href="#studio">3D Studio</a>
+          <a href="#analytics">Analytics</a>
+          <a href="#mobile">Download</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="termini.html">Terms</a>
         </div>
-        <div class="footer-col">
-          <h4>Legal</h4>
-          <ul>
-            <li><a href="privacy.html">Privacy policy</a></li>
-            <li><a href="termini.html">Terms of service</a></li>
-            <li><a href="https://github.com/frr0/VeloPulse">Source code on GitHub</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="container footer-bottom">
-        <span>&copy; <span data-year>2026</span> VeloLab</span>
       </div>
     </footer>
 
-    <script src="js/main.js"></script>
+    <script src="js/main.js" defer></script>
   </body>
 </html>
