@@ -203,15 +203,15 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
   const isAndroidApp = isAndroid();
 
   return (
-    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+    <div className={`${isAndroidApp ? 'py-4' : 'py-6'} border-y border-white/10`}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
-              Sleep & Recovery
+            <span className="text-[11px] font-bold tracking-[0.14em] text-[#818CF8] uppercase">
+              Sleep &amp; Recovery
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#818CF8]/15 text-[#818CF8]">
               {effectiveTab === 'duration'
                 ? 'Duration & Sleep Debt'
                 : effectiveTab === 'score'
@@ -219,7 +219,7 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
                 : 'Sleep Stages'}
             </span>
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
+          <h3 className="text-base sm:text-lg font-black text-white mt-0.5 tracking-tight">
             {effectiveTab === 'duration'
               ? 'Nightly Sleep Duration vs 8-Hour Target'
               : effectiveTab === 'score'
@@ -230,13 +230,13 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
 
         {/* Tab & Range Controls (Desktop / Web only in header) */}
         {!isAndroidApp && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setActiveTab('duration')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   effectiveTab === 'duration'
-                    ? 'bg-[#818CF8] text-white shadow'
+                    ? 'bg-[#818CF8]/20 text-[#818CF8]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -244,9 +244,9 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
               </button>
               <button
                 onClick={() => setActiveTab('score')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   effectiveTab === 'score'
-                    ? 'bg-[#818CF8] text-white shadow'
+                    ? 'bg-[#818CF8]/20 text-[#818CF8]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -255,9 +255,9 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
               {hasRealStagesData && (
                 <button
                   onClick={() => setActiveTab('stages')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                     effectiveTab === 'stages'
-                      ? 'bg-[#818CF8] text-white shadow'
+                      ? 'bg-[#818CF8]/20 text-[#818CF8]'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -266,14 +266,16 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
               )}
             </div>
 
-            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+            <span className="h-4 w-[1px] bg-white/10" />
+
+            <div className="flex items-center gap-1">
               {(['14', '30', '90'] as RangeOption[]).map((r) => (
                 <button
                   key={r}
                   onClick={() => setRange(r)}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                     range === r
-                      ? 'bg-[#3E4049] text-white shadow'
+                      ? 'bg-white/10 text-white'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -287,13 +289,13 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
 
       {/* Hero Stats (Desktop / Web only in header) */}
       {!isAndroidApp && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-6">
+          <div className="pl-3.5 border-l-2 border-[#818CF8]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               Latest Night
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-white">
+              <span className="text-2xl font-black text-white tabular-nums">
                 {effectiveTab === 'score'
                   ? latestScore !== null
                     ? `${latestScore}%`
@@ -310,22 +312,22 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             </span>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="pl-3.5 border-l-2 border-[#00E5A3]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               7-Day Avg Duration
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#00E5A3]">{avgHours ?? '--'}</span>
+              <span className="text-2xl font-black text-[#00E5A3] tabular-nums">{avgHours ?? '--'}</span>
             </div>
             <span className="text-[11px] text-slate-400 font-medium">Optimal 7h–9h target</span>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="pl-3.5 border-l-2 border-[#38BDF8]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               7-Day Avg Score
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#38BDF8]">
+              <span className="text-2xl font-black text-[#38BDF8] tabular-nums">
                 {avgScore !== null ? `${avgScore}%` : '--'}
               </span>
             </div>
@@ -334,13 +336,13 @@ export const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
             </span>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="pl-3.5 border-l-2 border-white/25">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               7-Day Sleep Debt
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span
-                className="text-2xl font-black"
+                className="text-2xl font-black tabular-nums"
                 style={{
                   color:
                     sleepDebtMinutes === null

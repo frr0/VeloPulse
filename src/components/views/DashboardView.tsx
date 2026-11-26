@@ -8,15 +8,22 @@ import {
   Zap,
   BarChart3,
 } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Activity } from '../../types/intervals';
-import { formatDuration, getFormStatus } from '../../utils/formatters';
+import {
+  formatDistance,
+  formatDuration,
+  formatElevation,
+  getFormStatus,
+} from '../../utils/formatters';
+import { ActivityCard } from '../ActivityCard';
 import { MetricCard } from '../MetricCard';
 import { RecoveryRing } from '../RecoveryRing';
 import { WeeklyLoadBar } from '../WeeklyLoadBar';
 import { AnalyticsTab } from './FitnessView';
 import { isAndroid } from '../../utils/platform';
+import { powerAtSecs } from '../../services/intervals/api';
 
 interface DashboardViewProps {
   onSelectActivity?: (activity: Activity) => void;
@@ -26,6 +33,7 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
+  onSelectActivity,
   onNavigateTab,
   onNavigateAnalytics,
 }) => {
@@ -37,6 +45,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     activities,
     events,
     recoveryScore,
+    powerCurve,
+    useImperial,
   } = useApp();
 
   const ctl = typeof latestWellness?.ctl === 'number' ? latestWellness.ctl : null;
@@ -56,6 +66,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const todayEvent = events.find((e) =>
     e.start_date_local && e.start_date_local.startsWith(todayStr)
   );
+
+  // Last 30 days volume & training summary
+  const summary30d = useMemo(() => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    let count = 0;
+    let distance = 0;
+    let duration = 0;
+    let elevation = 0;
+    let load = 0;
+
+    for (const act of activities) {
+      const ts = new Date(act.start_date_local).getTime();
+      if (!Number.isFinite(ts) || ts < cutoff) continue;
+      count++;
+      distance += act.distance || 0;
+      duration += act.moving_time || act.elapsed_time || 0;
+      elevation += act.total_elevation_gain || 0;
+      load += act.icu_training_load || 0;
+    }
+
+    return {
+      count,
+      distance,
+      duration,
+      elevation,
+      load: Math.round(load),
+      avgWeeklySecs: Math.round(duration / 4.285),
+    };
+  }, [activities]);
+
+  // Power bests strip (5s, 1m, 5m, 20m, 60m) from Intervals.icu power curve
+  const powerBests = useMemo(() => {
+    const series = powerCurve.recent ?? powerCurve.season;
+    if (!series || series.samples.length === 0) return null;
+    const benchmarks = [
+      { label: '5s Sprint', secs: 5, color: '#FC5200' },
+      { label: '1m Anaerobic', secs: 60, color: '#F59E0B' },
+      { label: '5m VO2 Max', secs: 300, color: '#A855F7' },
+      { label: '20m Threshold', secs: 1200, color: '#00E5A3' },
+      { label: '60m Endurance', secs: 3600, color: '#38BDF8' },
+    ];
+    const items = benchmarks.map((b) => ({
+      ...b,
+      reading: powerAtSecs(series.samples, b.secs),
+    }));
+    return items.some((i) => i.reading !== null) ? { label: series.label, items } : null;
+  }, [powerCurve]);
+
+  const recentActivities = useMemo(() => activities.slice(0, 5), [activities]);
+  const ftpWkg =
+    athlete?.ftp && athlete?.weight && athlete.weight > 0
+      ? (athlete.ftp / athlete.weight).toFixed(2)
+      : null;
 
   const isAndroidApp = isAndroid();
 
@@ -217,7 +280,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('all') : onNavigateTab('fitness'))}
               className="text-[11px] font-bold text-[#00E5A3] hover:underline flex items-center gap-1"
             >
-              <span>Tutti i grafici</span>
+              <span>All graphs</span>
               <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -274,10 +337,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div>
               <span className="text-xs font-black text-white block group-hover:text-[#00E5A3] transition-colors">
-                Grafici Fitness & Trend
+                Fitness &amp; Trend Charts
               </span>
               <span className="text-[10px] text-slate-400 block">
-                Visualizza grafici completi, curva di potenza e parametri fisiologici
+                View full charts, power curve, and physiological metrics
               </span>
             </div>
           </div>
@@ -288,41 +351,42 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-10 animate-fadeIn">
       {isSupabaseMode && providerConnections.length === 0 && (
-        <div className="bg-[#1F2025] border border-[#00E5A3]/30 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+        <div className="pl-4 border-l-2 border-[#00E5A3] py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00E5A3] block mb-1">
-              Welcome to VeloPulse
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3] block mb-1">
+              Welcome to VeloLab
             </span>
-            <p className="text-sm font-bold text-white">
+            <p className="text-base font-bold text-white">
               Connect a data source to start syncing your activities
             </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Choose Intervals.icu, Strava, or import Garmin .FIT files directly into your Supabase database.
+            <p className="text-xs text-[#989dab] mt-0.5">
+              Choose Intervals.icu, Strava, or import Garmin .FIT files directly into your database.
             </p>
           </div>
           <button
             type="button"
             onClick={() => onNavigateTab('profile')}
-            className="shrink-0 px-4 py-2.5 rounded-xl bg-[#00E5A3] hover:bg-[#00c98f] text-[#131316] font-extrabold text-xs uppercase tracking-wider transition-colors"
+            className="shrink-0 text-xs font-bold text-[#00E5A3] hover:underline flex items-center gap-1"
           >
-            Connect Data Sources
+            <span>Connect Data Sources</span>
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Top Grid: Recovery Ring + Fitness Triplet */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Recovery Hero Card (5 cols on lg) */}
-        <div className="lg:col-span-5 bg-[#1F2025] rounded-3xl p-6 sm:p-7 border border-[#383941] shadow-xl flex flex-col items-center justify-between">
-          <div className="w-full flex items-center justify-between mb-4">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-              Daily Recovery & Readiness
+      {/* Top Editorial Band: Recovery Ring + Fitness Triplet & 7-Day Load */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center pb-10 border-b border-white/10">
+        {/* Recovery Hero (5 cols on lg, frameless) */}
+        <div className="lg:col-span-5 flex flex-col items-center justify-between lg:pr-8 lg:border-r lg:border-white/10">
+          <div className="w-full flex items-center justify-between mb-5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
+              Daily Recovery &amp; Readiness
             </span>
             <button
               onClick={() => onNavigateTab('fitness')}
-              className="text-xs font-bold text-[#00E5A3] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#989dab] hover:text-[#00E5A3] transition-colors flex items-center gap-1"
             >
               <span>Trends</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -337,7 +401,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             hrv={latestWellness?.hrv}
           />
 
-          <p className="text-xs text-slate-400 text-center mt-4 max-w-xs leading-relaxed">
+          <p className="text-xs text-[#989dab] text-center mt-5 max-w-xs leading-relaxed">
             {recoveryScore === null
               ? 'No biometric recovery data (HRV, sleep, resting HR, or readiness) available yet.'
               : recoveryScore >= 67
@@ -348,45 +412,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        {/* Fitness Triplet & Training Load (7 cols on lg) */}
-        <div className="lg:col-span-7 flex flex-col justify-between gap-6">
-          {/* Triplet Cards Row */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <div className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border border-[#38BDF8]/20 text-center shadow-lg">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+        {/* Fitness Triplet & Training Load (7 cols on lg, card-free editorial) */}
+        <div className="lg:col-span-7 flex flex-col justify-between gap-7">
+          {/* Triplet Editorial Columns with thin left accent bars */}
+          <div className="grid grid-cols-3 gap-6 sm:gap-8">
+            <div className="pl-4 border-l-2 border-[#38BDF8]/60">
+              <span className="text-[11px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
                 Fitness
               </span>
-              <span className="text-3xl sm:text-4xl font-black text-[#38BDF8] block tracking-tight">
+              <span className="text-4xl sm:text-5xl font-black font-mono text-[#38BDF8] block tracking-tight leading-none">
                 {ctl !== null ? Math.round(ctl) : '--'}
               </span>
-              <span className="text-[11px] font-bold text-slate-400 mt-1 block">CTL (42d)</span>
+              <span className="text-xs font-mono text-[#989dab] mt-1.5 block">CTL (42d)</span>
             </div>
 
-            <div className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border border-[#A855F7]/20 text-center shadow-lg">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+            <div className="pl-4 border-l-2 border-[#A855F7]/60">
+              <span className="text-[11px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
                 Fatigue
               </span>
-              <span className="text-3xl sm:text-4xl font-black text-[#A855F7] block tracking-tight">
+              <span className="text-4xl sm:text-5xl font-black font-mono text-[#A855F7] block tracking-tight leading-none">
                 {atl !== null ? Math.round(atl) : '--'}
               </span>
-              <span className="text-[11px] font-bold text-slate-400 mt-1 block">ATL (7d)</span>
+              <span className="text-xs font-mono text-[#989dab] mt-1.5 block">ATL (7d)</span>
             </div>
 
             <div
-              className="bg-[#1F2025] p-4 sm:p-5 rounded-2xl border text-center shadow-lg"
-              style={{ borderColor: `${formStatus?.color ?? '#64748B'}30` }}
+              className="pl-4 border-l-2"
+              style={{ borderLeftColor: `${formStatus?.color ?? '#64748B'}85` }}
             >
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[11px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
                 Form
               </span>
               <span
-                className="text-3xl sm:text-4xl font-black block tracking-tight"
+                className="text-4xl sm:text-5xl font-black font-mono block tracking-tight leading-none"
                 style={{ color: formStatus?.color ?? '#94A3B8' }}
               >
                 {tsb === null ? '--' : tsb > 0 ? `+${Math.round(tsb)}` : Math.round(tsb)}
               </span>
               <span
-                className="text-[11px] font-bold mt-1 block capitalize"
+                className="text-xs font-semibold mt-1.5 block capitalize"
                 style={{ color: formStatus?.color ?? '#94A3B8' }}
               >
                 {formStatus?.label ?? 'No data'}
@@ -399,29 +463,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Today's Planned Workout Banner (if any) */}
+      {/* Today's Planned Workout Strip (editorial hairline style) */}
       {todayEvent && (
-        <div className="bg-[#1F2025] border border-[#00B4D8]/30 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="pl-4 border-l-2 border-[#00E5A3] py-2 pb-8 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <Calendar className="w-4 h-4 text-[#00B4D8]" />
-              <span className="text-xs font-black uppercase tracking-wider text-[#00B4D8]">
+              <Calendar className="w-3.5 h-3.5 text-[#00E5A3]" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
                 Today's Planned Workout
               </span>
               {todayEvent.load && (
-                <span className="text-xs font-black text-[#FC5200] ml-2">
-                  ~{todayEvent.load} Load
+                <span className="text-xs font-mono font-bold text-[#FC5200] ml-2">
+                  ~{todayEvent.load} TSS
                 </span>
               )}
             </div>
-            <h3 className="text-base font-bold text-white">{todayEvent.name}</h3>
+            <h3 className="text-lg font-extrabold text-white">{todayEvent.name}</h3>
             {todayEvent.description && (
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed max-w-xl">
+              <p className="text-xs text-[#989dab] mt-1 leading-relaxed max-w-xl">
                 {todayEvent.description}
               </p>
             )}
             {todayEvent.moving_time && (
-              <span className="text-xs text-slate-400 font-medium block mt-1.5">
+              <span className="text-xs text-[#989dab] font-mono block mt-1.5">
                 Target duration: {formatDuration(todayEvent.moving_time)}
               </span>
             )}
@@ -429,30 +493,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <button
             onClick={() => onNavigateTab('ride')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00E5A3]/15 hover:bg-[#00E5A3]/25 border border-[#00E5A3]/30 text-xs font-bold text-[#00E5A3] shrink-0 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#00E5A3]/10 hover:bg-[#00E5A3]/20 text-xs font-bold text-[#00E5A3] shrink-0 transition-all"
           >
             <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>Ride in Studio</span>
+            <span>Ride in 3D Studio</span>
           </button>
         </div>
       )}
 
-      {/* Daily Wellness Biometrics Grid */}
+      {/* Daily Wellness Biometrics Grid (editorial borderless blocks) */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-            Daily Wellness & Biometrics
+        <div className="flex items-center justify-between mb-6">
+          <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
+            Daily Wellness &amp; Biometrics
           </h4>
           <button
             onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('all') : onNavigateTab('fitness'))}
-            className="text-xs font-bold text-[#00E5A3] hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-[#989dab] hover:text-[#00E5A3] transition-colors flex items-center gap-1"
           >
-            <span>All Biometrics & Graphs</span>
+            <span>All Biometrics &amp; Graphs</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
           <MetricCard
             label="Sleep"
             value={
@@ -503,6 +567,158 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           />
         </div>
       </div>
+
+      {/* Last 30 Days Volume & Threshold Band */}
+      <section className="pt-8 border-t border-white/10">
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
+              Last 30 Days Volume
+            </h4>
+            {athlete?.ftp && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FC5200]/15 text-[#FC5200] font-mono">
+                FTP {athlete.ftp} W{ftpWkg ? ` · ${ftpWkg} W/kg` : ''}
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-[#989dab] font-mono">
+            {summary30d.count} {summary30d.count === 1 ? 'session' : 'sessions'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
+          <div className="pl-4 border-l-2 border-[#00E5A3]/70">
+            <span className="text-[10px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
+              Distance
+            </span>
+            <span className="text-2xl sm:text-3xl font-black font-mono text-white tabular-nums block leading-none">
+              {formatDistance(summary30d.distance, useImperial)}
+            </span>
+            <span className="text-xs text-[#989dab] mt-1.5 block">30-day total</span>
+          </div>
+
+          <div className="pl-4 border-l-2 border-[#38BDF8]/70">
+            <span className="text-[10px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
+              Moving Time
+            </span>
+            <span className="text-2xl sm:text-3xl font-black font-mono text-white tabular-nums block leading-none">
+              {formatDuration(summary30d.duration)}
+            </span>
+            <span className="text-xs text-[#989dab] mt-1.5 block">
+              ~{formatDuration(summary30d.avgWeeklySecs)} / week
+            </span>
+          </div>
+
+          <div className="pl-4 border-l-2 border-[#6DD58C]/70">
+            <span className="text-[10px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
+              Elevation Gain
+            </span>
+            <span className="text-2xl sm:text-3xl font-black font-mono text-[#6DD58C] tabular-nums block leading-none">
+              {formatElevation(summary30d.elevation, useImperial)}
+            </span>
+            <span className="text-xs text-[#989dab] mt-1.5 block">Climbed in 30d</span>
+          </div>
+
+          <div className="pl-4 border-l-2 border-[#FC5200]/70">
+            <span className="text-[10px] font-bold text-[#989dab] uppercase tracking-[0.12em] block mb-1">
+              Training Load
+            </span>
+            <span className="text-2xl sm:text-3xl font-black font-mono text-[#FC5200] tabular-nums block leading-none">
+              {summary30d.load}
+            </span>
+            <span className="text-xs text-[#989dab] mt-1.5 block">Total TSS</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Power Bests Strip (when power curve data is available) */}
+      {powerBests && (
+        <section className="pt-8 border-t border-white/10">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2.5">
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#FC5200]">
+                Power Bests
+              </h4>
+              <span className="text-[11px] text-[#989dab]">{powerBests.label}</span>
+            </div>
+            <button
+              onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('power') : onNavigateTab('fitness'))}
+              className="text-xs font-semibold text-[#989dab] hover:text-[#FC5200] transition-colors flex items-center gap-1"
+            >
+              <span>Power Curve</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-6">
+            {powerBests.items.map((item, idx) => (
+              <div
+                key={item.secs}
+                onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('power') : onNavigateTab('fitness'))}
+                className={`pl-3.5 border-l-2 cursor-pointer group transition-colors ${
+                  idx === powerBests.items.length - 1 ? 'col-span-2 sm:col-span-1' : ''
+                }`}
+                style={{ borderColor: `${item.color}99` }}
+              >
+                <span className="text-[10px] font-bold text-[#989dab] uppercase tracking-widest block">
+                  {item.label}
+                </span>
+                <span className="text-2xl font-black font-mono text-white group-hover:text-[#00E5A3] transition-colors tabular-nums block mt-0.5">
+                  {item.reading ? (
+                    <>
+                      {item.reading.interpolated ? '~' : ''}
+                      {item.reading.watts}
+                      <span className="text-xs font-semibold text-slate-400 ml-1">W</span>
+                    </>
+                  ) : (
+                    '--'
+                  )}
+                </span>
+                <span className="text-[11px] font-semibold" style={{ color: item.color }}>
+                  {item.reading && item.reading.wkg !== null
+                    ? `${item.reading.interpolated ? '~' : ''}${item.reading.wkg.toFixed(1)} W/kg`
+                    : '--'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Recent Activities (Latest 5 Hairline Rows) */}
+      {recentActivities.length > 0 && (
+        <section className="pt-8 border-t border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
+              Recent Activities
+            </h4>
+            <button
+              onClick={() => onNavigateTab('activities')}
+              className="text-xs font-semibold text-[#989dab] hover:text-[#00E5A3] transition-colors flex items-center gap-1"
+            >
+              <span>All Activities ({activities.length})</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="border-t border-white/10">
+            {recentActivities.map((act) => (
+              <ActivityCard
+                key={act.id}
+                activity={act}
+                useImperial={useImperial}
+                onSelect={(selected) => {
+                  if (onSelectActivity) {
+                    onSelectActivity(selected);
+                  } else {
+                    onNavigateTab('activities');
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

@@ -166,36 +166,36 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     );
   }
 
-  // Compact card (Dashboard / Fitness analytics view)
+  // Editorial card-free metric block (Dashboard / Fitness analytics view)
   return (
     <div
       onClick={onClick}
-      className={`bg-[#1F2025] rounded-2xl p-4 sm:p-5 border border-[#383941] shadow-lg flex flex-col justify-between transition-all ${
-        onClick ? 'cursor-pointer hover:border-[#00E5A3]/40 hover:bg-[#141C2B]' : ''
+      className={`pl-4 pr-2 py-2.5 border-l-2 flex flex-col justify-between transition-all duration-200 ${
+        onClick ? 'cursor-pointer hover:bg-white/[0.03] rounded-r-xl group' : ''
       }`}
+      style={{ borderLeftColor: `${accentColor}75` }}
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="flex items-center gap-2 mb-2">
+        {icon && (
+          <span style={{ color: accentColor }} className="shrink-0 opacity-90">
+            {icon}
+          </span>
+        )}
+        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#989dab] group-hover:text-white transition-colors">
           {label}
         </span>
-        <div
-          className="p-2 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
-        >
-          {icon}
-        </div>
       </div>
 
       <div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-mono leading-none">
             {value}
           </span>
-          {unit && <span className="text-xs font-bold text-slate-400">{unit}</span>}
+          {unit && <span className="text-xs font-bold text-[#989dab]">{unit}</span>}
         </div>
 
         {subValue && (
-          <div className="text-[11px] font-semibold text-slate-400 mt-1 flex items-center gap-1">
+          <div className="text-xs font-medium text-[#989dab] mt-1.5 flex items-center gap-1">
             {subValue}
           </div>
         )}

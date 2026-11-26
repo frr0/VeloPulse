@@ -176,38 +176,38 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
   const isAndroidApp = isAndroid();
 
   return (
-    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+    <div className={`${isAndroidApp ? 'py-4' : 'py-6'} border-y border-white/10`}>
       {/* Header & Controls */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-bold tracking-[0.14em] text-[#FC5200] uppercase">
               Power Duration Curve
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FC5200]/20 text-[#FC5200] border border-[#FC5200]/30">
-              MMP & Best Efforts
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FC5200]/15 text-[#FC5200]">
+              MMP &amp; Best Efforts
             </span>
             {data.simulated && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F59E0B]/15 text-[#F59E0B]">
                 Simulated demo data
               </span>
             )}
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
+          <h3 className="text-base sm:text-lg font-black text-white mt-0.5 tracking-tight">
             Mean Maximal Power across Critical Durations
           </h3>
         </div>
 
         {/* Toggle Switches (Desktop / Web only in header) */}
         {!isAndroidApp && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             {/* Watts vs W/kg */}
-            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setMetric('watts')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   activeMetric === 'watts'
-                    ? 'bg-[#FC5200] text-white shadow'
+                    ? 'bg-[#FC5200]/20 text-[#FC5200]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -217,9 +217,9 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
                 onClick={() => setMetric('wkg')}
                 disabled={!hasWkg}
                 title={hasWkg ? undefined : 'Add your weight on Intervals.icu to see W/kg'}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   activeMetric === 'wkg'
-                    ? 'bg-[#FC5200] text-white shadow'
+                    ? 'bg-[#FC5200]/20 text-[#FC5200]'
                     : 'text-slate-400 hover:text-white'
                 } ${hasWkg ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
               >
@@ -227,14 +227,16 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
               </button>
             </div>
 
+            <span className="h-4 w-[1px] bg-white/10" />
+
             {/* Recent vs Season */}
-            <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setMode('recent')}
                 disabled={!hasRecent}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   activeMode === 'recent'
-                    ? 'bg-[#3E4049] text-white shadow'
+                    ? 'bg-white/10 text-white'
                     : 'text-slate-400 hover:text-white'
                 } ${hasRecent ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
               >
@@ -244,9 +246,9 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
                 onClick={() => setMode('season')}
                 disabled={!hasSeason}
                 title={hasSeason ? undefined : 'Intervals.icu returned no season curve'}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   activeMode === 'season'
-                    ? 'bg-[#3E4049] text-white shadow'
+                    ? 'bg-white/10 text-white'
                     : 'text-slate-400 hover:text-white'
                 } ${hasSeason ? '' : 'opacity-40 cursor-not-allowed hover:text-slate-400'}`}
               >
@@ -257,22 +259,23 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
         )}
       </div>
 
-      {/* Benchmark Summary Pills (Desktop / Web only in header) */}
+      {/* Benchmark Summary Strip (Desktop / Web only in header) */}
       {!isAndroidApp && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
           {BENCHMARKS.map((benchmark, index) => {
             const reading = readings[index];
             return (
               <div
                 key={benchmark.secs}
-                className={`bg-[#26272D] p-3 rounded-xl border border-white/5 ${
+                className={`pl-3.5 border-l-2 ${
                   index === BENCHMARKS.length - 1 ? 'col-span-2 sm:col-span-1' : ''
                 }`}
+                style={{ borderColor: `${benchmark.color}99` }}
               >
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                   {benchmark.title}
                 </span>
-                <span className="text-lg font-black text-white mt-0.5 block">
+                <span className="text-xl font-black text-white mt-0.5 block tabular-nums">
                   {reading ? (
                     <>
                       {reading.interpolated ? '~' : ''}
@@ -295,13 +298,13 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
 
       {/* Critical power model (Desktop / Web only in header) */}
       {!isAndroidApp && (
-        <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 mb-5">
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
+        <div className="py-4 mb-6 border-y border-white/10">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Critical Power Model
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#A855F7]/15 text-[#A855F7]">
                 Estimates
               </span>
             </div>
@@ -314,30 +317,30 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
           </div>
 
           {criticalPower.status === 'ok' ? (
-            <div className="grid grid-cols-3 gap-2.5">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="pl-3.5 border-l-2 border-[#00E5A3]/70">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                   CP (estimated)
                 </span>
-                <span className="text-lg sm:text-xl font-black text-[#00E5A3]">
+                <span className="text-xl font-black text-[#00E5A3] tabular-nums">
                   {criticalPower.estimate.cpWatts}{' '}
                   <span className="text-xs font-semibold text-slate-400">W</span>
                 </span>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+              <div className="pl-3.5 border-l-2 border-[#A855F7]/70">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                   W&prime; (estimated)
                 </span>
-                <span className="text-lg sm:text-xl font-black text-[#A855F7]">
+                <span className="text-xl font-black text-[#A855F7] tabular-nums">
                   {(criticalPower.estimate.wPrimeJoules / 1000).toFixed(1)}{' '}
                   <span className="text-xs font-semibold text-slate-400">kJ</span>
                 </span>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+              <div className="pl-3.5 border-l-2 border-white/25">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                   FTP (profile)
                 </span>
-                <span className="text-lg sm:text-xl font-black text-white">
+                <span className="text-xl font-black text-white tabular-nums">
                   {ftp !== null ? (
                     <>
                       {ftp} <span className="text-xs font-semibold text-slate-400">W</span>
@@ -352,7 +355,7 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
             <p className="text-xs text-slate-400">{CP_UNAVAILABLE_TEXT[criticalPower.reason]}</p>
           )}
 
-          <p className="mt-2 text-[11px] text-slate-500">
+          <p className="mt-2.5 text-[11px] text-slate-500">
             Two-parameter critical power model (P = CP + W&prime;/t), fitted on your Intervals.icu
             curve. These are estimates: they do not replace the FTP on your profile.
           </p>

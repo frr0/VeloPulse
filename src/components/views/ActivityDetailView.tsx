@@ -56,6 +56,7 @@ import {
   readActivitySeries,
   smoothShortDropouts,
   thinSeriesForChart,
+  trimStationaryPauses,
 } from '../../utils/activityAnalysis';
 import {
   CriticalPowerResult,
@@ -78,12 +79,12 @@ import {
 
 /** Why the critical power model has no estimate, in the language of this page. */
 const CP_UNAVAILABLE_TEXT: Record<CriticalPowerUnavailableReason, string> = {
-  'no-curve': 'Intervals.icu non ha restituito una curva di potenza per questo atleta.',
+  'no-curve': 'No power curve was returned for this athlete.',
   'durations-missing':
-    'nella tua curva di potenza servono almeno due prove di durata fra 2 e 20 minuti.',
-  'durations-too-close': 'le durate della tua curva di potenza sono troppo vicine fra loro.',
+    'your power curve needs at least two efforts between 2 and 20 minutes.',
+  'durations-too-close': 'the durations in your power curve are too close together.',
   'model-not-applicable':
-    'la tua curva di potenza fra 2 e 20 minuti non segue il modello della potenza critica.',
+    'your power curve between 2 and 20 minutes does not fit the critical power model.',
 };
 
 interface ActivityDetailViewProps {
@@ -112,6 +113,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const [series, setSeries] = useState<ActivitySeries | null>(null);
   // Coordinate hovered on one of the telemetry charts
   const [hoveredCoordinate, setHoveredCoordinate] = useState<[number, number] | null>(null);
+  // Synchronized drag-to-zoom time window [startSec, endSec] across all telemetry charts & map
+  const [selectedTimeRange, setSelectedTimeRange] = useState<[number, number] | null>(null);
   // Fixed/sticky map mode while scrolling graphs; can be dismissed with 'X'
   const [isMapPinned, setIsMapPinned] = useState(true);
   const [isMapClosed, setIsMapClosed] = useState(false);
@@ -132,6 +135,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
     setDetailedActivity(activity);
     setStreamsError(null);
     setSeries(null);
+    setSelectedTimeRange(null);
     if (!activity) return;
 
     // Check embedded DB streams or locally cached streams first (instant & works offline forever)
@@ -227,10 +231,22 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const route = useMemo(() => getActivityRoute(currentAct), [routeSignature]);
   const hasRoute = route.length > 1;
 
-  // Pre-calculate full aligned latlng points for each timeSecs sample to drive synchronized hover dot
+  // Clean series for charts & map sync: cuts prolonged zero-speed pauses (>= 15s)
+  // and compresses elapsed-time gaps into continuous moving time
+  const displaySeries = useMemo(
+    () => (series ? trimStationaryPauses(series) : null),
+    [series]
+  );
+
+  // Use exact 1:1 sample-aligned GPS coordinates from the `latlng` stream when present;
+  // fall back to route interpolation only when only a summary polyline is available.
   const fullLatlngSeries = useMemo<([number, number] | null)[] | null>(() => {
-    if (!series?.timeSecs || series.timeSecs.length === 0 || route.length === 0) return null;
-    const timeSecs = series.timeSecs;
+    if (!displaySeries?.timeSecs || displaySeries.timeSecs.length === 0) return null;
+    if (displaySeries.latlng && displaySeries.latlng.length === displaySeries.timeSecs.length) {
+      return displaySeries.latlng;
+    }
+    if (route.length === 0) return null;
+    const timeSecs = displaySeries.timeSecs;
     const totalTime = Math.max(1, timeSecs[timeSecs.length - 1] - timeSecs[0]);
     const routeLen = route.length;
 
@@ -239,59 +255,140 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
       const idx = Math.min(routeLen - 1, Math.max(0, Math.round(progress * (routeLen - 1))));
       return route[idx] || null;
     });
-  }, [series?.timeSecs, route]);
+  }, [displaySeries, route]);
 
-  // Power & cadence series filtered for micro-dropouts / momentary stops (<= 3 seconds)
-  // so brief interruptions or gear shifting don't cause sharp plunges to 0,
-  // while longer stops (> 3s, like red lights) remain at 0.
+  // Power & cadence series filtered for micro-dropouts / momentary stops (<= 10 seconds)
   const smoothedWatts = useMemo(
-    () => (series?.watts ? smoothShortDropouts(series.timeSecs, series.watts) : null),
-    [series]
+    () => (displaySeries?.watts ? smoothShortDropouts(displaySeries.timeSecs, displaySeries.watts) : null),
+    [displaySeries]
   );
   const smoothedCadence = useMemo(
-    () => (series?.cadence ? smoothShortDropouts(series.timeSecs, series.cadence) : null),
-    [series]
+    () => (displaySeries?.cadence ? smoothShortDropouts(displaySeries.timeSecs, displaySeries.cadence) : null),
+    [displaySeries]
   );
 
-  // Charts over time: one chart per grandeur the activity really has. The
-  // series are thinned for drawing only, so the page stays fluid on a phone;
-  // every analysis below runs on the full series.
+  // Active index slice when user drags a [startSec, endSec] selection on any chart
+  const zoomSlice = useMemo(() => {
+    if (!displaySeries?.timeSecs || displaySeries.timeSecs.length === 0) return null;
+    if (!selectedTimeRange) {
+      return { startIdx: 0, endIdx: displaySeries.timeSecs.length - 1, isZoomed: false };
+    }
+    const [startT, endT] = selectedTimeRange;
+    const times = displaySeries.timeSecs;
+    let startIdx = 0;
+    while (startIdx < times.length - 1 && times[startIdx] < startT) startIdx++;
+    let endIdx = times.length - 1;
+    while (endIdx > startIdx && times[endIdx] > endT) endIdx--;
+    if (endIdx - startIdx < 1) {
+      return { startIdx: 0, endIdx: times.length - 1, isZoomed: false };
+    }
+    return { startIdx, endIdx, isZoomed: true };
+  }, [displaySeries?.timeSecs, selectedTimeRange]);
+
+  const activeTimeSecs = useMemo(
+    () => (displaySeries?.timeSecs && zoomSlice ? displaySeries.timeSecs.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1) : []),
+    [displaySeries?.timeSecs, zoomSlice]
+  );
+  const activeAltitude = useMemo(
+    () => (displaySeries?.altitude && zoomSlice ? displaySeries.altitude.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1) : null),
+    [displaySeries?.altitude, zoomSlice]
+  );
+  const activeLatlng = useMemo(
+    () => (fullLatlngSeries && zoomSlice ? fullLatlngSeries.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1) : null),
+    [fullLatlngSeries, zoomSlice]
+  );
+
+  // Highlighted GPS segment for the map between the 2 selected points
+  const highlightedSegment = useMemo<[number, number][] | null>(() => {
+    if (!zoomSlice?.isZoomed || !activeLatlng) return null;
+    const pts = activeLatlng.filter((p): p is [number, number] => p !== null && isFinite(p[0]) && isFinite(p[1]));
+    return pts.length >= 2 ? pts : null;
+  }, [zoomSlice?.isZoomed, activeLatlng]);
+
+  // Quick summary averages for the selected segment
+  const selectionStats = useMemo(() => {
+    if (!zoomSlice?.isZoomed || !displaySeries || activeTimeSecs.length < 2) return null;
+    const { startIdx, endIdx } = zoomSlice;
+    const avgOf = (arr: (number | null)[] | null | undefined) => {
+      if (!arr) return null;
+      let sum = 0;
+      let count = 0;
+      for (let i = startIdx; i <= endIdx; i++) {
+        const v = arr[i];
+        if (v !== null && v !== undefined && Number.isFinite(v)) {
+          sum += v;
+          count++;
+        }
+      }
+      return count > 0 ? sum / count : null;
+    };
+    const startSec = activeTimeSecs[0];
+    const endSec = activeTimeSecs[activeTimeSecs.length - 1];
+    return {
+      startSec,
+      endSec,
+      durationSecs: Math.max(0, endSec - startSec),
+      avgWatts: avgOf(smoothedWatts),
+      avgHr: avgOf(displaySeries.heartrate),
+      avgSpeed: avgOf(displaySeries.speed),
+    };
+  }, [zoomSlice, displaySeries, activeTimeSecs, smoothedWatts]);
+
+  // Charts over time: sliced to zoom window BEFORE thinning so zooming reveals full resolution!
   const altitudeRows = useMemo<StreamChartRow[]>(
     () =>
-      series?.altitude
-        ? thinSeriesForChart(series.timeSecs, series.altitude, MAX_CHART_POINTS, null, fullLatlngSeries)
+      activeAltitude && activeTimeSecs.length > 0
+        ? thinSeriesForChart(activeTimeSecs, activeAltitude, MAX_CHART_POINTS, null, activeLatlng)
         : [],
-    [series, fullLatlngSeries]
+    [activeTimeSecs, activeAltitude, activeLatlng]
   );
   const heartrateRows = useMemo<StreamChartRow[]>(
     () =>
-      series?.heartrate
-        ? thinSeriesForChart(series.timeSecs, series.heartrate, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
+      displaySeries?.heartrate && zoomSlice && activeTimeSecs.length > 0
+        ? thinSeriesForChart(
+            activeTimeSecs,
+            displaySeries.heartrate.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1),
+            MAX_CHART_POINTS,
+            activeAltitude,
+            activeLatlng
+          )
         : [],
-    [series, fullLatlngSeries]
+    [displaySeries?.heartrate, zoomSlice, activeTimeSecs, activeAltitude, activeLatlng]
   );
   const wattsRows = useMemo<StreamChartRow[]>(
     () =>
-      smoothedWatts && series
-        ? thinSeriesForChart(series.timeSecs, smoothedWatts, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
+      smoothedWatts && zoomSlice && activeTimeSecs.length > 0
+        ? thinSeriesForChart(
+            activeTimeSecs,
+            smoothedWatts.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1),
+            MAX_CHART_POINTS,
+            activeAltitude,
+            activeLatlng
+          )
         : [],
-    [series, smoothedWatts, fullLatlngSeries]
+    [smoothedWatts, zoomSlice, activeTimeSecs, activeAltitude, activeLatlng]
   );
   const cadenceRows = useMemo<StreamChartRow[]>(
     () =>
-      smoothedCadence && series
-        ? thinSeriesForChart(series.timeSecs, smoothedCadence, MAX_CHART_POINTS, series.altitude, fullLatlngSeries)
+      smoothedCadence && zoomSlice && activeTimeSecs.length > 0
+        ? thinSeriesForChart(
+            activeTimeSecs,
+            smoothedCadence.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1),
+            MAX_CHART_POINTS,
+            activeAltitude,
+            activeLatlng
+          )
         : [],
-    [series, smoothedCadence, fullLatlngSeries]
+    [smoothedCadence, zoomSlice, activeTimeSecs, activeAltitude, activeLatlng]
   );
   const speedRows = useMemo<StreamChartRow[]>(() => {
-    if (!series?.speed) return [];
-    // If user prefers imperial, convert km/h to mph (1 km/h = 0.621371 mph)
+    if (!displaySeries?.speed || !zoomSlice || activeTimeSecs.length === 0) return [];
+    const sliced = displaySeries.speed.slice(zoomSlice.startIdx, zoomSlice.endIdx + 1);
     const values = useImperial
-      ? series.speed.map((v) => (v !== null ? v * 0.621371 : null))
-      : series.speed;
-    return thinSeriesForChart(series.timeSecs, values, MAX_CHART_POINTS, series.altitude, fullLatlngSeries);
-  }, [series, useImperial, fullLatlngSeries]);
+      ? sliced.map((v) => (v !== null ? v * 0.621371 : null))
+      : sliced;
+    return thinSeriesForChart(activeTimeSecs, values, MAX_CHART_POINTS, activeAltitude, activeLatlng);
+  }, [displaySeries?.speed, zoomSlice, activeTimeSecs, useImperial, activeAltitude, activeLatlng]);
 
   const hasStreamCharts =
     altitudeRows.length > 0 ||
@@ -309,12 +406,12 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
       ? null
       : streamsError ??
         (credentials && credentials.isDemo
-          ? 'L’accesso dimostrativo non è collegato a Intervals.icu: questa attività non ha dati registrati nella demo.'
+          ? 'Demo mode is not connected to a live account: this activity has no recorded telemetry streams.'
           : !credentials
-          ? 'L’accesso dimostrativo non è collegato a Intervals.icu, quindi non ci sono dati registrati da leggere.'
+          ? 'Not connected to a live account, so recorded telemetry streams cannot be loaded.'
           : !currentAct.id
-          ? 'Questa attività non ha un identificativo su Intervals.icu, quindi non posso chiedere i dati registrati.'
-          : 'Intervals.icu non ha dati registrati per questa attività.');
+          ? 'This activity has no remote ID, so recorded streams cannot be fetched.'
+          : 'No recorded telemetry streams are available for this activity.');
 
   // CP and W' estimated on the power curve the app already downloaded.
   const criticalPower = useMemo<CriticalPowerResult>(() => {
@@ -326,19 +423,22 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   // repeats the value only under a quarter of the full reserve, so that stretch
   // stands out.
   const wbalRows = useMemo<StreamChartRow[]>(() => {
-    if (!series?.watts || criticalPower.status !== 'ok') return [];
+    if (!displaySeries?.watts || criticalPower.status !== 'ok') return [];
     const { cpWatts, wPrimeJoules } = criticalPower.estimate;
     const points = computeWbalSeries(
-      series.timeSecs,
-      series.watts,
+      displaySeries.timeSecs,
+      displaySeries.watts,
       cpWatts,
       wPrimeJoules,
-      series.intervalSecs
+      displaySeries.intervalSecs
     );
     if (points.length === 0) return [];
 
+    const startIdx = zoomSlice?.isZoomed ? zoomSlice.startIdx : 0;
+    const endIdx = zoomSlice?.isZoomed ? Math.min(points.length - 1, zoomSlice.endIdx) : points.length - 1;
+    const sliceLen = Math.max(1, endIdx - startIdx + 1);
     const lowJoules = wPrimeJoules * WBAL_LOW_FRACTION;
-    const step = Math.max(1, Math.ceil(points.length / MAX_CHART_POINTS));
+    const step = Math.max(1, Math.ceil(sliceLen / MAX_CHART_POINTS));
     const rows: StreamChartRow[] = [];
     const add = (index: number) => {
       const point = points[index];
@@ -347,20 +447,19 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         t: point.t,
         v: kilojoules,
         low: point.joules !== null && point.joules < lowJoules ? kilojoules : null,
-        alt: series.altitude && series.altitude[index] !== undefined ? series.altitude[index] : null,
+        alt: displaySeries.altitude && displaySeries.altitude[index] !== undefined ? displaySeries.altitude[index] : null,
         latlng: fullLatlngSeries && fullLatlngSeries[index] ? fullLatlngSeries[index] : null,
       });
     };
-    for (let i = 0; i < points.length; i += step) add(i);
-    const last = points.length - 1;
-    if (rows[rows.length - 1].t !== points[last].t) add(last);
+    for (let i = startIdx; i <= endIdx; i += step) add(i);
+    if (rows.length > 0 && rows[rows.length - 1].t !== points[endIdx].t) add(endIdx);
     return rows;
-  }, [series, criticalPower, fullLatlngSeries]);
+  }, [displaySeries, criticalPower, fullLatlngSeries, zoomSlice]);
 
   const wbalMissingReason = !series?.watts
-    ? 'Manca la serie della potenza: Intervals.icu non l’ha registrata per questa attività.'
+    ? 'Power stream missing: no power data was recorded for this activity.'
     : criticalPower.status !== 'ok'
-    ? `Manca la stima di CP: ${CP_UNAVAILABLE_TEXT[criticalPower.reason]}`
+    ? `CP estimate unavailable: ${CP_UNAVAILABLE_TEXT[criticalPower.reason]}`
     : null;
 
   // Zones of the user: the custom ones from the settings, otherwise the ones
@@ -385,13 +484,13 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const powerHistogramMissingNote = powerHistogram
     ? null
     : !series?.watts
-    ? 'Istogramma calcolato non disponibile: Intervals.icu non ha la serie della potenza di questa attività.'
-    : 'Istogramma calcolato non disponibile: imposta il tuo FTP nelle impostazioni per avere le zone di potenza.';
+    ? 'Computed histogram unavailable: no power stream was recorded for this activity.'
+    : 'Computed histogram unavailable: set your FTP in settings to compute power zones.';
   const hrHistogramMissingNote = hrHistogram
     ? null
     : !series?.heartrate
-    ? 'Istogramma calcolato non disponibile: Intervals.icu non ha la serie del battito di questa attività.'
-    : 'Istogramma calcolato non disponibile: imposta le tue zone di battito nelle impostazioni.';
+    ? 'Computed histogram unavailable: no heart rate stream was recorded for this activity.'
+    : 'Computed histogram unavailable: configure your heart rate zones in settings.';
 
   const decoupling = useMemo(() => computeAerobicDecoupling(series), [series]);
 
@@ -414,13 +513,13 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
 
   const defaultZoneColors = ['#94A3B8', '#38BDF8', '#10B981', '#F59E0B', '#EF4444', '#FB923C', '#C084FC'];
   const defaultZoneLabels = [
-    'Z1 Recupero Attivo',
-    'Z2 Fondo Lento / Aerobico',
-    'Z3 Medio / Tempo',
-    'Z4 Soglia Anaerobica',
+    'Z1 Active Recovery',
+    'Z2 Endurance / Aerobic',
+    'Z3 Tempo',
+    'Z4 Lactate Threshold',
     'Z5 VO2 Max',
-    'Z6 Capacità Anaerobica',
-    'Z7 Neuromuscolare',
+    'Z6 Anaerobic Capacity',
+    'Z7 Neuromuscular',
   ];
 
   const userHrZones = settings?.hrZones || [];
@@ -454,27 +553,27 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   const hasPowerZones = Boolean(powerHistogram || totalPowerSecs > 0);
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="space-y-8 animate-fadeIn pb-12">
       {/* Top Header / Breadcrumb Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 bg-[#1F2025] border border-[#383941] rounded-3xl shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="group flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-slate-300 hover:text-white transition-all text-xs font-bold"
+            className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-slate-300 hover:text-white transition-all text-xs font-bold"
           >
-            <ArrowLeft className="w-4 h-4 text-[#00E5A3] group-hover:-translate-x-0.5 transition-transform" />
-            <span>Back to {returnTabName}</span>
+            <ArrowLeft className="w-3.5 h-3.5 text-[#00E5A3] group-hover:-translate-x-0.5 transition-transform" />
+            <span>{returnTabName}</span>
           </button>
 
           <div className="h-6 w-[1px] bg-white/10 hidden sm:block" />
 
           <div className="flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-[#00E5A3]/10 border border-[#00E5A3]/20 flex items-center justify-center text-[#00E5A3] shadow-inner">
+            <span className="w-10 h-10 rounded-full bg-[#00E5A3]/10 flex items-center justify-center text-[#00E5A3]">
               {isRide ? <Bike className="w-5 h-5" /> : isRun ? <Footprints className="w-5 h-5" /> : <Waves className="w-5 h-5" />}
             </span>
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                <span className="uppercase tracking-wider text-[#A8C7FA] font-bold">
+                <span className="uppercase tracking-[0.12em] text-[#00E5A3] font-bold text-[11px]">
                   {currentAct.type || 'Workout'}
                 </span>
                 <span>•</span>
@@ -487,29 +586,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {credentials && !credentials.isDemo && currentAct.id && (
-            <a
-              href={`https://intervals.icu/activities/${currentAct.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-xs font-semibold text-slate-300 hover:text-white transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-              <span>Intervals.icu</span>
-            </a>
-          )}
-        </div>
       </div>
 
       {/* Main 2-Column Layout: Left = Map + Compact Metrics + HR/Power Zones, Right = Telemetry Charts */}
       {(hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones || hasStreamCharts || (series && decoupling.status === 'ok')) && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT COLUMN: Map + Compact Key Metrics + HR & Power Zones underneath */}
           {(hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones) && (
-            <div className="lg:col-span-5 space-y-4">
-              {/* Interactive GPS Map (normal card behavior, stays under top navbar, expandable) */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Interactive GPS Map */}
               {hasRoute && (
                 <section>
                   <ActivityMap
@@ -518,68 +603,69 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                     useImperial={useImperial}
                     cartoApiKey={settings?.cartoApiKey}
                     hoveredCoordinate={hoveredCoordinate}
+                    highlightedSegment={highlightedSegment}
                   />
                 </section>
               )}
 
-              {/* Compact Key Metrics Card directly below the map */}
+              {/* Card-Free Key Metrics Grid */}
               {(hasHeroMetrics || hasPerformanceMetrics) && (
-                <section className="bg-[#1F2025] border border-[#383941] p-3 rounded-2xl shadow-lg">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                <section className="py-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5">
                     {currentAct.distance ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                      <div className="pl-3 border-l-2 border-[#00E5A3]/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">
                           Distance
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                        <span className="text-base font-black text-white font-mono tabular-nums">
                           {formatDistance(currentAct.distance, useImperial)}
                         </span>
                       </div>
                     ) : null}
 
                     {(currentAct.moving_time || currentAct.elapsed_time) ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                      <div className="pl-3 border-l-2 border-white/25">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">
                           Duration
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                        <span className="text-base font-black text-white font-mono tabular-nums">
                           {formatDuration(currentAct.moving_time || currentAct.elapsed_time)}
                         </span>
                       </div>
                     ) : null}
 
                     {currentAct.total_elevation_gain ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                      <div className="pl-3 border-l-2 border-[#6DD58C]/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">
                           Elevation
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-[#6DD58C] font-mono">
+                        <span className="text-base font-black text-[#6DD58C] font-mono tabular-nums">
                           {formatElevation(currentAct.total_elevation_gain, useImperial)}
                         </span>
                       </div>
                     ) : null}
 
                     {currentAct.icu_training_load !== undefined && currentAct.icu_training_load !== null ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
+                      <div className="pl-3 border-l-2 border-[#FC5200]/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">
                           Load (TSS)
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-[#FC5200] font-mono">
+                        <span className="text-base font-black text-[#FC5200] font-mono tabular-nums">
                           {Math.round(currentAct.icu_training_load)}
                         </span>
                       </div>
                     ) : null}
 
                     {currentAct.average_watts ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-[#FC5200]/50">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           Avg Power
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                        <span className="text-base font-black text-white font-mono tabular-nums">
                           {formatWatts(currentAct.average_watts)}
                         </span>
                         {currentAct.weighted_average_watts ? (
-                          <span className="text-[9px] text-[#FC5200] font-semibold ml-1">
+                          <span className="text-[10px] text-[#FC5200] font-semibold ml-1.5">
                             NP {Math.round(currentAct.weighted_average_watts)}
                           </span>
                         ) : null}
@@ -587,35 +673,35 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                     ) : null}
 
                     {isRun && currentAct.average_speed ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-[#38BDF8]/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           Avg Pace
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                        <span className="text-base font-black text-white font-mono tabular-nums">
                           {formatPace(currentAct.average_speed, useImperial)}
                         </span>
                       </div>
                     ) : currentAct.average_speed ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-[#38BDF8]/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           Avg Speed
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                        <span className="text-base font-black text-white font-mono tabular-nums">
                           {formatSpeed(currentAct.average_speed, useImperial)}
                         </span>
                       </div>
                     ) : null}
 
                     {currentAct.average_heartrate ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-red-400/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           Avg HR
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
+                        <span className="text-base font-black text-white font-mono tabular-nums">
                           {formatHeartRate(currentAct.average_heartrate)}
                         </span>
                         {currentAct.max_heartrate ? (
-                          <span className="text-[9px] text-red-400 font-semibold ml-1">
+                          <span className="text-[10px] text-red-400 font-semibold ml-1.5">
                             Max {Math.round(currentAct.max_heartrate)}
                           </span>
                         ) : null}
@@ -623,34 +709,34 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                     ) : null}
 
                     {currentAct.icu_average_cadence ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-[#A8C7FA]/60">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           Cadence
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
-                          {Math.round(currentAct.icu_average_cadence)} <span className="text-[9px] font-normal text-slate-400">rpm</span>
+                        <span className="text-base font-black text-white font-mono tabular-nums">
+                          {Math.round(currentAct.icu_average_cadence)} <span className="text-[10px] font-normal text-slate-400">rpm</span>
                         </span>
                       </div>
                     ) : null}
 
                     {currentAct.icu_intensity ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-[#FDD663]/70">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           IF
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-[#FDD663] font-mono">
+                        <span className="text-base font-black text-[#FDD663] font-mono tabular-nums">
                           {(currentAct.icu_intensity > 2 ? currentAct.icu_intensity / 100 : currentAct.icu_intensity).toFixed(2)}
                         </span>
                       </div>
                     ) : null}
 
                     {currentAct.icu_joules ? (
-                      <div className="bg-[#26272D] px-2.5 py-1.5 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                      <div className="pl-3 border-l-2 border-white/20">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block truncate">
                           Work
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white font-mono">
-                          {Math.round(currentAct.icu_joules / 1000)} <span className="text-[9px] font-normal text-slate-400">kJ</span>
+                        <span className="text-base font-black text-white font-mono tabular-nums">
+                          {Math.round(currentAct.icu_joules / 1000)} <span className="text-[10px] font-normal text-slate-400">kJ</span>
                         </span>
                       </div>
                     ) : null}
@@ -668,15 +754,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                     footnote="Computed from the recorded heart rate stream using your configured zones."
                   />
                 ) : totalHrSecs > 0 ? (
-                  <div className="bg-[#1F2025] border border-[#383941] p-5 rounded-3xl space-y-4">
+                  <div className="py-5 border-t border-white/10 space-y-4">
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-red-500" />
-                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200">
                         Heart Rate Zones
                       </h3>
                     </div>
 
-                    <div className="flex h-3.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
+                    <div className="flex h-3 rounded-full overflow-hidden bg-white/5">
                       {hrZoneTimes.map((secs, idx) => {
                         const pct = (secs / totalHrSecs) * 100;
                         if (pct <= 0) return null;
@@ -724,19 +810,19 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                     </div>
                   </div>
                 ) : currentAct.average_heartrate ? (
-                  <div className="bg-[#1F2025] border border-[#383941] p-5 rounded-3xl space-y-3">
+                  <div className="py-5 border-t border-white/10 space-y-3">
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-red-500" />
-                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
-                        Frequenza Cardiaca
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200">
+                        Heart Rate
                       </h3>
                     </div>
-                    <div className="bg-[#26272D] p-4 rounded-2xl border border-white/5 text-xs text-slate-400 flex items-center justify-between">
+                    <div className="pl-3.5 border-l-2 border-red-400/60 py-1 text-xs text-slate-400 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Heart className="w-4 h-4 text-red-500" />
-                        <span>Media Registrata: <strong className="text-white">{currentAct.average_heartrate} bpm</strong></span>
+                        <span>Recorded Avg: <strong className="text-white">{currentAct.average_heartrate} bpm</strong></span>
                       </div>
-                      <span className="text-[11px] text-slate-400">Distribuzione non presente</span>
+                      <span className="text-[11px] text-slate-500">Zone distribution unavailable</span>
                     </div>
                   </div>
                 ) : null
@@ -752,15 +838,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                     footnote={`Computed from the recorded power stream using your ${settings?.ftp ?? '--'} W FTP.`}
                   />
                 ) : totalPowerSecs > 0 ? (
-                  <div className="bg-[#1F2025] border border-[#383941] p-5 rounded-3xl space-y-4">
+                  <div className="py-5 border-t border-white/10 space-y-4">
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-[#FC5200]" />
-                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200">
                         Power Zones
                       </h3>
                     </div>
 
-                    <div className="flex h-3.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
+                    <div className="flex h-3 rounded-full overflow-hidden bg-white/5">
                       {powerZoneTimes.map((secs, idx) => {
                         const pct = (secs / totalPowerSecs) * 100;
                         if (pct <= 0) return null;
@@ -780,13 +866,13 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                       {powerZoneTimes.map((secs, idx) => {
                         const pct = (secs / totalPowerSecs) * 100;
                         const powerNames = [
-                          'Z1 Recupero Attivo',
-                          'Z2 Fondo / Resistenza',
-                          'Z3 Medio / Tempo',
-                          'Z4 Soglia Funzionale',
+                          'Z1 Active Recovery',
+                          'Z2 Endurance',
+                          'Z3 Tempo',
+                          'Z4 Threshold',
                           'Z5 VO2 Max',
-                          'Z6 Capacità Anaerobica',
-                          'Z7 Neuromuscolare',
+                          'Z6 Anaerobic Capacity',
+                          'Z7 Neuromuscular',
                         ];
                         const colors = ['#94A3B8', '#38BDF8', '#4ADE80', '#FACC15', '#FB923C', '#F87171', '#C084FC'];
                         return (
@@ -813,19 +899,63 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
           )}
 
           {/* RIGHT COLUMN: Telemetry Charts Over Time + Aerobic Decoupling */}
-          <div className={`${hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-5`}>
+          <div className={`${hasRoute || hasHeroMetrics || hasPerformanceMetrics || hasHrZones || hasPowerZones ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6`}>
             {hasStreamCharts && (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between gap-2">
+              <section className="space-y-2">
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10 flex-wrap">
                   <div className="flex items-center gap-2">
                     <ActivityIcon className="w-4 h-4 text-[#00E5A3]" />
-                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
                       Telemetry Over Time
                     </h3>
                   </div>
+                  <span className="text-[11px] text-slate-500">
+                    {selectionStats
+                      ? 'Double-click any chart to reset zoom'
+                      : 'Click & drag on any chart to zoom a segment'}
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                {selectionStats && (
+                  <div className="py-3 pl-3.5 border-l-2 border-[#FC5200] flex items-center justify-between gap-4 flex-wrap text-xs">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#FC5200] block">
+                          Selected Segment (A → B)
+                        </span>
+                        <span className="font-mono font-bold text-white">
+                          {formatDuration(Math.round(selectionStats.startSec))} – {formatDuration(Math.round(selectionStats.endSec))}{' '}
+                          <span className="text-slate-400">({formatDuration(Math.round(selectionStats.durationSecs))})</span>
+                        </span>
+                      </div>
+                      {selectionStats.avgWatts !== null && (
+                        <span className="font-mono font-bold text-[#FC5200]">
+                          {Math.round(selectionStats.avgWatts)} W
+                        </span>
+                      )}
+                      {selectionStats.avgHr !== null && (
+                        <span className="font-mono font-bold text-[#F28B82]">
+                          {Math.round(selectionStats.avgHr)} bpm
+                        </span>
+                      )}
+                      {selectionStats.avgSpeed !== null && (
+                        <span className="font-mono font-bold text-[#38BDF8]">
+                          {(useImperial ? selectionStats.avgSpeed * 0.621371 : selectionStats.avgSpeed).toFixed(1)}{' '}
+                          {useImperial ? 'mph' : 'km/h'}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTimeRange(null)}
+                      className="px-3 py-1 rounded-full bg-[#FC5200]/15 hover:bg-[#FC5200]/25 text-[#FC5200] font-bold text-[11px] transition-colors cursor-pointer"
+                    >
+                      Reset Zoom
+                    </button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1">
                   {altitudeRows.length > 0 && (
                     <ActivityStreamChart
                       title="Altitude"
@@ -835,6 +965,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                       rows={altitudeRows}
                       icon={<Mountain className="w-4 h-4 text-[#6DD58C]" />}
                       onHoverPoint={setHoveredCoordinate}
+                      onSelectRange={setSelectedTimeRange}
+                      onResetRange={() => setSelectedTimeRange(null)}
                     />
                   )}
                   {heartrateRows.length > 0 && (
@@ -846,6 +978,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                       rows={heartrateRows}
                       icon={<Heart className="w-4 h-4 text-[#F28B82]" />}
                       onHoverPoint={setHoveredCoordinate}
+                      onSelectRange={setSelectedTimeRange}
+                      onResetRange={() => setSelectedTimeRange(null)}
                     />
                   )}
                   {wattsRows.length > 0 && (
@@ -858,6 +992,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                       icon={<Zap className="w-4 h-4 text-[#FC5200]" />}
                       footnote="Short dropout filter (≤ 10s): brief drops smoothed, extended stops remain at 0"
                       onHoverPoint={setHoveredCoordinate}
+                      onSelectRange={setSelectedTimeRange}
+                      onResetRange={() => setSelectedTimeRange(null)}
                     />
                   )}
                   {cadenceRows.length > 0 && (
@@ -870,6 +1006,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                       icon={<RotateCw className="w-4 h-4 text-[#A8C7FA]" />}
                       footnote="Short dropout filter (≤ 10s): brief drops smoothed, extended stops remain at 0"
                       onHoverPoint={setHoveredCoordinate}
+                      onSelectRange={setSelectedTimeRange}
+                      onResetRange={() => setSelectedTimeRange(null)}
                     />
                   )}
                   {speedRows.length > 0 && (
@@ -882,6 +1020,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                       decimals={1}
                       icon={<Gauge className="w-4 h-4 text-[#38BDF8]" />}
                       onHoverPoint={setHoveredCoordinate}
+                      onSelectRange={setSelectedTimeRange}
+                      onResetRange={() => setSelectedTimeRange(null)}
                     />
                   )}
                   {wbalRows.length > 0 && criticalPower.status === 'ok' && (
@@ -903,6 +1043,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                         criticalPower.estimate.wPrimeJoules / 1000
                       ).toFixed(1)} kJ estimated from your Intervals.icu power curve.`}
                       onHoverPoint={setHoveredCoordinate}
+                      onSelectRange={setSelectedTimeRange}
+                      onResetRange={() => setSelectedTimeRange(null)}
                     />
                   )}
                 </div>
@@ -911,17 +1053,17 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
 
             {/* Aerobic decoupling: only rendered if available and valid */}
             {series && decoupling.status === 'ok' && (
-              <section className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-3">
+              <section className="pt-6 border-t border-white/10 space-y-4">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="w-4 h-4 text-[#FDD663]" />
-                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#FDD663]">
                     Aerobic Decoupling
                   </h3>
                 </div>
 
                 <div className="flex items-end gap-3 flex-wrap">
                   <span
-                    className="text-3xl sm:text-4xl font-black"
+                    className="text-3xl sm:text-4xl font-black tabular-nums"
                     style={{
                       color:
                         decoupling.percent > DECOUPLING_THRESHOLD_PERCENT ? '#FC5200' : '#00E5A3',
@@ -934,24 +1076,24 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {[
                     { label: 'First half', half: decoupling.first },
                     { label: 'Second half', half: decoupling.second },
                   ].map((entry) => (
                     <div
                       key={entry.label}
-                      className="bg-[#26272D] p-3.5 rounded-2xl border border-white/5"
+                      className="pl-4 border-l-2 border-white/15"
                     >
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
                         {entry.label}
                       </span>
                       <div className="flex items-center gap-4 text-xs">
-                        <span className="text-white font-black text-base">
+                        <span className="text-white font-black text-base tabular-nums">
                           {Math.round(entry.half.watts)}{' '}
                           <span className="text-[11px] font-semibold text-slate-400">W</span>
                         </span>
-                        <span className="text-[#F28B82] font-black text-base">
+                        <span className="text-[#F28B82] font-black text-base tabular-nums">
                           {Math.round(entry.half.bpm)}{' '}
                           <span className="text-[11px] font-semibold text-slate-400">bpm</span>
                         </span>
@@ -964,12 +1106,12 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                 </div>
 
                 {decoupling.percent > DECOUPLING_THRESHOLD_PERCENT && (
-                  <p className="text-xs text-[#FC5200] font-semibold bg-[#FC5200]/10 border border-[#FC5200]/20 rounded-2xl p-3">
+                  <p className="text-xs text-[#FC5200] font-semibold pl-4 border-l-2 border-[#FC5200] py-1">
                     Above 5%: heart rate drifted upward relative to power in the second half.
                   </p>
                 )}
 
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   Power-to-heart-rate ratio comparison between the first and second half of the ride. Target: under 5%.
                 </p>
               </section>
@@ -980,28 +1122,28 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
 
       {/* Interval Repeats Table */}
       {currentAct.intervals && currentAct.intervals.length > 0 && (
-        <section className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-4">
+        <section className="pt-6 border-t border-white/10 space-y-4">
           <div className="flex items-center gap-2">
             <Repeat className="w-4 h-4 text-[#00E5A3]" />
-            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3]">
               Structured Intervals ({currentAct.intervals.length})
             </h3>
           </div>
 
-          <div className="divide-y divide-white/5 text-xs overflow-x-auto">
+          <div className="divide-y divide-white/10 text-xs overflow-x-auto">
             {currentAct.intervals.map((int, idx) => (
               <div key={int.id || idx} className="py-3 flex items-center justify-between min-w-[360px]">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wide ${
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${
                       int.type === 'RECOVERY'
-                        ? 'bg-white/5 text-slate-400 border border-white/5'
-                        : 'bg-[#00E5A3]/10 text-[#00E5A3] border border-[#00E5A3]/20'
+                        ? 'bg-white/5 text-slate-400'
+                        : 'bg-[#00E5A3]/15 text-[#00E5A3]'
                     }`}
                   >
                     {int.type || `Interval ${idx + 1}`}
                   </span>
-                  <span className="text-white font-bold text-sm">
+                  <span className="text-white font-bold text-sm tabular-nums">
                     {formatDuration(int.moving_time || int.elapsed_time || 0)}
                   </span>
                 </div>
@@ -1009,13 +1151,13 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
                 <div className="flex items-center gap-5 text-right">
                   {int.average_watts && (
                     <div>
-                      <span className="font-black text-white text-sm">{Math.round(int.average_watts)}W</span>
+                      <span className="font-black text-white text-sm tabular-nums">{Math.round(int.average_watts)}W</span>
                       <span className="text-[10px] text-slate-400 block">Avg Power</span>
                     </div>
                   )}
                   {int.average_heartrate && (
                     <div>
-                      <span className="font-black text-red-400 text-sm">{Math.round(int.average_heartrate)} bpm</span>
+                      <span className="font-black text-red-400 text-sm tabular-nums">{Math.round(int.average_heartrate)} bpm</span>
                       <span className="text-[10px] text-slate-400 block">Avg HR</span>
                     </div>
                   )}
@@ -1028,30 +1170,30 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
 
       {/* Athlete Notes & Feelings */}
       {(currentAct.description || currentAct.rpe || currentAct.feel) && (
-        <section className="bg-[#1F2025] border border-[#383941] p-5 sm:p-6 rounded-3xl space-y-4">
+        <section className="pt-6 border-t border-white/10 space-y-4">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-slate-400" />
-            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
               Athlete Notes &amp; Perceived Exertion
             </h3>
           </div>
 
           {currentAct.description && (
-            <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap bg-[#26272D] p-4 rounded-2xl border border-white/5">
+            <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap pl-4 border-l-2 border-white/15 py-1 max-w-3xl">
               {currentAct.description}
             </p>
           )}
 
-          <div className="flex items-center gap-6 pt-1 text-xs">
+          <div className="flex items-center gap-8 pt-1 text-xs">
             {currentAct.rpe && (
-              <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-0.5">Perceived Exertion (RPE)</span>
+              <div className="pl-3.5 border-l-2 border-white/20">
+                <span className="text-slate-400 uppercase font-bold text-[10px] tracking-widest block mb-0.5">Perceived Exertion (RPE)</span>
                 <span className="text-white font-black text-base">{currentAct.rpe} / 10</span>
               </div>
             )}
             {currentAct.feel && (
-              <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-0.5">Feel</span>
+              <div className="pl-3.5 border-l-2 border-[#00E5A3]/70">
+                <span className="text-slate-400 uppercase font-bold text-[10px] tracking-widest block mb-0.5">Feel</span>
                 <span className="text-[#00E5A3] font-bold text-base">
                   {currentAct.feel === 5 ? 'Great' : currentAct.feel === 4 ? 'Good' : 'Normal'}
                 </span>

@@ -41,6 +41,7 @@ interface MapCardProps {
   coordinates: [number, number][];
   useImperial?: boolean;
   hoveredCoordinate?: [number, number] | null;
+  highlightedSegment?: [number, number][] | null;
   mapStyle: MapStyle;
   onChangeStyle: (style: MapStyle) => void;
   isExpanded: boolean;
@@ -58,6 +59,7 @@ const MapCard: React.FC<MapCardProps> = ({
   coordinates,
   useImperial = false,
   hoveredCoordinate,
+  highlightedSegment,
   mapStyle,
   onChangeStyle,
   isExpanded,
@@ -69,6 +71,8 @@ const MapCard: React.FC<MapCardProps> = ({
   const polylineLayerRef = useRef<L.Polyline | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const hoverMarkerRef = useRef<L.Marker | null>(null);
+  const highlightLayersRef = useRef<L.Layer[]>([]);
+  const hadHighlightRef = useRef(false);
   const [hasTileError, setHasTileError] = useState(false);
 
   const handleRecenter = () => {
@@ -251,6 +255,98 @@ const MapCard: React.FC<MapCardProps> = ({
     }
   }, [hoveredCoordinate]);
 
+  // Highlight selected segment between 2 chart points in contrasting color + endpoint markers
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clear previous highlight layers
+    highlightLayersRef.current.forEach((layer) => {
+      try {
+        map.removeLayer(layer);
+      } catch {
+        // ignore if already removed
+      }
+    });
+    highlightLayersRef.current = [];
+
+    if (!highlightedSegment || highlightedSegment.length < 2) {
+      if (polylineLayerRef.current) {
+        polylineLayerRef.current.setStyle({ opacity: 0.95 });
+        if (hadHighlightRef.current) {
+          map.fitBounds(polylineLayerRef.current.getBounds(), {
+            padding: [45, 45],
+            animate: true,
+          });
+        }
+      }
+      hadHighlightRef.current = false;
+      return;
+    }
+
+    hadHighlightRef.current = true;
+    if (polylineLayerRef.current) {
+      polylineLayerRef.current.setStyle({ opacity: 0.3 });
+    }
+
+    const casing = L.polyline(highlightedSegment, {
+      color: '#000000',
+      weight: 8,
+      opacity: 0.75,
+      lineJoin: 'round',
+      lineCap: 'round',
+    }).addTo(map);
+
+    const segmentLine = L.polyline(highlightedSegment, {
+      color: '#FC5200',
+      weight: 5,
+      opacity: 1,
+      lineJoin: 'round',
+      lineCap: 'round',
+    }).addTo(map);
+
+    const makePinIcon = (label: string) =>
+      L.divIcon({
+        className: 'custom-map-selection-pin',
+        html: `
+          <div style="
+            width: 20px;
+            height: 20px;
+            border-radius: 9999px;
+            background-color: #FC5200;
+            border: 2.5px solid #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.75);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+          ">${label}</div>
+        `,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+
+    const startPin = L.marker(highlightedSegment[0], {
+      icon: makePinIcon('A'),
+      zIndexOffset: 1500,
+    }).addTo(map);
+
+    const endPin = L.marker(highlightedSegment[highlightedSegment.length - 1], {
+      icon: makePinIcon('B'),
+      zIndexOffset: 1500,
+    }).addTo(map);
+
+    highlightLayersRef.current = [casing, segmentLine, startPin, endPin];
+
+    map.fitBounds(segmentLine.getBounds(), {
+      padding: [48, 48],
+      animate: true,
+    });
+  }, [highlightedSegment, coordinates]);
+
   return (
     <div
       className={`relative isolate bg-[#1F2025] border border-[#383941] overflow-hidden shadow-xl rounded-3xl ${
@@ -368,6 +464,8 @@ interface ActivityMapProps {
   cartoApiKey?: string;
   /** Current point hovered on one of the telemetry charts [lat, lng]. */
   hoveredCoordinate?: [number, number] | null;
+  /** Highlighted GPS sub-segment when zoomed on telemetry charts. */
+  highlightedSegment?: [number, number][] | null;
   isPinned?: boolean;
   onClose?: () => void;
 }
@@ -377,6 +475,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
   coordinates,
   useImperial = false,
   hoveredCoordinate,
+  highlightedSegment,
   onClose,
 }) => {
   const [mapStyle, setMapStyle] = useState<MapStyle>('streets');
@@ -404,6 +503,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
           coordinates={coordinates}
           useImperial={useImperial}
           hoveredCoordinate={hoveredCoordinate}
+          highlightedSegment={highlightedSegment}
           mapStyle={mapStyle}
           onChangeStyle={setMapStyle}
           isExpanded={false}
@@ -424,6 +524,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({
               coordinates={coordinates}
               useImperial={useImperial}
               hoveredCoordinate={hoveredCoordinate}
+              highlightedSegment={highlightedSegment}
               mapStyle={mapStyle}
               onChangeStyle={setMapStyle}
               isExpanded={true}

@@ -31,11 +31,11 @@ export const ZoneHistogramChart: React.FC<ZoneHistogramChartProps> = ({
   }));
 
   return (
-    <div className="bg-[#1F2025] border border-[#383941] p-4 sm:p-5 rounded-3xl space-y-4">
+    <div className="py-5 border-t border-white/10 space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           {icon}
-          <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300 truncate">
+          <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 truncate">
             {title}
           </h3>
         </div>

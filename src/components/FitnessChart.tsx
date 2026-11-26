@@ -48,43 +48,43 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
   const isAndroidApp = isAndroid();
 
   return (
-    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+    <div className={`border-y border-white/10 ${isAndroidApp ? 'py-4' : 'py-6'}`}>
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
-              Fitness & Form
+            <span className="text-[11px] font-bold tracking-[0.14em] text-[#00E5A3] uppercase">
+              Fitness &amp; Form
             </span>
             {formStatus ? (
               <span
-                className="px-2 py-0.5 rounded text-[10px] font-bold"
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                 style={{ backgroundColor: formStatus.badgeBg, color: formStatus.color }}
               >
                 {formStatus.label}
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-slate-400">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-400">
                 No data
               </span>
             )}
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
+          <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight mt-1">
             Chronic Training Load (CTL) vs Acute Fatigue (ATL)
           </h3>
         </div>
 
         {/* Range Selector (hidden on Android header, placed below) */}
         {!isAndroidApp && (
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl self-start sm:self-auto border border-[#383941]">
+          <div className="flex items-center gap-1 self-start sm:self-auto font-mono">
             {(['14', '30', '90', '180', 'ALL'] as RangeOption[]).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   range === r
-                    ? 'bg-[#3E4049] text-white shadow'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                    : 'text-[#989dab] hover:text-white'
                 }`}
               >
                 {r === 'ALL' ? 'ALL' : `${r}D`}

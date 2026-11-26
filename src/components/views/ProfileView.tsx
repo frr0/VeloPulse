@@ -46,73 +46,76 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const effectiveWeightKg = athlete?.weight || settings?.riderWeightKg || null;
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto animate-fadeIn">
-      {/* Athlete Hero Card */}
-      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-7 shadow-xl">
-        <div className="flex items-center gap-5 mb-6">
+    <div className="space-y-10 max-w-3xl mx-auto animate-fadeIn pb-10">
+      {/* Athlete Hero Band */}
+      <section className="pb-8 border-b border-white/10">
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3] block mb-4">
+          Athlete Profile
+        </span>
+        <div className="flex items-center gap-5 mb-8">
           {athlete?.profile_medium ? (
             <img
               src={athlete.profile_medium}
               alt={displayName}
-              className="w-16 h-16 rounded-2xl object-cover border-2 border-[#00E5A3]"
+              className="w-16 h-16 rounded-full object-cover border-2 border-[#00E5A3]"
             />
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-[#2F3037] border border-[#383941] flex items-center justify-center text-[#00E5A3] font-black text-2xl">
+            <div className="w-16 h-16 rounded-full bg-[#00E5A3]/10 border border-[#00E5A3]/30 flex items-center justify-center text-[#00E5A3] font-black text-2xl">
               {displayName.charAt(0).toUpperCase()}
             </div>
           )}
 
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-white">{displayName}</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">{displayName}</h2>
             {(athlete?.city || athlete?.country) && (
               <span className="text-xs text-slate-400 block mt-0.5">
                 {[athlete.city, athlete.country].filter(Boolean).join(', ')}
               </span>
             )}
-            <span className="inline-block mt-2 bg-[#2F3037] px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
               Athlete ID: {athlete?.id || credentials?.athleteId || '0'}
             </span>
           </div>
         </div>
 
-        {/* Baselines Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#2F3037] rounded-2xl border border-white/5 text-center">
-          <div>
-            <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+        {/* Baselines Grid (Card-Free Left-Accent Columns) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className="pl-3.5 border-l-2 border-[#FC5200]/70">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
               <Zap className="w-3 h-3 text-[#FC5200]" />
               FTP
             </div>
-            <span className="text-lg font-black text-white">
+            <span className="text-xl font-black text-white tabular-nums">
               {effectiveFtp !== null ? `${effectiveFtp} W` : '--'}
             </span>
           </div>
 
-          <div>
-            <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <div className="pl-3.5 border-l-2 border-red-400/70">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
               <Heart className="w-3 h-3 text-red-400" />
               Rest HR
             </div>
-            <span className="text-lg font-black text-white">
+            <span className="text-xl font-black text-white tabular-nums">
               {effectiveRestHr !== null ? `${effectiveRestHr} bpm` : '--'}
             </span>
           </div>
 
-          <div>
-            <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <div className="pl-3.5 border-l-2 border-red-500/70">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
               <Heart className="w-3 h-3 text-red-500" />
               Max HR
             </div>
-            <span className="text-lg font-black text-white">
+            <span className="text-xl font-black text-white tabular-nums">
               {effectiveMaxHr !== null ? `${effectiveMaxHr} bpm` : '--'}
             </span>
           </div>
 
-          <div>
-            <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <div className="pl-3.5 border-l-2 border-[#00B4D8]/70">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
               <Scale className="w-3 h-3 text-[#00B4D8]" />
               Weight
             </div>
-            <span className="text-lg font-black text-white">
+            <span className="text-xl font-black text-white tabular-nums">
               {effectiveWeightKg === null
                 ? '--'
                 : useImperial
@@ -121,50 +124,50 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </span>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Smart Trainer & Physics Settings */}
-      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
+      <section className="pb-8 border-b border-white/10 space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3] flex items-center gap-2">
             <Gauge className="w-4 h-4 text-[#00E5A3]" />
-            <span>Smart Trainer & Cycling Physics</span>
+            <span>Smart Trainer &amp; Cycling Physics</span>
           </h3>
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
-              className="px-3 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-[#00E5A3] hover:bg-[#3E4049] transition-colors"
+              className="px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-xs font-bold text-[#00E5A3] transition-colors"
             >
               Configure Parameters
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#2F3037] rounded-2xl border border-white/5 text-center text-xs">
-          <div>
-            <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Bike Weight</span>
-            <span className="font-bold text-white text-sm">{settings?.bikeWeightKg ?? 9} kg</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
+          <div className="pl-3.5 border-l-2 border-white/20">
+            <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">Bike Weight</span>
+            <span className="font-black text-white text-base tabular-nums">{settings?.bikeWeightKg ?? 9} kg</span>
           </div>
-          <div>
-            <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">CdA (Aero Drag)</span>
-            <span className="font-bold text-white text-sm">{settings?.cda ?? 0.32} m²</span>
+          <div className="pl-3.5 border-l-2 border-white/20">
+            <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">CdA (Aero Drag)</span>
+            <span className="font-black text-white text-base tabular-nums">{settings?.cda ?? 0.32} m²</span>
           </div>
-          <div>
-            <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Speed Source</span>
-            <span className="font-bold text-[#00E5A3] text-sm uppercase">
+          <div className="pl-3.5 border-l-2 border-[#00E5A3]/70">
+            <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">Speed Source</span>
+            <span className="font-black text-[#00E5A3] text-sm uppercase">
               {settings?.speedSource === 'physics' ? 'Virtual Physics' : 'Flywheel'}
             </span>
           </div>
-          <div>
-            <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Sound Audio Cues</span>
-            <span className="font-bold text-white text-sm">
+          <div className="pl-3.5 border-l-2 border-white/20">
+            <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">Sound Audio Cues</span>
+            <span className="font-black text-white text-base">
               {settings?.soundAlerts ? 'Enabled' : 'Muted'}
             </span>
           </div>
         </div>
 
         {onOpenBluetooth && (
-          <div className="pt-2 flex items-center justify-between">
+          <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4">
             <div>
               <span className="text-sm font-bold text-white block">Bluetooth Hardware Sensors</span>
               <span className="text-xs text-slate-400">
@@ -173,25 +176,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <button
               onClick={onOpenBluetooth}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#00E5A3]/15 hover:bg-[#00E5A3]/25 border border-[#00E5A3]/30 text-xs font-bold text-[#00E5A3] transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#00E5A3]/15 hover:bg-[#00E5A3]/25 text-xs font-bold text-[#00E5A3] transition-colors shrink-0"
             >
               <Bluetooth className="w-3.5 h-3.5" />
-              <span>Sensors Modal</span>
+              <span>Sensors</span>
             </button>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Data Sources (Intervals.icu, Strava, Garmin .FIT) in Supabase mode */}
       <DataSourcesCard />
 
       {/* Preferences & Units */}
-      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 shadow-xl space-y-5">
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+      <section className="pb-8 border-b border-white/10 space-y-1">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3] mb-4">
           {isSupabaseMode ? 'Preferences & Sync' : 'Preferences & Intervals.icu Sync'}
         </h3>
 
-        <div className="flex items-center justify-between py-2 border-b border-white/5">
+        <div className="flex items-center justify-between py-4 border-b border-white/10">
           <div>
             <span className="text-sm font-bold text-white block">Units of Measurement</span>
             <span className="text-xs text-slate-400">
@@ -200,13 +203,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <button
             onClick={toggleUnits}
-            className="px-3.5 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-[#00E5A3] hover:bg-[#3E4049] transition-colors"
+            className="px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-xs font-bold text-[#00E5A3] transition-colors"
           >
             Switch to {useImperial ? 'Metric' : 'Imperial'}
           </button>
         </div>
 
-        <div className="flex items-center justify-between py-2 border-b border-white/5">
+        <div className="flex items-center justify-between py-4 border-b border-white/10">
           <div>
             <span className="text-sm font-bold text-white block">Connection Type</span>
             <span className="text-xs text-slate-400">
@@ -219,14 +222,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <span
             className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-              isDemo ? 'bg-amber-500/10 text-amber-400' : 'bg-[#00E5A3]/10 text-[#00E5A3]'
+              isDemo ? 'bg-amber-500/15 text-amber-400' : 'bg-[#00E5A3]/15 text-[#00E5A3]'
             }`}
           >
             {isDemo ? 'Demo Mode' : isSupabaseMode ? 'Supabase DB' : 'Live Sync'}
           </span>
         </div>
 
-        <div className="flex items-center justify-between py-2">
+        <div className="flex items-center justify-between py-4">
           <div>
             <span className="text-sm font-bold text-white block">Force Re-sync</span>
             <span className="text-xs text-slate-400">Pull freshest workouts, wellness, and events</span>
@@ -234,13 +237,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             onClick={refreshData}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-white hover:bg-[#3E4049] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-xs font-bold text-white transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#00E5A3]' : ''}`} />
             <span>Sync Now</span>
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Disconnect Account: not in the published demo (DEMO_ONLY), which has
           no login and no logout. */}
@@ -248,14 +251,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {!DEMO_ONLY && (
           <button
             onClick={logout}
-            className="inline-flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-2xl transition-all"
+            className="inline-flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-wider py-2.5 px-6 rounded-full transition-all"
           >
             <LogOut className="w-4 h-4" />
             <span>{isSupabaseMode ? 'Sign Out' : 'Disconnect Intervals.icu Account'}</span>
           </button>
         )}
-        <span className="text-[11px] text-slate-500 block mt-2">
-          VeloPulse • Unified Smart Cycling & Intervals Platform
+        <span className="text-[11px] text-slate-500 block mt-3">
+          VeloLab • Unified Smart Cycling &amp; Intervals Platform
         </span>
         <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-slate-500">
           <a
@@ -264,7 +267,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             rel="noopener"
             className="hover:text-slate-300 underline underline-offset-2"
           >
-            Informativa sulla privacy
+            Privacy Policy
           </a>
           <span className="text-slate-600">&middot;</span>
           <a
@@ -273,7 +276,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             rel="noopener"
             className="hover:text-slate-300 underline underline-offset-2"
           >
-            Termini di servizio
+            Terms of Service
           </a>
         </div>
       </div>

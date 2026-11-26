@@ -423,7 +423,7 @@ export const LoginView: React.FC = () => {
             rel="noopener"
             className="hover:text-slate-300 underline underline-offset-2"
           >
-            Informativa sulla privacy
+            Privacy Policy
           </a>
           <span className="text-slate-600">&middot;</span>
           <a
@@ -432,7 +432,7 @@ export const LoginView: React.FC = () => {
             rel="noopener"
             className="hover:text-slate-300 underline underline-offset-2"
           >
-            Termini di servizio
+            Terms of Service
           </a>
         </div>
       </div>

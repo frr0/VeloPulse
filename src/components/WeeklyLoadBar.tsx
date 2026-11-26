@@ -44,15 +44,15 @@ export const WeeklyLoadBar: React.FC<WeeklyLoadBarProps> = ({ activities }) => {
   const activeDays = weekData.filter((d) => d.load > 0).length;
 
   return (
-    <div className="bg-[#1F2025] rounded-2xl p-5 border border-[#383941] shadow-xl">
-      <div className="flex items-center justify-between mb-4">
+    <div className="pt-6 border-t border-white/10">
+      <div className="flex items-baseline justify-between mb-4">
         <div>
-          <span className="text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">
+          <span className="text-[11px] font-bold tracking-[0.12em] text-[#00E5A3] uppercase block">
             7-Day Training Load
           </span>
-          <div className="flex items-baseline gap-2 mt-0.5">
-            <span className="text-3xl font-black text-white">{totalLoad}</span>
-            <span className="text-xs text-slate-400 font-semibold">TSS ({activeDays}/7 days)</span>
+          <div className="flex items-baseline gap-2.5 mt-1">
+            <span className="text-3xl font-black font-mono text-white leading-none">{totalLoad}</span>
+            <span className="text-xs text-[#989dab] font-mono">TSS &middot; {activeDays}/7 days</span>
           </div>
         </div>
       </div>

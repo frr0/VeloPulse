@@ -38,6 +38,8 @@ export interface ActivitySeries {
   cadence: NumericSeries | null;
   /** Speed in km/h. null when the activity has no velocity stream. */
   speed: NumericSeries | null;
+  /** GPS [lat, lng] aligned 1:1 with each sample, if a `latlng` stream was present. */
+  latlng?: ([number, number] | null)[] | null;
 }
 
 /**
@@ -154,6 +156,34 @@ export function readActivitySeries(streams: ActivityStream[]): ActivitySeries | 
     return hasAnyValue(series) ? series : null;
   };
 
+  // Keep 1:1 sample-aligned GPS coordinates directly from the `latlng` stream
+  const latlngStream = streams.find((candidate) => candidate.type === 'latlng');
+  let alignedLatlng: ([number, number] | null)[] | null = null;
+  if (latlngStream && Array.isArray(latlngStream.data) && latlngStream.data.length > 0) {
+    const lats = latlngStream.data;
+    const lngs = Array.isArray(latlngStream.data2) ? latlngStream.data2 : null;
+    let hasValidCoord = false;
+    const coords: ([number, number] | null)[] = keptIndexes.map((idx) => {
+      const lat = lats[idx];
+      if (lngs) {
+        const lng = lngs[idx];
+        if (isFiniteNumber(lat) && isFiniteNumber(lng)) {
+          hasValidCoord = true;
+          return [lat, lng];
+        }
+        return null;
+      }
+      if (Array.isArray(lat) && isFiniteNumber(lat[0]) && isFiniteNumber(lat[1])) {
+        hasValidCoord = true;
+        return [lat[0], lat[1]];
+      }
+      return null;
+    });
+    if (hasValidCoord) {
+      alignedLatlng = coords;
+    }
+  }
+
   const series: ActivitySeries = {
     timeSecs,
     intervalSecs: medianInterval(timeSecs),
@@ -163,10 +193,101 @@ export function readActivitySeries(streams: ActivityStream[]): ActivitySeries | 
     cadence: build(rawCadence),
     // Intervals.icu provides velocity in m/s; convert to km/h (1 m/s = 3.6 km/h)
     speed: build(rawSpeed, 3.6),
+    latlng: alignedLatlng,
   };
 
   if (!series.altitude && !series.heartrate && !series.watts && !series.cadence && !series.speed) return null;
   return series;
+}
+
+/**
+ * Removes prolonged stationary pauses (e.g. speed <= 1.5 km/h for >= 15s, or
+ * auto-pause gaps > 15s in elapsed time) and compresses the time axis into
+ * clean, continuous moving time while preserving 1:1 alignment across all
+ * telemetry streams and GPS coordinates.
+ */
+export function trimStationaryPauses(
+  series: ActivitySeries,
+  minPauseSeconds: number = 15,
+  minMovingKmh: number = 1.5
+): ActivitySeries {
+  const n = series.timeSecs.length;
+  if (n < 4) return series;
+
+  const hasSpeed = Boolean(series.speed && series.speed.some((v) => v !== null && v > minMovingKmh));
+  const keep = new Array<boolean>(n).fill(true);
+
+  if (hasSpeed && series.speed) {
+    let i = 0;
+    while (i < n) {
+      const isStopped = (idx: number): boolean => {
+        const spd = series.speed![idx];
+        const watts = series.watts?.[idx];
+        const cad = series.cadence?.[idx];
+        const speedZero = spd === null || spd <= minMovingKmh;
+        // Never treat active indoor pedaling as stopped
+        const activelyPedaling =
+          (watts !== null && watts !== undefined && watts > 25) ||
+          (cad !== null && cad !== undefined && cad > 20);
+        return speedZero && !activelyPedaling;
+      };
+
+      if (isStopped(i)) {
+        const runStart = i;
+        while (i < n && isStopped(i)) i++;
+        const runEnd = i - 1;
+        const duration = series.timeSecs[runEnd] - series.timeSecs[runStart];
+        const touchesEdge = runStart === 0 || runEnd === n - 1;
+        // Trim any stop >= minPauseSeconds, or dead-zero tail/lead >= 5s
+        if (duration >= minPauseSeconds || (touchesEdge && duration >= 5)) {
+          for (let k = runStart; k <= runEnd; k++) {
+            keep[k] = false;
+          }
+        }
+      } else {
+        i++;
+      }
+    }
+  }
+
+  const keptIndices: number[] = [];
+  for (let i = 0; i < n; i++) {
+    if (keep[i]) keptIndices.push(i);
+  }
+
+  // Safety guard: never wipe out a ride if speed data was corrupted
+  if (keptIndices.length < 4 || keptIndices.length < n * 0.05) {
+    return series;
+  }
+
+  // Build clean continuous moving-time axis (collapsing any pause gaps > minPauseSeconds)
+  const newTimeSecs: number[] = [0];
+  let accum = 0;
+  for (let j = 1; j < keptIndices.length; j++) {
+    const prevIdx = keptIndices[j - 1];
+    const currIdx = keptIndices[j];
+    const rawDt = series.timeSecs[currIdx] - series.timeSecs[prevIdx];
+    const dt =
+      currIdx === prevIdx + 1 && rawDt > 0 && rawDt <= minPauseSeconds
+        ? rawDt
+        : Math.max(0.5, Math.min(rawDt > 0 ? rawDt : series.intervalSecs, series.intervalSecs));
+    accum += dt;
+    newTimeSecs.push(Math.round(accum * 10) / 10);
+  }
+
+  const pickNumeric = (arr: NumericSeries | null): NumericSeries | null =>
+    arr ? keptIndices.map((idx) => arr[idx]) : null;
+
+  return {
+    timeSecs: newTimeSecs,
+    intervalSecs: series.intervalSecs,
+    altitude: pickNumeric(series.altitude),
+    heartrate: pickNumeric(series.heartrate),
+    watts: pickNumeric(series.watts),
+    cadence: pickNumeric(series.cadence),
+    speed: pickNumeric(series.speed),
+    latlng: series.latlng ? keptIndices.map((idx) => series.latlng![idx]) : null,
+  };
 }
 
 /** One drawn point: the elapsed time and the value recorded at that moment. */
@@ -277,21 +398,54 @@ export function thinSeriesForChart(
   const step = Math.max(1, Math.ceil(length / Math.max(1, maxPoints)));
   const points: ChartPoint[] = [];
 
-  const buildPoint = (i: number): ChartPoint => ({
-    t: timeSecs[i],
-    v: series[i],
-    alt: altitude && altitude[i] !== undefined ? altitude[i] : null,
-    latlng: latlngSeries && latlngSeries[i] ? latlngSeries[i] : null,
-  });
-
-  for (let i = 0; i < length; i += step) {
-    points.push(buildPoint(i));
+  if (step === 1) {
+    for (let i = 0; i < length; i++) {
+      points.push({
+        t: timeSecs[i],
+        v: series[i],
+        alt: altitude && altitude[i] !== undefined ? altitude[i] : null,
+        latlng: latlngSeries && latlngSeries[i] ? latlngSeries[i] : null,
+      });
+    }
+    return points;
   }
 
-  // The last sample closes the chart on the real end of the activity.
-  const last = length - 1;
-  if (points.length === 0 || points[points.length - 1].t !== timeSecs[last]) {
-    points.push(buildPoint(last));
+  // Bucket-average each window to eliminate 1-sample aliasing spikes while
+  // keeping exact time & GPS coordinate alignment
+  for (let start = 0; start < length; start += step) {
+    const end = Math.min(length, start + step);
+    const mid = Math.floor((start + end - 1) / 2);
+
+    let vSum = 0;
+    let vCount = 0;
+    let altSum = 0;
+    let altCount = 0;
+    let coord: [number, number] | null = null;
+
+    for (let i = start; i < end; i++) {
+      const val = series[i];
+      if (val !== null && val !== undefined && Number.isFinite(val)) {
+        vSum += val;
+        vCount++;
+      }
+      if (altitude) {
+        const a = altitude[i];
+        if (a !== null && a !== undefined && Number.isFinite(a)) {
+          altSum += a;
+          altCount++;
+        }
+      }
+      if (!coord && latlngSeries && latlngSeries[i]) {
+        coord = latlngSeries[i];
+      }
+    }
+
+    points.push({
+      t: timeSecs[mid],
+      v: vCount > 0 ? vSum / vCount : null,
+      alt: altCount > 0 ? altSum / altCount : null,
+      latlng: coord,
+    });
   }
 
   return points;

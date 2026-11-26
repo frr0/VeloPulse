@@ -500,8 +500,9 @@ function updateArticulatedLeg(leg: LegRig, crankAngle: number) {
   const hipY = 0.99;
   const hipZ = -0.23;
 
-  const pedalY = bbY + Math.sin(crankAngle) * crankR;
-  const pedalZ = bbZ + Math.cos(crankAngle) * crankR;
+  // Forward pedaling (+Z is forward): Top (+Y) -> Forward (+Z) -> Bottom (-Y) -> Back (-Z)
+  const pedalY = bbY + Math.cos(crankAngle) * crankR;
+  const pedalZ = bbZ + Math.sin(crankAngle) * crankR;
 
   // Ankle sits slightly above & behind the pedal cleat
   const ankleY = pedalY + 0.06;

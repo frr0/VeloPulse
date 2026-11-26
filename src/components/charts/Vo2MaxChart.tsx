@@ -66,46 +66,45 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
   const isAndroidApp = isAndroid();
 
   return (
-    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+    <div className={`${isAndroidApp ? 'py-4' : 'py-6'} border-y border-white/10`}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-bold tracking-[0.14em] text-[#A855F7] uppercase">
               Aerobic Capacity
             </span>
             {classification ? (
               <span
-                className="px-2 py-0.5 rounded text-[10px] font-bold"
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
                 style={{
-                  backgroundColor: `${classification.color}20`,
+                  backgroundColor: `${classification.color}18`,
                   color: classification.color,
-                  border: `1px solid ${classification.color}40`,
                 }}
               >
                 {classification.tier} ({classification.desc})
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-400">
                 No data
               </span>
             )}
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
-            VO2 Max Progression & Aerobic Fitness Trend
+          <h3 className="text-base sm:text-lg font-black text-white mt-0.5 tracking-tight">
+            VO2 Max Progression &amp; Aerobic Fitness Trend
           </h3>
         </div>
 
         {/* Range Selector (Desktop / Web only in header) */}
         {!isAndroidApp && (
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+          <div className="flex items-center gap-1.5">
             {(['14', '30', '90', '180'] as RangeOption[]).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   range === r
-                    ? 'bg-[#3E4049] text-white shadow'
+                    ? 'bg-[#A855F7]/20 text-[#A855F7]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -118,85 +117,64 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
 
       {/* Hero Stats Triplet (Desktop / Web only in header) */}
       {!isAndroidApp && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Current VO2 Max
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+          <div className="pl-3.5 border-l-2 border-[#A855F7]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+              Current VO2 Max
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-black text-white tabular-nums">
+                {latest !== null ? latest.toFixed(1) : '--'}
               </span>
-              <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-2xl font-black text-white">
-                  {latest !== null ? latest.toFixed(1) : '--'}
-                </span>
-                {latest !== null && (
-                  <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
-                )}
-              </div>
-            </div>
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{
-                backgroundColor: `${classification?.color ?? '#64748B'}15`,
-                color: classification?.color ?? '#64748B',
-              }}
-            >
-              <Award className="w-5 h-5" />
+              {latest !== null && (
+                <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+              )}
             </div>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                {range}D Progression
+          <div className="pl-3.5 border-l-2 border-[#00E5A3]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+              {range}D Progression
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span
+                className="text-2xl font-black tabular-nums"
+                style={{
+                  color:
+                    change === null
+                      ? '#94A3B8'
+                      : change >= 0
+                      ? '#00E5A3'
+                      : '#EF4444',
+                }}
+              >
+                {change === null
+                  ? '--'
+                  : change >= 0
+                  ? `+${change.toFixed(1)}`
+                  : change.toFixed(1)}
               </span>
-              <div className="flex items-baseline gap-1 mt-0.5">
-                <span
-                  className="text-2xl font-black"
-                  style={{
-                    color:
-                      change === null
-                        ? '#94A3B8'
-                        : change >= 0
-                        ? '#00E5A3'
-                        : '#EF4444',
-                  }}
-                >
-                  {change === null
-                    ? '--'
-                    : change >= 0
-                    ? `+${change.toFixed(1)}`
-                    : change.toFixed(1)}
-                </span>
-                {change !== null && (
-                  <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
-                )}
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-[#00E5A3]/15 text-[#00E5A3] flex items-center justify-center">
-              <TrendingUp className="w-5 h-5" />
+              {change !== null && (
+                <span className="text-xs text-slate-400 font-bold">ml/kg/min</span>
+              )}
             </div>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Aerobic Tier
-              </span>
-              <div className="flex items-baseline gap-1 mt-0.5">
-                <span
-                  className="text-2xl font-black"
-                  style={{ color: classification?.color ?? '#94A3B8' }}
-                >
-                  {classification ? classification.tier : '--'}
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-400 block">
-                {classification ? classification.desc : 'No VO2 Max recorded'}
+          <div className="pl-3.5 border-l-2 border-white/25">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+              Aerobic Tier
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span
+                className="text-2xl font-black"
+                style={{ color: classification?.color ?? '#94A3B8' }}
+              >
+                {classification ? classification.tier : '--'}
               </span>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-[#A855F7]/15 text-[#A855F7] flex items-center justify-center">
-              <Flame className="w-5 h-5" />
-            </div>
+            <span className="text-[10px] text-slate-400 block">
+              {classification ? classification.desc : 'No VO2 Max recorded'}
+            </span>
           </div>
         </div>
       )}

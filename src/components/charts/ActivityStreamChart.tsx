@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Maximize2, X } from 'lucide-react';
 import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -58,6 +59,10 @@ interface ActivityStreamChartProps {
   footnote?: string;
   /** Callback fired when the pointer hovers over a point with coordinates. */
   onHoverPoint?: (coord: [number, number] | null) => void;
+  /** Callback fired when the user clicks and drags to select a [startSec, endSec] range. */
+  onSelectRange?: (range: [number, number]) => void;
+  /** Callback fired when the user double-clicks the chart to reset zoom. */
+  onResetRange?: () => void;
 }
 
 /** Ticks of the time axis: about six round marks over the whole activity. */
@@ -95,13 +100,77 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
   reference,
   footnote,
   onHoverPoint,
+  onSelectRange,
+  onResetRange,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [dragEnd, setDragEnd] = useState<number | null>(null);
+  const [dragBox, setDragBox] = useState<{ left: number; width: number } | null>(null);
+  const dragRef = useRef<{ start: number | null; end: number | null }>({ start: null, end: null });
+  const dragPixelRef = useRef<{ startX: number; rectLeft: number; rectWidth: number } | null>(null);
 
   const ticks = useMemo(() => timeTicks(rows), [rows]);
   const formatValue = (value: number): string => value.toFixed(decimals);
   const hasAltitudeBackground =
     title !== 'Altitude' && rows.some((r) => r.alt !== null && r.alt !== undefined);
+
+  const commitDragSelection = useCallback(() => {
+    const { start, end } = dragRef.current;
+    dragRef.current = { start: null, end: null };
+    dragPixelRef.current = null;
+    setDragStart(null);
+    setDragEnd(null);
+    setDragBox(null);
+    if (start !== null && end !== null && onSelectRange) {
+      const lo = Math.min(start, end);
+      const hi = Math.max(start, end);
+      if (hi - lo >= 2) {
+        onSelectRange([lo, hi]);
+      }
+    }
+  }, [onSelectRange]);
+
+  const handleContainerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || rows.length < 2) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const plotLeft = 24;
+    const plotRight = Math.max(plotLeft + 1, rect.width - 8);
+    const x = Math.max(plotLeft, Math.min(plotRight, e.clientX - rect.left));
+    dragPixelRef.current = { startX: x, rectLeft: rect.left, rectWidth: rect.width };
+    setDragBox({ left: x, width: 0 });
+  };
+
+  const handleContainerMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragPixelRef.current) return;
+    const { startX, rectLeft, rectWidth } = dragPixelRef.current;
+    const plotLeft = 24;
+    const plotRight = Math.max(plotLeft + 1, rectWidth - 8);
+    const currX = Math.max(plotLeft, Math.min(plotRight, e.clientX - rectLeft));
+    const left = Math.min(startX, currX);
+    const width = Math.abs(currX - startX);
+    setDragBox({ left, width });
+  };
+
+  // Complete drag cleanly even if mouse is released outside the chart area
+  useEffect(() => {
+    if (dragStart === null && dragBox === null) return;
+    const handleWindowMouseUp = () => commitDragSelection();
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    return () => window.removeEventListener('mouseup', handleWindowMouseUp);
+  }, [dragStart, dragBox, commitDragSelection]);
+
+  const extractTimeFromState = (state: { activeLabel?: unknown; activePayload?: Array<{ payload?: StreamChartRow }> } | null | undefined): number | null => {
+    if (!state) return null;
+    if (state.activePayload && state.activePayload.length > 0) {
+      const t = state.activePayload[0]?.payload?.t;
+      if (typeof t === 'number' && Number.isFinite(t)) return t;
+    }
+    if (typeof state.activeLabel === 'number' && Number.isFinite(state.activeLabel)) {
+      return state.activeLabel;
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -117,12 +186,30 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
 
   const renderAreaChart = (expanded: boolean) => {
     const activeGradientId = expanded ? `${gradientId}-expanded` : gradientId;
+    const selMin = dragStart !== null && dragEnd !== null ? Math.min(dragStart, dragEnd) : null;
+    const selMax = dragStart !== null && dragEnd !== null ? Math.max(dragStart, dragEnd) : null;
+
     return (
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={rows}
           margin={{ top: 6, right: 8, left: -22, bottom: 0 }}
+          onMouseDown={(state) => {
+            const t = extractTimeFromState(state);
+            if (t !== null) {
+              dragRef.current = { start: t, end: t };
+              setDragStart(t);
+              setDragEnd(t);
+            }
+          }}
           onMouseMove={(state) => {
+            if (dragRef.current.start !== null) {
+              const t = extractTimeFromState(state);
+              if (t !== null) {
+                dragRef.current.end = t;
+                setDragEnd(t);
+              }
+            }
             if (onHoverPoint && state && state.activePayload && state.activePayload.length > 0) {
               const row = state.activePayload[0].payload as StreamChartRow;
               if (row.latlng && row.latlng[0] && row.latlng[1]) {
@@ -132,6 +219,11 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
             }
             if (onHoverPoint && (!state || !state.isTooltipActive)) {
               onHoverPoint(null);
+            }
+          }}
+          onMouseUp={() => {
+            if (dragRef.current.start !== null) {
+              commitDragSelection();
             }
           }}
           onMouseLeave={() => {
@@ -270,6 +362,21 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
               connectNulls={false}
             />
           )}
+
+          {/* Live click-and-drag selection band & 2 endpoint markers */}
+          {selMin !== null && selMax !== null && selMax > selMin && (
+            <>
+              <ReferenceArea
+                x1={selMin}
+                x2={selMax}
+                fill="#FC5200"
+                fillOpacity={0.22}
+                strokeOpacity={0}
+              />
+              <ReferenceLine x={selMin} stroke="#FC5200" strokeWidth={2} />
+              <ReferenceLine x={selMax} stroke="#FC5200" strokeWidth={2} />
+            </>
+          )}
         </AreaChart>
       </ResponsiveContainer>
     );
@@ -277,22 +384,22 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
 
   return (
     <>
-      <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-4 sm:p-5">
+      <div className="py-5 border-b border-white/10 last:border-b-0">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
             {icon}
-            <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-300 truncate">
+            <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-200 truncate">
               {title}
             </h4>
             <span className="text-[10px] font-bold text-slate-400 shrink-0">({unit})</span>
             {hasAltitudeBackground && (
-              <span className="hidden sm:inline-block text-[10px] font-semibold text-slate-400/80 bg-slate-800/60 px-1.5 py-0.5 rounded border border-white/5">
+              <span className="hidden sm:inline-block text-[10px] font-semibold text-slate-400/80 px-2 py-0.5 rounded-full bg-white/[0.04]">
                 Elevation Bg
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             {highlight && (
               <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
                 <span
@@ -307,28 +414,48 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
               onClick={() => setIsExpanded(true)}
               title="Expand chart"
               aria-label={`Expand ${title} chart`}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-[10px] font-bold text-slate-300 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.1] text-[10px] font-bold text-slate-300 hover:text-white transition-colors"
             >
-              <Maximize2 className="w-3.5 h-3.5 text-[#00E5A3]" />
+              <Maximize2 className="w-3 h-3 text-[#00E5A3]" />
               <span className="hidden sm:inline">Expand</span>
             </button>
           </div>
         </div>
 
-        <div className="w-full h-[180px] sm:h-[200px]">{renderAreaChart(false)}</div>
+        <div
+          className="relative w-full h-[180px] sm:h-[200px] select-none cursor-crosshair"
+          onMouseDown={handleContainerMouseDown}
+          onMouseMove={handleContainerMouseMove}
+          onDoubleClick={() => {
+            dragRef.current = { start: null, end: null };
+            dragPixelRef.current = null;
+            setDragStart(null);
+            setDragEnd(null);
+            setDragBox(null);
+            onResetRange?.();
+          }}
+        >
+          {renderAreaChart(false)}
+          {dragBox && dragBox.width > 2 && (
+            <div
+              className="pointer-events-none absolute top-[6px] bottom-[24px] bg-[#FC5200]/20 border-x-2 border-[#FC5200] rounded-[2px] z-10"
+              style={{ left: `${dragBox.left}px`, width: `${dragBox.width}px` }}
+            />
+          )}
+        </div>
 
-        {footnote && <p className="mt-2 text-[11px] text-slate-400">{footnote}</p>}
+        {footnote && <p className="mt-2 text-[11px] text-slate-500">{footnote}</p>}
       </div>
 
       {/* Expanded Full-Screen Modal */}
       {isExpanded && (
         <div
           data-chart-modal="true"
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
           onClick={() => setIsExpanded(false)}
         >
           <div
-            className="w-full max-w-6xl bg-[#1F2025] border border-[#383941] rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4"
+            className="w-full max-w-6xl bg-[#0f121a]/95 border border-white/15 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3">
@@ -344,7 +471,7 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
                 type="button"
                 onClick={() => setIsExpanded(false)}
                 aria-label="Close expanded chart"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#26272D] hover:bg-[#2F3037] border border-[#383941] text-xs font-bold text-slate-300 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
                 <span>Close</span>
@@ -361,7 +488,27 @@ export const ActivityStreamChart: React.FC<ActivityStreamChartProps> = ({
               </div>
             )}
 
-            <div className="w-full h-[65vh] min-h-[360px]">{renderAreaChart(true)}</div>
+            <div
+              className="relative w-full h-[65vh] min-h-[360px] select-none cursor-crosshair"
+              onMouseDown={handleContainerMouseDown}
+              onMouseMove={handleContainerMouseMove}
+              onDoubleClick={() => {
+                dragRef.current = { start: null, end: null };
+                dragPixelRef.current = null;
+                setDragStart(null);
+                setDragEnd(null);
+                setDragBox(null);
+                onResetRange?.();
+              }}
+            >
+              {renderAreaChart(true)}
+              {dragBox && dragBox.width > 2 && (
+                <div
+                  className="pointer-events-none absolute top-[6px] bottom-[24px] bg-[#FC5200]/20 border-x-2 border-[#FC5200] rounded-[2px] z-10"
+                  style={{ left: `${dragBox.left}px`, width: `${dragBox.width}px` }}
+                />
+              )}
+            </div>
 
             {footnote && <p className="text-xs text-slate-400">{footnote}</p>}
           </div>

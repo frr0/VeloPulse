@@ -105,33 +105,33 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
   const isAndroidApp = isAndroid();
 
   return (
-    <div className={`bg-[#1F2025] rounded-2xl border border-[#383941] shadow-xl ${isAndroidApp ? 'p-3' : 'p-5'}`}>
+    <div className={`${isAndroidApp ? 'py-4' : 'py-6'} border-y border-white/10`}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+            <span className="text-[11px] font-bold tracking-[0.14em] text-[#00B4D8] uppercase">
               Cardiovascular Efficiency
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#00B4D8]/20 text-[#00B4D8] border border-[#00B4D8]/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#00B4D8]/15 text-[#00B4D8]">
               Resting Heart Rate
             </span>
           </div>
-          <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
-            Daily Resting Pulse & 7-Day Baseline Trend
+          <h3 className="text-base sm:text-lg font-black text-white mt-0.5 tracking-tight">
+            Daily Resting Pulse &amp; 7-Day Baseline Trend
           </h3>
         </div>
 
         {/* Range Selector (hidden on Android header, placed below) */}
         {!isAndroidApp && (
-          <div className="flex items-center bg-[#2F3037] p-1 rounded-xl border border-[#383941]">
+          <div className="flex items-center gap-1.5">
             {(['14', '30', '90'] as RangeOption[]).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
                   range === r
-                    ? 'bg-[#3E4049] text-white shadow'
+                    ? 'bg-[#00B4D8]/15 text-[#00B4D8]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -144,13 +144,13 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
 
       {/* Hero Stats (hidden on Android header, placed below) */}
       {!isAndroidApp && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-6">
+          <div className="pl-3.5 border-l-2 border-[#00B4D8]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               Latest Pulse
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-white">
+              <span className="text-2xl font-black text-white tabular-nums">
                 {latestRhr !== null ? latestRhr : '--'}
               </span>
               {latestRhr !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
@@ -160,12 +160,12 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
             </span>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="pl-3.5 border-l-2 border-[#38BDF8]/60">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               7-Day Rolling Avg
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#00B4D8]">
+              <span className="text-2xl font-black text-[#00B4D8] tabular-nums">
                 {avg7d !== null ? avg7d : '--'}
               </span>
               {avg7d !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
@@ -173,12 +173,12 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
             <span className="text-[11px] text-slate-400 font-medium">Smoothed baseline</span>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="pl-3.5 border-l-2 border-[#00E5A3]/70">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               Lowest Recorded
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-[#00E5A3]">
+              <span className="text-2xl font-black text-[#00E5A3] tabular-nums">
                 {lowestRhr !== null ? lowestRhr : '--'}
               </span>
               {lowestRhr !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}
@@ -186,12 +186,12 @@ export const RestingHrChart: React.FC<RestingHrChartProps> = ({
             <span className="text-[11px] text-slate-400 font-medium">Period minimum</span>
           </div>
 
-          <div className="bg-[#26272D] p-3.5 rounded-xl border border-white/5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="pl-3.5 border-l-2 border-white/25">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               Period Average
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-black text-white">
+              <span className="text-2xl font-black text-white tabular-nums">
                 {overallAvg !== null ? overallAvg : '--'}
               </span>
               {overallAvg !== null && <span className="text-xs text-slate-400 font-bold">bpm</span>}

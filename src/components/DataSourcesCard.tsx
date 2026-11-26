@@ -112,25 +112,23 @@ export const DataSourcesCard: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#1F2025] border border-[#383941] rounded-3xl p-6 shadow-xl space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <Database className="w-4 h-4 text-[#00E5A3]" />
-            <span>Data Sources (Supabase DB)</span>
-          </h3>
-          <p className="text-xs text-slate-400 mt-1">
-            Choose where to import activities, power curves, and wellness data into your personal database.
-          </p>
-        </div>
+    <section className="pb-8 border-b border-white/10 space-y-5">
+      <div>
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00E5A3] flex items-center gap-2">
+          <Database className="w-4 h-4 text-[#00E5A3]" />
+          <span>Data Sources (Supabase DB)</span>
+        </h3>
+        <p className="text-xs text-slate-400 mt-1">
+          Choose where to import activities, power curves, and wellness data into your personal database.
+        </p>
       </div>
 
       {feedback && (
         <div
-          className={`p-3 rounded-2xl text-xs font-semibold flex items-center gap-2 ${
+          className={`pl-3.5 border-l-2 py-1 text-xs font-semibold flex items-center gap-2 ${
             feedback.isError
-              ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-              : 'bg-[#00E5A3]/10 border border-[#00E5A3]/30 text-[#00E5A3]'
+              ? 'border-red-500 text-red-400'
+              : 'border-[#00E5A3] text-[#00E5A3]'
           }`}
         >
           <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -138,212 +136,214 @@ export const DataSourcesCard: React.FC = () => {
         </div>
       )}
 
-      {/* 1. Intervals.icu */}
-      <div className="p-4 rounded-2xl bg-[#26272D] border border-[#383941] space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-white">Intervals.icu</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                  intervalsConn
-                    ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
-                    : 'bg-slate-500/15 text-slate-400'
-                }`}
-              >
-                {intervalsConn ? 'Connected' : 'Not connected'}
-              </span>
+      <div className="divide-y divide-white/10">
+        {/* 1. Intervals.icu */}
+        <div className="py-4 pl-3.5 border-l-2 border-[#00E5A3]/60 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">Intervals.icu</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    intervalsConn
+                      ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                      : 'bg-white/5 text-slate-400'
+                  }`}
+                >
+                  {intervalsConn ? 'Connected' : 'Not connected'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Activities, power curves, calendar, HRV, sleep, and CTL/ATL/TSB.
+              </p>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Activities, power curves, calendar, HRV, sleep, and CTL/ATL/TSB.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            {intervalsConn ? (
-              <>
+            <div className="flex items-center gap-2">
+              {intervalsConn ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowIntervalsForm(!showIntervalsForm)}
+                    className="px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-xs font-bold text-slate-200 transition-colors"
+                  >
+                    Update Key
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyProvider === 'intervals'}
+                    onClick={() => handleDisconnect('intervals')}
+                    className="p-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20"
+                    title="Disconnect Intervals.icu"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
                 <button
                   type="button"
                   onClick={() => setShowIntervalsForm(!showIntervalsForm)}
-                  className="px-3 py-1.5 rounded-xl bg-[#2F3037] border border-[#383941] text-xs font-bold text-slate-200 hover:bg-[#3E4049]"
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#00E5A3] text-[#090a0e] font-extrabold text-xs hover:bg-[#00c98f]"
                 >
-                  Update Key
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Connect</span>
                 </button>
-                <button
-                  type="button"
-                  disabled={busyProvider === 'intervals'}
-                  onClick={() => handleDisconnect('intervals')}
-                  className="p-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20"
-                  title="Disconnect Intervals.icu"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowIntervalsForm(!showIntervalsForm)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#00E5A3] text-[#131316] font-extrabold text-xs hover:bg-[#00c98f]"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                <span>Connect</span>
-              </button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        {showIntervalsForm && (
-          <form onSubmit={handleSaveIntervals} className="pt-3 border-t border-white/5 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div className="sm:col-span-2 relative flex items-center">
+          {showIntervalsForm && (
+            <form onSubmit={handleSaveIntervals} className="pt-3 border-t border-white/10 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 relative flex items-center">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Intervals.icu API Key (Settings -> Developer)"
+                    className="w-full bg-transparent border-b border-white/20 focus:border-[#00E5A3] focus:outline-none px-1 py-2 text-xs text-white pr-8"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-1 text-slate-400 hover:text-white"
+                  >
+                    {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
                 <input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Intervals.icu API Key (Settings -> Developer)"
-                  className="w-full bg-[#131316] border border-[#383941] focus:border-[#00E5A3] focus:outline-none rounded-xl px-3 py-2 text-xs text-white pr-9"
+                  type="text"
+                  value={athleteId}
+                  onChange={(e) => setAthleteId(e.target.value)}
+                  placeholder="Athlete ID (optional, default 0)"
+                  className="bg-transparent border-b border-white/20 focus:border-[#00E5A3] focus:outline-none px-1 py-2 text-xs text-white"
                 />
+              </div>
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-2.5 text-slate-400 hover:text-white"
+                  onClick={() => setShowIntervalsForm(false)}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-400 hover:text-white"
                 >
-                  {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={busyProvider === 'intervals' || isRefreshing}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#00E5A3] text-[#090a0e] font-extrabold text-xs disabled:opacity-50"
+                >
+                  {busyProvider === 'intervals' ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : null}
+                  <span>Save &amp; Sync</span>
                 </button>
               </div>
-              <input
-                type="text"
-                value={athleteId}
-                onChange={(e) => setAthleteId(e.target.value)}
-                placeholder="Athlete ID (optional, default 0)"
-                className="bg-[#131316] border border-[#383941] focus:border-[#00E5A3] focus:outline-none rounded-xl px-3 py-2 text-xs text-white"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowIntervalsForm(false)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={busyProvider === 'intervals' || isRefreshing}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#00E5A3] text-[#131316] font-extrabold text-xs disabled:opacity-50"
-              >
-                {busyProvider === 'intervals' ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : null}
-                <span>Save &amp; Sync</span>
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* 2. Strava */}
-      <div className="p-4 rounded-2xl bg-[#26272D] border border-[#383941]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-white">Strava</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                  stravaConn
-                    ? 'bg-[#FC5200]/15 text-[#FC5200]'
-                    : 'bg-slate-500/15 text-slate-400'
-                }`}
-              >
-                {stravaConn ? 'Connected' : 'Not connected'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              OAuth2 via Cloudflare Pages Functions. Imports activities, power, HR, and GPS routes.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {stravaConn ? (
-              <>
-                <button
-                  type="button"
-                  disabled={busyProvider === 'strava'}
-                  onClick={handleStravaSync}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FC5200]/15 border border-[#FC5200]/30 text-[#FC5200] font-bold text-xs hover:bg-[#FC5200]/25 disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${busyProvider === 'strava' ? 'animate-spin' : ''}`}
-                  />
-                  <span>Sync Strava</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={busyProvider === 'strava'}
-                  onClick={() => handleDisconnect('strava')}
-                  className="p-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20"
-                  title="Disconnect Strava"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                disabled={busyProvider === 'strava'}
-                onClick={handleStravaConnect}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FC5200] text-white font-extrabold text-xs hover:bg-[#e54b00] disabled:opacity-50"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                <span>Connect Strava</span>
-              </button>
-            )}
-          </div>
+            </form>
+          )}
         </div>
-      </div>
 
-      {/* 3. Garmin Connect (.FIT import) */}
-      <div className="p-4 rounded-2xl bg-[#26272D] border border-[#383941]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-white">Garmin Connect (.FIT)</span>
-              {garminConn && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[#00B4D8]/15 text-[#00B4D8]">
-                  Active
+        {/* 2. Strava */}
+        <div className="py-4 pl-3.5 border-l-2 border-[#FC5200]/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">Strava</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    stravaConn
+                      ? 'bg-[#FC5200]/15 text-[#FC5200]'
+                      : 'bg-white/5 text-slate-400'
+                  }`}
+                >
+                  {stravaConn ? 'Connected' : 'Not connected'}
                 </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                OAuth2 via Cloudflare Pages Functions. Imports activities, power, HR, and GPS routes.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {stravaConn ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={busyProvider === 'strava'}
+                    onClick={handleStravaSync}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FC5200]/15 text-[#FC5200] font-bold text-xs hover:bg-[#FC5200]/25 disabled:opacity-50"
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${busyProvider === 'strava' ? 'animate-spin' : ''}`}
+                    />
+                    <span>Sync Strava</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyProvider === 'strava'}
+                    onClick={() => handleDisconnect('strava')}
+                    className="p-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20"
+                    title="Disconnect Strava"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busyProvider === 'strava'}
+                  onClick={handleStravaConnect}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#FC5200] text-white font-extrabold text-xs hover:bg-[#e54b00] disabled:opacity-50"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Connect Strava</span>
+                </button>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Upload <code className="text-slate-200">.fit</code> files exported from Garmin Connect or
-              your bike computer. For automatic Garmin + HRV/Sleep sync, connect Intervals.icu.
-            </p>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <input
-              ref={fitInputRef}
-              type="file"
-              accept=".fit,.FIT"
-              onChange={handleFitUpload}
-              className="hidden"
-            />
-            <button
-              type="button"
-              disabled={busyProvider === 'garmin'}
-              onClick={() => fitInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#00B4D8]/15 border border-[#00B4D8]/30 text-[#00B4D8] font-bold text-xs hover:bg-[#00B4D8]/25 disabled:opacity-50"
-            >
-              {busyProvider === 'garmin' ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Upload className="w-3.5 h-3.5" />
-              )}
-              <span>Import .FIT</span>
-            </button>
+        {/* 3. Garmin Connect (.FIT import) */}
+        <div className="py-4 pl-3.5 border-l-2 border-[#00B4D8]/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">Garmin Connect (.FIT)</span>
+                {garminConn && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[#00B4D8]/15 text-[#00B4D8]">
+                    Active
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Upload <code className="text-slate-200">.fit</code> files exported from Garmin Connect or
+                your bike computer. For automatic Garmin + HRV/Sleep sync, connect Intervals.icu.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <input
+                ref={fitInputRef}
+                type="file"
+                accept=".fit,.FIT"
+                onChange={handleFitUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                disabled={busyProvider === 'garmin'}
+                onClick={() => fitInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#00B4D8]/15 text-[#00B4D8] font-bold text-xs hover:bg-[#00B4D8]/25 disabled:opacity-50"
+              >
+                {busyProvider === 'garmin' ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                <span>Import .FIT</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
