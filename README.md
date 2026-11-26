@@ -1,4 +1,4 @@
-# VeloPulse | Smart Cycling Studio & Athletic Analytics
+# VeloLab | Smart Cycling Studio & Athletic Analytics
 
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -9,19 +9,19 @@
 [![Three.js](https://img.shields.io/badge/Three.js-3D_Road-000000?logo=threedotjs&logoColor=white)](https://threejs.org/)
 [![Garmin FIT SDK](https://img.shields.io/badge/Garmin_FIT_SDK-21.2-00508F)](https://developer.garmin.com/fit/overview/)
 
-**VeloPulse** is a modern, unified indoor cycling studio and athletic performance analytics platform. It combines a lightweight **full-screen 3D virtual road engine**, real-time smart trainer ERG control, structured workout execution, and deep ride & recovery analytics—with support for **Strava**, **Intervals.icu**, and **Garmin `.fit`** files across all platforms.
+**VeloLab** is a modern, unified indoor cycling studio and athletic performance analytics platform. It combines a lightweight **full-screen 3D virtual road engine**, real-time smart trainer ERG control, structured workout execution, and deep ride & recovery analytics—with support for **Strava**, **Intervals.icu**, and **Garmin `.fit`** files across all platforms.
 
 Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316`, surface containers, pill navigation, Material You accents, and a frameless high-contrast 3D HUD).
 
 <p align="center">
-  <img src="docs/screenshots/ride-studio-3d-road.jpg" alt="VeloPulse 3D Road View - New York Virtual Cycling Studio with Frameless HUD" width="100%" />
+  <img src="docs/screenshots/ride-studio-3d-road.jpg" alt="VeloLab 3D Road View - New York Virtual Cycling Studio with Frameless HUD" width="100%" />
 </p>
 
 ---
 
 ## Cross-Platform Availability
 
-VeloPulse runs natively or as an app on all major operating systems:
+VeloLab runs natively or as an app on all major operating systems:
 
 | Platform | Format | Description |
 | :--- | :--- | :--- |
@@ -70,7 +70,7 @@ the address shows a "Private demo" page instead of the app.
   * Automatic FTMS ERG wattage control (`0x2AD9`), live ERG Bias (±5%), and interval skip.
 * **Virtual GPS `.FIT` Export, Permanent Storage & Intervals.icu Upload**:
   * Every `.fit` file embeds a real-world scenic **virtual GPS route** matching the world you rode in (Dolomites, Central Park, Rome, or Paris) so Strava, Garmin Connect, and Intervals.icu display a full route map.
-  * Real trainer sessions are saved **permanently inside VeloPulse** (local storage + Supabase DB) with full telemetry streams and cross-provider duplicate detection—and can be uploaded directly or automatically to **Intervals.icu**.
+  * Real trainer sessions are saved **permanently inside VeloLab** (local storage + Supabase DB) with full telemetry streams and cross-provider duplicate detection—and can be uploaded directly or automatically to **Intervals.icu**.
 
 ---
 
@@ -86,7 +86,7 @@ the address shows a "Private demo" page instead of the app.
   * **Left column**: interactive Leaflet GPS route map (Street, Satellite, and OSM tiles with fullscreen expand), compact summary cards, and **Coggan 7-zone Power & Heart Rate histograms**.
   * **Right column**: crisp synchronized telemetry charts over time (**Altitude**, **Power**, **Speed** with elevation backdrop & hover tooltips, **Heart Rate**, **Cadence**, and **W'bal anaerobic reserve**), each expandable to fullscreen, plus aerobic decoupling (`Pw:Hr`).
 * **Interactive Leaflet Route Map**:
-  * Decodes GPS tracks from `.fit` files (including VeloPulse virtual routes), Strava polylines, and Intervals.icu streams.
+  * Decodes GPS tracks from `.fit` files (including VeloLab virtual routes), Strava polylines, and Intervals.icu streams.
   * Custom **START** and **FINISH** markers plus a live cursor synced with every telemetry chart.
 * **Comprehensive Metrics**:
   * Distance, duration, elevation gain, TSS, average/normalized power (NP), Intensity Factor (IF), work (kJ), speed, cadence, and heart rate.

@@ -45,20 +45,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('dashboard')}
             className="flex items-center gap-2.5 shrink-0 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-2xl bg-[#A8C7FA]/15 border border-[#A8C7FA]/30 flex items-center justify-center text-[#A8C7FA] group-hover:bg-[#A8C7FA]/25 transition-all">
-              <Zap className="w-5 h-5 fill-current" />
+            <div className="w-10 h-10 rounded-2xl bg-[#A8C7FA]/15 border border-[#A8C7FA]/30 flex items-center justify-center text-white group-hover:bg-[#A8C7FA]/25 transition-all">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4.5 6.5L12 18.5L19.5 6.5" />
+                <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
+              </svg>
             </div>
             <div>
               <div className="flex items-center gap-1.5 leading-none">
                 <span className="text-sm font-black tracking-tight text-white block">
-                  VELO<span className="text-[#A8C7FA]">PULSE</span>
+                  VELO<span className="text-[#A8C7FA]">LAB</span>
                 </span>
                 <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#2F3037] text-[#A8C7FA] border border-[#A8C7FA]/20">
-                  SUITE
+                  STUDIO
                 </span>
               </div>
               <span className="text-[10px] font-medium text-[#9E9EA7] leading-tight block mt-0.5">
-                Indoor Studio & Intervals
+                3D Indoor Studio &amp; Analytics
               </span>
             </div>
           </div>

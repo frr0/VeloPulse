@@ -152,7 +152,7 @@ function MainApp() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#131316] gap-3">
         <div className="w-9 h-9 border-3 border-[#00E5A3] border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-bold text-slate-400">Loading VeloPulse...</span>
+        <span className="text-xs font-bold text-slate-400">Loading VeloLab...</span>
       </div>
     );
   }

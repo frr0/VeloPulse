@@ -122,11 +122,14 @@ export const LoginView: React.FC = () => {
 
         {/* Hero Brand Header */}
         <div className="flex flex-col items-center text-center mb-6 relative">
-          <div className="w-16 h-16 rounded-2xl bg-[#00E5A3]/10 border border-[#00E5A3]/30 flex items-center justify-center text-[#00E5A3] mb-4 shadow-lg shadow-[#00E5A3]/5">
-            <Activity className="w-8 h-8" />
+          <div className="w-16 h-16 rounded-2xl bg-[#A8C7FA]/10 border border-[#A8C7FA]/30 flex items-center justify-center text-white mb-4 shadow-lg shadow-[#38BDF8]/10">
+            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4.5 6.5L12 18.5L19.5 6.5" />
+              <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
+            </svg>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            VELOPULSE
+            VELO<span className="text-[#A8C7FA]">LAB</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xs leading-relaxed">
             {isSupabaseMode
@@ -262,7 +265,7 @@ export const LoginView: React.FC = () => {
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    {authTab === 'signin' ? 'Sign In to VeloPulse' : 'Create Account'}
+                    {authTab === 'signin' ? 'Sign In to VeloLab' : 'Create Account'}
                   </>
                 )}
               </button>
