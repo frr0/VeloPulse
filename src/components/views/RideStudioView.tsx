@@ -117,7 +117,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   onRoadModeChange,
 }) => {
   const isNative = Capacitor.isNativePlatform();
-  const { powerCurve } = useApp();
+  const { powerCurve, credentials, saveLocalSession } = useApp();
 
   // CP and W' estimated on the power curve the app already downloaded. Without
   // the estimate the studio shows no reserve: it never derives CP from the FTP.
@@ -630,6 +630,12 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
       localStorage.setItem('velopulse_last_summary', JSON.stringify(summary));
     } catch {
       // ignore
+    }
+
+    // Automatically save real trainer sessions inside VeloPulse (Activities, Dashboard, Fitness & Detail charts).
+    // Demo mode and Virtual Simulator rides are intentionally excluded.
+    if (!credentials?.isDemo && !devicesState.isSimulated && summary.totalTimerTimeSeconds >= 5) {
+      saveLocalSession(summary, currentWorkout?.title, settings.ftp);
     }
     try {
       const fileInfo = createFitFileInfo(summary);

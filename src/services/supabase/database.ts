@@ -8,6 +8,7 @@ import {
   Wellness,
 } from '../../types/intervals';
 import {
+  ActivityStream,
   getActivities,
   getAthleteProfile,
   getCalendarEvents,
@@ -15,6 +16,7 @@ import {
   getWellnessHistory,
 } from '../intervals/api';
 import { parseFitFileToActivity } from '../fit/fitParser';
+import { isDuplicateActivity } from '../localWorkouts';
 import { supabase } from './client';
 import { DataProvider, DbProfile, ProviderConnection } from './types';
 
@@ -396,10 +398,37 @@ export async function disconnectProviderConnection(
 
 /**
  * Parses a Garmin `.FIT` file and persists it in Supabase `activities`.
+ * Rejects duplicates if an activity with the same start time (±5 min) and duration already exists.
  */
 export async function importFitFileToDatabase(userId: string, file: File): Promise<Activity> {
   const client = requireSupabase();
   const parsed = await parseFitFileToActivity(file);
+
+  // Check for existing duplicate activity across all providers (VeloPulse, Intervals, Strava, Garmin)
+  const { data: existingRows } = await client
+    .from('activities')
+    .select('external_id, start_date_local, moving_time_s, name')
+    .eq('user_id', userId)
+    .order('start_date_local', { ascending: false })
+    .limit(200);
+
+  if (existingRows) {
+    const dup = existingRows.find((r: Record<string, any>) =>
+      isDuplicateActivity(
+        {
+          id: String(r.external_id),
+          start_date_local: r.start_date_local,
+          moving_time: r.moving_time_s ?? undefined,
+        },
+        parsed
+      )
+    );
+    if (dup) {
+      throw new Error(
+        `Questa attività è già presente in VeloPulse ("${dup.name || 'Attività esistente'}") — nessun duplicato importato.`
+      );
+    }
+  }
 
   const { error } = await client.from('activities').upsert(
     {
@@ -473,4 +502,103 @@ export async function syncStravaViaBackend(): Promise<{ synced: number }> {
     );
   }
   return { synced: Number((payload as { synced?: number }).synced || 0) };
+}
+
+/**
+ * Permanently saves a VeloPulse-recorded activity + its full telemetry/GPS streams
+ * and updated daily wellness (CTL/ATL/TSB) into Supabase so it remains accessible forever.
+ */
+export async function saveVeloPulseActivityToDatabase(
+  userId: string,
+  activity: Activity,
+  streams: ActivityStream[] | null,
+  updatedWellnessDay?: Wellness | null
+): Promise<void> {
+  const client = requireSupabase();
+
+  const rawWithStreams: Activity = {
+    ...activity,
+    velopulse_streams: streams && streams.length > 0 ? streams : activity.velopulse_streams,
+  };
+
+  const { error: actErr } = await client.from('activities').upsert(
+    {
+      user_id: userId,
+      provider: 'manual',
+      external_id: String(activity.id),
+      name: activity.name || 'VeloPulse Ride',
+      type: activity.type || 'VirtualRide',
+      start_date_local: activity.start_date_local,
+      distance_m: activity.distance ?? null,
+      moving_time_s: activity.moving_time != null ? Math.round(activity.moving_time) : null,
+      elapsed_time_s: activity.elapsed_time != null ? Math.round(activity.elapsed_time) : null,
+      total_elevation_gain_m: activity.total_elevation_gain ?? null,
+      average_speed: activity.average_speed ?? null,
+      max_speed: activity.max_speed ?? null,
+      average_heartrate: activity.average_heartrate ?? null,
+      max_heartrate: activity.max_heartrate ?? null,
+      average_watts: activity.average_watts ?? null,
+      weighted_average_watts: activity.weighted_average_watts ?? null,
+      training_load: activity.icu_training_load ?? null,
+      intensity: activity.icu_intensity ?? null,
+      ftp: activity.icu_ftp != null ? Math.round(activity.icu_ftp) : null,
+      joules: activity.icu_joules ?? null,
+      average_cadence: activity.icu_average_cadence ?? null,
+      indoor: true,
+      trainer: true,
+      description: activity.description ?? null,
+      start_latlng: activity.start_latlng ?? null,
+      end_latlng: activity.end_latlng ?? null,
+      raw_data: rawWithStreams,
+    },
+    { onConflict: 'user_id,provider,external_id' }
+  );
+  if (actErr) console.warn('Failed saving VeloPulse activity to Supabase:', actErr.message);
+
+  if (updatedWellnessDay) {
+    const { error: wellErr } = await client.from('wellness').upsert(
+      {
+        user_id: userId,
+        provider: 'manual',
+        date: updatedWellnessDay.id,
+        ctl: updatedWellnessDay.ctl ?? null,
+        atl: updatedWellnessDay.atl ?? null,
+        tsb: updatedWellnessDay.tsb ?? null,
+        raw_data: updatedWellnessDay,
+      },
+      { onConflict: 'user_id,date' }
+    );
+    if (wellErr) console.warn('Failed updating wellness in Supabase:', wellErr.message);
+  }
+}
+
+/**
+ * Permanently caches fetched telemetry/GPS streams into the activity's `raw_data` in Supabase
+ * so charts and maps remain available even offline or without external providers.
+ */
+export async function saveActivityStreamsToDatabase(
+  userId: string,
+  externalId: string,
+  streams: ActivityStream[]
+): Promise<void> {
+  if (!streams || streams.length === 0) return;
+  const client = requireSupabase();
+  const { data: row } = await client
+    .from('activities')
+    .select('id, raw_data')
+    .eq('user_id', userId)
+    .eq('external_id', String(externalId))
+    .maybeSingle();
+
+  if (!row) return;
+  const prevRaw = (row.raw_data as Record<string, unknown>) || {};
+  await client
+    .from('activities')
+    .update({
+      raw_data: {
+        ...prevRaw,
+        velopulse_streams: streams,
+      },
+    })
+    .eq('id', row.id);
 }

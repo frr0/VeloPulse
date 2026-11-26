@@ -20,7 +20,7 @@ interface FitnessChartProps {
 type RangeOption = '14' | '30' | '90' | '180' | 'ALL';
 
 export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
-  const [range, setRange] = useState<RangeOption>('30');
+  const [range, setRange] = useState<RangeOption>('180');
   const [showCtl, setShowCtl] = useState(true);
   const [showAtl, setShowAtl] = useState(true);
   const [showTsb, setShowTsb] = useState(true);

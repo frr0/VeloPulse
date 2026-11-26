@@ -94,10 +94,10 @@ export async function getWellnessHistory(
   const params = new URLSearchParams();
 
   const today = new Date();
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(today.getDate() - 90);
+  const oldestDefault = new Date();
+  oldestDefault.setDate(today.getDate() - 180);
 
-  params.append('oldest', oldestDate || ninetyDaysAgo.toISOString().split('T')[0]);
+  params.append('oldest', oldestDate || oldestDefault.toISOString().split('T')[0]);
   params.append('newest', newestDate || today.toISOString().split('T')[0]);
 
   const list = await request<Wellness[]>(`/athlete/${id}/wellness?${params.toString()}`, apiKey);
@@ -123,10 +123,10 @@ export async function getActivities(
   const params = new URLSearchParams();
 
   const today = new Date();
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(today.getDate() - 60);
+  const oldestDefault = new Date();
+  oldestDefault.setDate(today.getDate() - 180);
 
-  params.append('oldest', oldestDate || sixtyDaysAgo.toISOString().split('T')[0]);
+  params.append('oldest', oldestDate || oldestDefault.toISOString().split('T')[0]);
   params.append('newest', newestDate || today.toISOString().split('T')[0]);
 
   const list = await request<Activity[]>(`/athlete/${id}/activities?${params.toString()}`, apiKey);

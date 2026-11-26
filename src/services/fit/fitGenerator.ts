@@ -1,7 +1,7 @@
 import { Encoder, Profile } from '@garmin/fitsdk';
 import { SessionSummary } from '../../types';
 
-type VirtualWorldId = 'valley' | 'newyork' | 'roma' | 'paris';
+export type VirtualWorldId = 'valley' | 'newyork' | 'roma' | 'paris';
 
 const DEG_TO_SEMICIRCLES = 2147483648 / 180;
 
@@ -70,7 +70,7 @@ function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number)
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function buildRouteSampler(world: VirtualWorldId) {
+export function buildRouteSampler(world: VirtualWorldId) {
   const pts = VIRTUAL_WORLD_ROUTES[world];
   const cumDist: number[] = [0];
   for (let i = 1; i < pts.length; i++) {
@@ -79,7 +79,9 @@ function buildRouteSampler(world: VirtualWorldId) {
   }
   const totalLen = Math.max(1, cumDist[cumDist.length - 1]);
 
-  return (distanceMeters: number): { latSemi: number; lonSemi: number; altitude: number } => {
+  return (
+    distanceMeters: number
+  ): { lat: number; lon: number; latSemi: number; lonSemi: number; altitude: number } => {
     const d = ((distanceMeters % totalLen) + totalLen) % totalLen;
     let idx = 0;
     while (idx < cumDist.length - 2 && cumDist[idx + 1] < d) {
@@ -92,6 +94,8 @@ function buildRouteSampler(world: VirtualWorldId) {
     const alt = pts[idx][2] + (pts[idx + 1][2] - pts[idx][2]) * frac;
 
     return {
+      lat,
+      lon,
       latSemi: Math.round(lat * DEG_TO_SEMICIRCLES),
       lonSemi: Math.round(lon * DEG_TO_SEMICIRCLES),
       altitude: Number(alt.toFixed(1)),

@@ -156,6 +156,12 @@ export interface Activity {
   icu_latlng?: [number, number][];
   indoor?: boolean;
   trainer?: boolean;
+  velopulse_streams?: Array<{
+    type: string;
+    name?: string;
+    data?: unknown[];
+    data2?: unknown[];
+  }>;
 }
 
 export interface CalendarEvent {

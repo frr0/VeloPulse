@@ -35,6 +35,12 @@ import {
   latlngStreamToCoordinates,
 } from '../../services/intervals/api';
 import { getDemoActivityStreams } from '../../services/intervals/mockStreams';
+import {
+  cacheActivityStreamsLocally,
+  isLocalVeloPulseActivity,
+  loadCachedActivityStreams,
+} from '../../services/localWorkouts';
+import { saveActivityStreamsToDatabase } from '../../services/supabase/database';
 import { ActivityMap } from '../ActivityMap';
 import { ActivityStreamChart, StreamChartRow } from '../charts/ActivityStreamChart';
 import { ZoneHistogramChart } from '../charts/ZoneHistogramChart';
@@ -95,7 +101,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
   useImperial = false,
   settings,
 }) => {
-  const { credentials, powerCurve } = useApp();
+  const { credentials, powerCurve, isSupabaseMode, authUser } = useApp();
   const [detailedActivity, setDetailedActivity] = useState<Activity>(activity);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   // Why the recorded data is missing, when Intervals.icu could not be read.
@@ -128,8 +134,27 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
     setSeries(null);
     if (!activity) return;
 
+    // Check embedded DB streams or locally cached streams first (instant & works offline forever)
+    const persistedStreams =
+      (activity.velopulse_streams && activity.velopulse_streams.length > 0
+        ? activity.velopulse_streams
+        : null) || loadCachedActivityStreams(activity.id);
+
+    if (persistedStreams) {
+      setSeries(readActivitySeries(persistedStreams));
+      const track = latlngStreamToCoordinates(
+        persistedStreams.find((stream) => stream.type === 'latlng')
+      );
+      if (track.length > 1) {
+        setDetailedActivity((prev) => ({ ...prev, icu_latlng: track }));
+      }
+      if (isLocalVeloPulseActivity(activity.id)) {
+        return;
+      }
+    }
+
     if (credentials && !credentials.isDemo && activity.id) {
-      setIsLoadingDetails(true);
+      if (!persistedStreams) setIsLoadingDetails(true);
       Promise.all([
         getActivityDetails(credentials.apiKey, activity.id).catch(() => null),
         // One single call for every series the page needs: the track for the map
@@ -138,8 +163,19 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({
         getActivityStreams(credentials.apiKey, activity.id, [...ACTIVITY_STREAM_TYPES]),
       ])
         .then(([full, streams]) => {
-          setStreamsError(streams.status === 'failed' ? streams.reason : null);
-          setSeries(streams.status === 'ok' ? readActivitySeries(streams.streams) : null);
+          if (streams.status === 'ok' && streams.streams.length > 0) {
+            setStreamsError(null);
+            setSeries(readActivitySeries(streams.streams));
+            // Persist fetched streams forever in local cache + Supabase DB
+            cacheActivityStreamsLocally(activity.id, streams.streams);
+            if (isSupabaseMode && authUser) {
+              saveActivityStreamsToDatabase(authUser.id, activity.id, streams.streams).catch(
+                () => {}
+              );
+            }
+          } else if (!persistedStreams) {
+            setStreamsError(streams.status === 'failed' ? streams.reason : null);
+          }
           setDetailedActivity((prev) => {
             const next = { ...prev, ...(full || {}) };
             if (streams.status === 'ok') {

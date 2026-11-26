@@ -22,10 +22,18 @@ import {
   importFitFileToDatabase,
   loadUserBundle,
   saveUserUnits,
+  saveVeloPulseActivityToDatabase,
   syncStravaViaBackend,
   UserDatabaseBundle,
 } from '../services/supabase/database';
 import { DataProvider, ProviderConnection } from '../services/supabase/types';
+import {
+  applyLocalLoadToWellness,
+  loadLocalActivityStreams,
+  mergeWithLocalActivities,
+  saveLocalWorkoutSession,
+} from '../services/localWorkouts';
+import { SessionSummary } from '../types';
 import {
   Activity,
   Athlete,
@@ -81,6 +89,7 @@ interface AppContextType {
   connectStrava: () => Promise<void>;
   syncStrava: () => Promise<number>;
   importGarminFit: (file: File) => Promise<Activity>;
+  saveLocalSession: (summary: SessionSummary, workoutTitle?: string, ftp?: number) => Activity | null;
   // Common actions
   logout: () => void;
   refreshData: () => Promise<void>;
@@ -184,7 +193,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProviderConnections(bundle.connections);
     setAthlete(bundle.athlete);
     setWellness(bundle.wellness);
-    setActivities(bundle.activities);
+    setActivities(mergeWithLocalActivities(bundle.activities));
     setEvents(bundle.events);
     setPowerCurve(bundle.powerCurve);
     if (bundle.profile && typeof bundle.profile.use_imperial === 'boolean') {
@@ -326,7 +335,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (cachedAthlete) setAthlete(JSON.parse(cachedAthlete));
         if (cachedWellness) setWellness(JSON.parse(cachedWellness));
-        if (cachedActivities) setActivities(JSON.parse(cachedActivities));
+        if (cachedActivities) {
+          const restored = JSON.parse(cachedActivities) as Activity[];
+          setActivities(parsedAuth.isDemo ? restored : mergeWithLocalActivities(restored));
+        }
         if (cachedEvents) setEvents(JSON.parse(cachedEvents));
 
         fetchFullData(parsedAuth, false);
@@ -371,14 +383,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profileWeight
       );
 
+      const mergedActivities = mergeWithLocalActivities(fetchedActivities);
       setAthlete(fetchedAthlete);
       setWellness(fetchedWellness);
-      setActivities(fetchedActivities);
+      setActivities(mergedActivities);
       setEvents(fetchedEvents);
 
       localStorage.setItem(STORAGE_KEYS.ATHLETE, JSON.stringify(fetchedAthlete));
       localStorage.setItem(STORAGE_KEYS.WELLNESS, JSON.stringify(fetchedWellness));
-      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(fetchedActivities));
+      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(mergedActivities));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(fetchedEvents));
 
       setPowerCurve(fetchedPowerCurve);
@@ -635,6 +648,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const clearError = () => setError(null);
 
+  /**
+   * Saves a completed real Ride Studio session directly inside VeloPulse (localStorage + live state)
+   * so it immediately appears in Activities, Dashboard, Fitness charts, and ActivityDetailView
+   * even without uploading to Intervals.icu. Never saves in Demo mode.
+   */
+  const saveLocalSession = (
+    summary: SessionSummary,
+    workoutTitle?: string,
+    ftp?: number
+  ): Activity | null => {
+    if (DEMO_ONLY || credentials?.isDemo) {
+      return null;
+    }
+
+    const saved = saveLocalWorkoutSession(summary, workoutTitle, ftp);
+    setActivities((prev) => {
+      const next = [saved, ...prev.filter((a) => a.id !== saved.id)].sort(
+        (a, b) => new Date(b.start_date_local).getTime() - new Date(a.start_date_local).getTime()
+      );
+      try {
+        localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(next));
+      } catch {
+        // ignore quota errors
+      }
+      return next;
+    });
+
+    let updatedTodayWellness: Wellness | null = null;
+    if (summary.trainingStressScore > 0) {
+      const startTime =
+        summary.startTime instanceof Date ? summary.startTime : new Date(summary.startTime || Date.now());
+      setWellness((prev) => {
+        const next = applyLocalLoadToWellness(prev, summary.trainingStressScore, startTime);
+        updatedTodayWellness = next[next.length - 1] ?? null;
+        try {
+          localStorage.setItem(STORAGE_KEYS.WELLNESS, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    }
+
+    // Persist permanently to Supabase DB when logged in with Supabase
+    if (isSupabaseMode && authUser) {
+      const streams = loadLocalActivityStreams(saved.id);
+      saveVeloPulseActivityToDatabase(authUser.id, saved, streams, updatedTodayWellness).catch(
+        (err) => console.warn('Background Supabase save warning:', err)
+      );
+    }
+
+    return saved;
+  };
+
   const latestWellness = useMemo(() => {
     if (!wellness || wellness.length === 0) return null;
     const sorted = [...wellness].sort(
@@ -703,6 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         connectStrava,
         syncStrava,
         importGarminFit,
+        saveLocalSession,
         logout,
         refreshData,
         toggleUnits,

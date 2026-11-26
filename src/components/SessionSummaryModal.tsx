@@ -4,6 +4,7 @@ import { Download, CheckCircle2, Trophy, X, CloudUpload, Loader2, MapPin, AlertC
 import { SessionSummary } from '../types';
 import { createFitFileInfo, downloadFitFile } from '../services/fit/fitGenerator';
 import { uploadActivityFitToIntervals } from '../services/intervals/api';
+import { findDuplicateActivity } from '../services/localWorkouts';
 import { useApp } from '../context/AppContext';
 
 const WORLD_MAP_LABELS: Record<string, string> = {
@@ -26,13 +27,13 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
   summary,
   workoutTitle,
 }) => {
-  const { credentials, refreshData } = useApp();
+  const { credentials, activities, refreshData } = useApp();
   const canUploadIntervals = Boolean(credentials && !credentials.isDemo && credentials.apiKey);
 
   const [autoUpload, setAutoUpload] = useState<boolean>(() => {
     return localStorage.getItem('velopulse_auto_upload_intervals') === 'true';
   });
-  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'success' | 'duplicate' | 'error'>('idle');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const autoUploadedSummaryRef = useRef<SessionSummary | null>(null);
 
@@ -47,6 +48,24 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
 
   const handleUploadIntervals = async () => {
     if (!summary || !credentials || credentials.isDemo || !credentials.apiKey) return;
+
+    // Prevent double upload if this ride already exists on Intervals.icu / Strava / Garmin
+    const startIso = (
+      summary.startTime instanceof Date ? summary.startTime : new Date(summary.startTime || Date.now())
+    ).toISOString();
+    const existingRemote = findDuplicateActivity(
+      activities,
+      { start_date_local: startIso, moving_time: summary.totalTimerTimeSeconds },
+      { ignoreLocalVeloPulse: true }
+    );
+    if (existingRemote) {
+      setUploadState('duplicate');
+      setUploadError(
+        `Attività già presente ("${existingRemote.name}") — caricamento saltato per evitare duplicati.`
+      );
+      return;
+    }
+
     setUploadState('uploading');
     setUploadError(null);
     try {
@@ -302,8 +321,14 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             )}
           </div>
 
-          {uploadState === 'error' && uploadError && (
-            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          {(uploadState === 'error' || uploadState === 'duplicate') && uploadError && (
+            <div
+              className={`p-2.5 rounded-xl text-xs flex items-center gap-2 border ${
+                uploadState === 'duplicate'
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+              }`}
+            >
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{uploadError}</span>
             </div>
@@ -313,10 +338,12 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             {canUploadIntervals && (
               <button
                 onClick={handleUploadIntervals}
-                disabled={uploadState === 'uploading' || uploadState === 'success'}
+                disabled={uploadState === 'uploading' || uploadState === 'success' || uploadState === 'duplicate'}
                 className={`w-full sm:flex-1 py-3 px-5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                   uploadState === 'success'
                     ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                    : uploadState === 'duplicate'
+                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-200'
                     : 'bg-[#00E5A3] hover:bg-[#26ebad] text-slate-950 shadow-lg shadow-[#00E5A3]/20 active:scale-95'
                 }`}
               >
@@ -329,6 +356,11 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
                   <>
                     <CheckCircle2 className="w-4 h-4" />
                     <span>CARICATA SU INTERVALS.ICU</span>
+                  </>
+                ) : uploadState === 'duplicate' ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>GIÀ PRESENTE</span>
                   </>
                 ) : (
                   <>
