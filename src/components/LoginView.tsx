@@ -114,27 +114,40 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#131316] text-white selection:bg-[#00E5A3]/20">
-      <div className="w-full max-w-md bg-[#1F2025] border border-[#383941] rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        {/* Glow ambient background circle */}
-        <div className="absolute -top-24 -left-24 w-60 h-60 bg-[#00E5A3]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-[#FC5200]/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Hero Brand Header */}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#090a0e] text-[#f3f4f8] selection:bg-[#00E5A3]/20 relative overflow-hidden">
+      {/* Subtle ambient glow matching landing page */}
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[720px] h-[360px] rounded-full opacity-60 blur-3xl"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(0, 229, 163, 0.14) 0%, rgba(56, 189, 248, 0.08) 45%, transparent 75%)',
+        }}
+      />
+      <div className="w-full max-w-md bg-[#11131b]/95 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-md">
+        {/* Hero Brand Header (matches landing page V VeloLab lockup) */}
         <div className="flex flex-col items-center text-center mb-6 relative">
-          <div className="w-16 h-16 rounded-2xl bg-[#A8C7FA]/10 border border-[#A8C7FA]/30 flex items-center justify-center text-white mb-4 shadow-lg shadow-[#38BDF8]/10">
-            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <div className="flex items-center gap-2.5 mb-2">
+            <svg
+              viewBox="0 0 24 24"
+              className="w-9 h-9"
+              fill="none"
+              stroke="#F1F5F9"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M4.5 6.5L12 18.5L19.5 6.5" />
               <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
             </svg>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              VeloLab
+            </h1>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            VELO<span className="text-[#A8C7FA]">LAB</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xs leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#989dab] mt-1 max-w-xs leading-relaxed">
             {isSupabaseMode
               ? 'Sign in to sync Intervals.icu, Strava, and Garmin .FIT files'
-              : 'Next-gen athletic performance & recovery dashboard'}
+              : '3D Indoor Cycling Studio & Performance Analytics'}
           </p>
         </div>
 

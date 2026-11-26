@@ -150,7 +150,7 @@ function MainApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#131316] gap-3">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#090a0e] gap-3">
         <div className="w-9 h-9 border-3 border-[#00E5A3] border-t-transparent rounded-full animate-spin" />
         <span className="text-xs font-bold text-slate-400">Loading VeloLab...</span>
       </div>
@@ -167,7 +167,7 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#131316] text-white flex flex-col font-sans selection:bg-[#00E5A3]/20 selection:text-[#00E5A3]">
+    <div className="min-h-screen bg-[#090a0e] text-[#f3f4f8] flex flex-col font-sans selection:bg-[#00E5A3]/20 selection:text-[#00E5A3]">
       <Navbar
         currentTab={selectedActivity ? returnTab : currentTab}
         onSelectTab={handleSelectTab}

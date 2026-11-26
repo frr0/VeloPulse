@@ -37,43 +37,40 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[#131316]/95 backdrop-blur-md border-b border-[#383941]">
+      <header className="sticky top-0 z-30 bg-[#090a0e]/85 backdrop-blur-md border-b border-white/10">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
-          {/* Brand Logo & Name */}
+          {/* Brand Logo & Name (matches landing page lockup) */}
           <div
             onClick={() => onSelectTab('dashboard')}
             className="flex items-center gap-2.5 shrink-0 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-2xl bg-[#A8C7FA]/15 border border-[#A8C7FA]/30 flex items-center justify-center text-white group-hover:bg-[#A8C7FA]/25 transition-all">
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4.5 6.5L12 18.5L19.5 6.5" />
-                <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-sm font-black tracking-tight text-white block">
-                  VELO<span className="text-[#A8C7FA]">LAB</span>
-                </span>
-                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#2F3037] text-[#A8C7FA] border border-[#A8C7FA]/20">
-                  STUDIO
-                </span>
-              </div>
-              <span className="text-[10px] font-medium text-[#9E9EA7] leading-tight block mt-0.5">
-                3D Indoor Studio &amp; Analytics
-              </span>
-            </div>
+            <svg
+              viewBox="0 0 24 24"
+              className="w-7 h-7 shrink-0 transition-transform group-hover:scale-105"
+              fill="none"
+              stroke="#F1F5F9"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4.5 6.5L12 18.5L19.5 6.5" />
+              <path d="M9.5 10.5L12 14.5L14.5 10.5" stroke="#38BDF8" />
+            </svg>
+            <span className="text-base font-extrabold tracking-tight text-white leading-none">
+              VeloLab
+            </span>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 bg-[#1F2025] p-1.5 rounded-full border border-[#383941]">
+          <nav className="hidden lg:flex items-center gap-1 bg-[#11131b]/90 p-1.5 rounded-full border border-white/10">
             <button
               onClick={() => onSelectTab('dashboard')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 currentTab === 'dashboard'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
-                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                  : 'text-[#989dab] hover:text-white hover:bg-white/5'
               }`}
             >
               <Compass className="w-4 h-4" />
@@ -84,8 +81,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSelectTab('ride')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 currentTab === 'ride'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
-                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                  : 'text-[#989dab] hover:text-white hover:bg-white/5'
               }`}
             >
               <Zap className={`w-4 h-4 ${currentTab === 'ride' ? 'fill-current' : ''}`} />
@@ -96,8 +93,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSelectTab('fitness')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 currentTab === 'fitness'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
-                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                  : 'text-[#989dab] hover:text-white hover:bg-white/5'
               }`}
             >
               <TrendingUp className="w-4 h-4" />
@@ -108,8 +105,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSelectTab('activities')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 currentTab === 'activities'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
-                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                  : 'text-[#989dab] hover:text-white hover:bg-white/5'
               }`}
             >
               <Activity className="w-4 h-4" />
@@ -120,8 +117,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSelectTab('plan')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 currentTab === 'plan'
-                  ? 'bg-[#A8C7FA]/15 text-[#A8C7FA]'
-                  : 'text-[#9E9EA7] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#00E5A3]/15 text-[#00E5A3]'
+                  : 'text-[#989dab] hover:text-white hover:bg-white/5'
               }`}
             >
               <Calendar className="w-4 h-4" />
@@ -150,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={refreshData}
               disabled={isRefreshing}
               title="Sync Data from Intervals.icu"
-              className="w-9 h-9 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#383941] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              className="w-9 h-9 rounded-xl bg-[#11131b] hover:bg-[#1a1f2e] border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#00E5A3]' : ''}`} />
             </button>
@@ -164,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Athlete Profile"
                   className={`rounded-full transition-all cursor-pointer ${
                     currentTab === 'profile'
-                      ? 'ring-2 ring-[#00E5A3] ring-offset-2 ring-offset-[#131316]'
+                      ? 'ring-2 ring-[#00E5A3] ring-offset-2 ring-offset-[#090a0e]'
                       : 'hover:opacity-85'
                   }`}
                 >
@@ -187,11 +184,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Mobile / Tablet Sub-Navigation Bar (Desktop/Web & iOS) */}
         {!isAndroidApp && (
-          <div className="flex lg:hidden items-center justify-around py-2 border-t border-[#383941]/60 text-xs overflow-x-auto gap-1">
+          <div className="flex lg:hidden items-center justify-around py-2 border-t border-white/10 text-xs overflow-x-auto gap-1">
             <button
               onClick={() => onSelectTab('dashboard')}
               className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-                currentTab === 'dashboard' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+                currentTab === 'dashboard' ? 'text-[#00E5A3] bg-[#00E5A3]/15' : 'text-[#989dab]'
               }`}
             >
               Today
@@ -199,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => onSelectTab('ride')}
               className={`px-3 py-1.5 font-bold rounded-full shrink-0 flex items-center gap-1 transition-all ${
-                currentTab === 'ride' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+                currentTab === 'ride' ? 'text-[#00E5A3] bg-[#00E5A3]/15' : 'text-[#989dab]'
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
@@ -208,7 +205,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => onSelectTab('fitness')}
               className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-                currentTab === 'fitness' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+                currentTab === 'fitness' ? 'text-[#00E5A3] bg-[#00E5A3]/15' : 'text-[#989dab]'
               }`}
             >
               Fitness
@@ -216,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => onSelectTab('activities')}
               className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-                currentTab === 'activities' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+                currentTab === 'activities' ? 'text-[#00E5A3] bg-[#00E5A3]/15' : 'text-[#989dab]'
               }`}
             >
               Activities
@@ -224,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => onSelectTab('plan')}
               className={`px-3 py-1.5 font-bold rounded-full shrink-0 transition-all ${
-                currentTab === 'plan' ? 'text-[#A8C7FA] bg-[#A8C7FA]/15' : 'text-[#9E9EA7]'
+                currentTab === 'plan' ? 'text-[#00E5A3] bg-[#00E5A3]/15' : 'text-[#989dab]'
               }`}
             >
               Plan
@@ -236,14 +233,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     {/* Mobile Bottom Navigation Bar (Android & iOS) */}
     {isAndroidApp && (
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#131316]/95 backdrop-blur-lg border-t border-[#383941] px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-2xl">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#090a0e]/95 backdrop-blur-lg border-t border-white/10 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-2xl">
         <div className="grid grid-cols-5 w-full gap-1">
           <button
             onClick={() => onSelectTab('dashboard')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
               currentTab === 'dashboard'
-                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
-                : 'text-[#9E9EA7] hover:text-white'
+                ? 'text-[#00E5A3] bg-[#00E5A3]/15'
+                : 'text-[#989dab] hover:text-white'
             }`}
           >
             <Compass className="w-4 h-4 mb-0.5" />
@@ -253,8 +250,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('ride')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
               currentTab === 'ride'
-                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
-                : 'text-[#9E9EA7] hover:text-white'
+                ? 'text-[#00E5A3] bg-[#00E5A3]/15'
+                : 'text-[#989dab] hover:text-white'
             }`}
           >
             <Zap className="w-4 h-4 mb-0.5" />
@@ -264,8 +261,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('fitness')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
               currentTab === 'fitness'
-                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
-                : 'text-[#9E9EA7] hover:text-white'
+                ? 'text-[#00E5A3] bg-[#00E5A3]/15'
+                : 'text-[#989dab] hover:text-white'
             }`}
           >
             <TrendingUp className="w-4 h-4 mb-0.5" />
@@ -275,8 +272,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('activities')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
               currentTab === 'activities'
-                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
-                : 'text-[#9E9EA7] hover:text-white'
+                ? 'text-[#00E5A3] bg-[#00E5A3]/15'
+                : 'text-[#989dab] hover:text-white'
             }`}
           >
             <Activity className="w-4 h-4 mb-0.5" />
@@ -286,8 +283,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('plan')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
               currentTab === 'plan'
-                ? 'text-[#A8C7FA] bg-[#A8C7FA]/15'
-                : 'text-[#9E9EA7] hover:text-white'
+                ? 'text-[#00E5A3] bg-[#00E5A3]/15'
+                : 'text-[#989dab] hover:text-white'
             }`}
           >
             <Calendar className="w-4 h-4 mb-0.5" />

@@ -9,8 +9,8 @@
   }
 
   body {
-    background-color: #131316;
-    color: #e3e2e6;
+    background-color: #090a0e;
+    color: #f3f4f8;
     font-feature-settings: "tnum" on, "lnum" on;
     overflow-x: clip;
     overscroll-behavior-y: none;
@@ -25,20 +25,20 @@
   }
 }
 
-/* Material 3 custom scrollbars */
+/* Custom dark scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #131316;
+  background: #090a0e;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2F3037;
+  background: #232838;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3E4049;
+  background: #333b52;
 }
 
 /* Hide lateral and horizontal scrollbars in Android app and touch devices */
