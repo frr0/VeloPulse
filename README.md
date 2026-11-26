@@ -6,14 +6,15 @@
 [![Capacitor](https://img.shields.io/badge/Capacitor-8.5-119EFF?logo=capacitor&logoColor=white)](https://capacitorjs.com/)
 [![Electron](https://img.shields.io/badge/Electron-44.7-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![Three.js](https://img.shields.io/badge/Three.js-3D_Road-000000?logo=threedotjs&logoColor=white)](https://threejs.org/)
 [![Garmin FIT SDK](https://img.shields.io/badge/Garmin_FIT_SDK-21.2-00508F)](https://developer.garmin.com/fit/overview/)
 
-**VeloPulse** is a modern, unified indoor cycling studio and athletic performance analytics platform. It combines real-time smart trainer control, structured workout execution, and deep ride & recovery analytics—with support for **Strava**, **Intervals.icu**, and **Garmin `.fit`** files across all platforms.
+**VeloPulse** is a modern, unified indoor cycling studio and athletic performance analytics platform. It combines a lightweight **full-screen 3D virtual road engine**, real-time smart trainer ERG control, structured workout execution, and deep ride & recovery analytics—with support for **Strava**, **Intervals.icu**, and **Garmin `.fit`** files across all platforms.
 
-Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316`, surface containers, pill navigation, and Material You accents).
+Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316`, surface containers, pill navigation, Material You accents, and a frameless high-contrast 3D HUD).
 
 <p align="center">
-  <img src="docs/screenshots/dashboard-today.png" alt="VeloPulse Dashboard" width="100%" />
+  <img src="docs/screenshots/ride-studio-3d-road.jpg" alt="VeloPulse 3D Road View - New York Virtual Cycling Studio with Frameless HUD" width="100%" />
 </p>
 
 ---
@@ -51,55 +52,54 @@ the address shows a "Private demo" page instead of the app.
 
 ## Key Features
 
-### 1. Indoor Smart Trainer & Ride Studio
+### 1. Lightweight 3D Road Studio & Smart Trainer Control
 
 <p align="center">
-  <img src="docs/screenshots/ride-studio.png" alt="Ride Studio - Smart Trainer HUD & ERG Workout Runner" width="100%" />
+  <img src="docs/screenshots/ride-studio-3d-road.jpg" alt="Ride Studio 3D Road View - New York with Frameless Telemetry HUD and Articulated Cyclist" width="100%" />
 </p>
 
-* **Bluetooth Sensor Connectivity**:
-  * **Smart Trainer (FTMS & Cycling Power)**: Connects via Bluetooth FTMS (`0x1826`) or Cycling Power (`0x1818`). Live instantaneous power (W), 3-second smoothing, cadence (RPM), and hardware flywheel speed.
-  * **Bluetooth Cadence Sensor**: Dedicated crank cadence sensor support (`0x1816`).
-  * **Bluetooth Heart Rate Monitor**: Live BPM, HR zones, and HR intensity tracking (`0x180D`).
-  * **Virtual Cyclist Simulator Mode**: Built-in simulator to test and execute workouts without requiring physical bike hardware.
-* **Advanced Cycling Physics Engine**:
-  * Calculates real-world road velocity and distance using aerodynamic drag ($C_d A$), rolling resistance ($C_{rr}$), rider weight, bike weight, and road gradient:
-    $$F_{drive} = \frac{P_{watts} \cdot \eta}{v}, \quad F_{resist} = 0.5 \cdot \rho \cdot C_d A \cdot v^2 + C_{rr} \cdot m \cdot g + m \cdot g \cdot \sin(\theta)$$
-  * Toggle between **Virtual Physics Speed** and **Flywheel Speed**.
-* **Zwift (.zwo) Workout Runner & Auto ERG Control**:
-  * Execute custom Zwift `.zwo` XML workouts or built-in presets (Sweet Spot Progression, VO2 Max Boost, Over-Under Threshold, FTP Ramp Test, Active Recovery).
-  * Automatically transmits target wattage to smart trainers via Bluetooth FTMS Control Point (`0x2AD9`).
-  * Live ERG Bias adjustment (-20% to +20%) and interval skip forward/backward.
-  * Multi-tone audio countdown beeps on interval transitions.
-* **Garmin .FIT Activity File Generator**:
-  * Generates 100% compliant `.fit` binary activity files using `@garmin/fitsdk`.
-  * Second-by-second records with power, cadence, heart rate, speed, distance, normalized power, TSS, and IF.
-  * Supports saving in-progress / partial session data even if stopped early.
-  * Ready for 1-click upload to **Strava**, **Garmin Connect**, and **Intervals.icu**.
+* **Lightweight Procedural 3D Graphics (Three.js)**:
+  * **4 Stylized Low-Poly Worlds**: ride through **Valley** (scenic mountain loop), **New York** (Manhattan avenues, Empire State Building, Statue of Liberty, One WTC), **Rome** (sampietrini roads, umbrella pines, Colosseum, Arch of Constantine, St. Peter's Dome), and **Paris** (Haussmann boulevards, Eiffel Tower, Arc de Triomphe, Louvre Pyramid).
+  * **4 Instant Lighting Themes**: switch between **Day**, **Golden Hour**, **Mist**, and **Night** (complete with glowing illuminated building windows, streetlamps, and bike headlight).
+  * **Articulated 3D Cyclist & Live Peloton**: ride in a steady third-person chase view behind a road cyclist with realistic 2-segment inverse-kinematics pedaling and spinning spoked wheels, synchronized 1:1 with your real speed (stopping cleanly at 0 km/h), while overtaking and being overtaken by NPC riders.
+  * **Ultra-Light Eco Mode**: zero heavy external texture downloads—all geometry is instanced (< 15 draw calls) with **Eco (30fps, DPR 1×)** and **60fps** toggles so it runs smoothly even on integrated laptop GPUs.
+* **Frameless Full-Screen HUD & Classic Cockpit Toggle**:
+  * Edge-to-edge full-screen road canvas with **borderless, high-contrast floating telemetry** on the sides (large live Power, prominent amber Target Watts, Cadence, Heart Rate, Speed, Time, and live W'bal), a transparent bottom-left workout interval silhouette, and compact bottom-right session controls.
+  * Press **`H`** to toggle a clean distraction-free view, click **Fullscreen** for monitor-wide immersion, or switch back to the **Classic** card cockpit anytime.
+* **Bluetooth Sensor Connectivity & Trainer Auto-Start**:
+  * **Smart Trainer (FTMS & Cycling Power)**: connects via Bluetooth FTMS (`0x1826`) or Cycling Power (`0x1818`). Live instantaneous power (W), 3-second smoothing, cadence (RPM), and hardware flywheel speed.
+  * **Pedal-to-Start**: simply start pedaling on your trainer to launch the session automatically—no need to reach for the Start button. Stopping pedaling never auto-stops your workout; Pause, Resume, and Finish remain strictly manual.
+  * **Dedicated Sensors & Simulator**: Bluetooth Cadence (`0x1816`), Heart Rate (`0x180D`), and a built-in **Virtual Simulator** for testing without hardware.
+* **12 Built-In Structured Workouts & Zwift `.zwo` Runner**:
+  * Redesigned **Workout Library** with category filters (*Recovery*, *Endurance*, *Sweet Spot*, *Threshold*, *VO2 Max*, *Sprint*, *Test*), live SVG power-profile sparklines, duration/TSS/IF badges, and drag-and-drop `.zwo` upload.
+  * Automatic FTMS ERG wattage control (`0x2AD9`), live ERG Bias (±5%), and interval skip.
+* **Virtual GPS `.FIT` Export, Permanent Storage & Intervals.icu Upload**:
+  * Every `.fit` file embeds a real-world scenic **virtual GPS route** matching the world you rode in (Dolomites, Central Park, Rome, or Paris) so Strava, Garmin Connect, and Intervals.icu display a full route map.
+  * Real trainer sessions are saved **permanently inside VeloPulse** (local storage + Supabase DB) with full telemetry streams and cross-provider duplicate detection—and can be uploaded directly or automatically to **Intervals.icu**.
 
 ---
 
-### 2. Dedicated Activity Page & Interactive GPS Route Map
+### 2. Dedicated Activity Page, Interactive GPS Map & Telemetry Visuals
 
 <p align="center">
-  <img src="docs/screenshots/activity-map-telemetry.png" alt="Activity Detail - Interactive GPS Route Map & Telemetry" width="100%" />
+  <img src="docs/screenshots/activity-map-telemetry-new.jpg" alt="Activity Detail - Interactive GPS Route Map with Altitude and Power Telemetry Charts" width="100%" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/activity-zones-wbal.jpg" alt="Activity Analytics - Coggan Power Zones Histogram, Speed with Elevation Backdrop, and W'bal Reserve" width="100%" />
 </p>
 
 * **Dedicated Two-Column Activity View**:
-  * Opening any activity from the Dashboard or Activities list navigates to a dedicated page (`ActivityDetailView`) with integrated breadcrumb navigation and `Escape` keyboard shortcut.
-  * **Left column**: interactive GPS route map (expandable to fullscreen), compact key metrics summary, and Heart Rate & Power zone distributions.
-  * **Right column**: synchronized telemetry charts over time (altitude, heart rate, power, cadence, speed, and W'bal reserve), each expandable to fullscreen, plus aerobic decoupling analysis.
+  * Opening any activity from the Dashboard or Activities list opens a clean dark-mode analytics canvas (`ActivityDetailView`) with persistent local & database stream caching so charts and maps remain available offline.
+  * **Left column**: interactive Leaflet GPS route map (Street, Satellite, and OSM tiles with fullscreen expand), compact summary cards, and **Coggan 7-zone Power & Heart Rate histograms**.
+  * **Right column**: crisp synchronized telemetry charts over time (**Altitude**, **Power**, **Speed** with elevation backdrop & hover tooltips, **Heart Rate**, **Cadence**, and **W'bal anaerobic reserve**), each expandable to fullscreen, plus aerobic decoupling (`Pw:Hr`).
 * **Interactive Leaflet Route Map**:
-  * Decodes GPS tracks from `.fit` files, Strava polylines, and Intervals.icu streams.
-  * Street, Satellite, and OpenStreetMap layer switcher with recenter and fullscreen expand controls.
-  * Custom **START** and **FINISH** markers plus a live cursor synced with the telemetry charts.
-  * Distance & elevation badge overlays.
+  * Decodes GPS tracks from `.fit` files (including VeloPulse virtual routes), Strava polylines, and Intervals.icu streams.
+  * Custom **START** and **FINISH** markers plus a live cursor synced with every telemetry chart.
 * **Comprehensive Metrics**:
   * Distance, duration, elevation gain, TSS, average/normalized power (NP), Intensity Factor (IF), work (kJ), speed, cadence, and heart rate.
-  * **Heart Rate Zones**: stacked distribution and detailed time-in-zone breakdown.
-  * **Power Zones**: 7-zone Coggan power model.
-  * **Structured Intervals**: work and recovery intervals table with average wattage and heart rate.
-  * **Athlete Notes & Exertion**: RPE (1-10) and feel indicators.
+  * **Power Zones & Heart Rate Zones**: color-coded distribution histograms and exact time-in-zone breakdowns.
+  * **W'bal Reserve**: real-time and post-ride anaerobic reserve tracking computed from your estimated Critical Power (CP) and W'.
 
 ---
 
