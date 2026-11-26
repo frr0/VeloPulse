@@ -2,18 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>VeloPulse | Indoor training studio and cycling analytics</title>
-    <meta name="description" content="VeloPulse brings together an indoor cycling training studio and deep performance analytics. Connect Bluetooth trainers, Strava, Intervals.icu, and Garmin .fit files on web, Android, Windows, macOS and Linux." />
+    <title>VeloPulse | 3D Indoor Cycling Studio &amp; Athletic Analytics</title>
+    <meta
+      name="description"
+      content="VeloPulse pairs a lightweight full-screen 3D cycling road and frameless HUD with deep ride telemetry, interactive GPS maps, and 180-day fitness analytics."
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#131316" />
+    <meta name="theme-color" content="#0b0c10" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="VeloPulse | 3D Indoor Cycling Studio & Athletic Analytics" />
-    <meta property="og:description" content="Lightweight 3D virtual roads, frameless HUD, Bluetooth smart trainer ERG control, interactive GPS maps, and deep cycling analytics in one app." />
+    <meta property="og:title" content="VeloPulse | 3D Indoor Cycling Studio &amp; Athletic Analytics" />
+    <meta
+      property="og:description"
+      content="Lightweight 3D virtual roads, frameless HUD, Bluetooth smart trainer ERG control, interactive GPS maps, and deep cycling analytics in one app."
+    />
     <meta property="og:image" content="screenshots/ride-studio-3d-road.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300E5A3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='18.5' cy='17.5' r='3.5'/><circle cx='5.5' cy='17.5' r='3.5'/><circle cx='15' cy='5' r='1'/><path d='M12 17.5V14l-3-3 4-3 2 3h2'/></svg>" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300E5A3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='18.5' cy='17.5' r='3.5'/><circle cx='5.5' cy='17.5' r='3.5'/><circle cx='15' cy='5' r='1'/><path d='M12 17.5V14l-3-3 4-3 2 3h2'/></svg>"
+    />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -22,7 +32,17 @@
     <header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="#top">
-          <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <svg
+            class="logo-mark"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
             <circle cx="18.5" cy="17.5" r="3.5" />
             <circle cx="5.5" cy="17.5" r="3.5" />
             <circle cx="15" cy="5" r="1" />
@@ -34,515 +54,291 @@
           Menu
         </button>
         <nav class="main-nav" id="nav-menu" aria-label="Main navigation">
-          <a href="#features">Features</a>
-          <a href="#fitness">Fitness</a>
-          <a href="#get-started">How to get started</a>
+          <a href="#studio">3D Studio</a>
+          <a href="#activities">Analytics</a>
+          <a href="#download">Download</a>
           <div class="nav-auth">
-            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signin" class="btn btn-ghost">Log in</a>
-            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signup" class="btn btn-primary">Sign up</a>
+            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signin" class="nav-link-muted">Log in</a>
+            <a href="https://velopulse.velopulse-app.workers.dev/?mode=signup" class="nav-link-accent">Sign up</a>
           </div>
         </nav>
       </div>
     </header>
 
     <main id="content">
+      <!-- HERO: Editorial typography + full-width 3D Road showcase (no bulky CTA buttons) -->
       <section class="hero" id="top">
-        <div class="container hero-inner">
-          <div>
-            <p class="eyebrow">3D indoor cycling studio + performance analytics</p>
-            <h1>Your trainer, 3D roads, and deep analytics in one app</h1>
+        <div class="container">
+          <div class="hero-copy">
+            <p class="eyebrow">3D Indoor Studio &amp; Performance Analytics</p>
+            <h1>Ride lightweight 3D roads.<br />Read every watt with clarity.</h1>
             <p class="lead">
-              VeloPulse pairs a lightweight, full-screen 3D virtual road engine
-              and frameless telemetry HUD with pro-grade cycling analytics.
-              Pedal through New York, Rome, Paris, or an alpine valley with
-              automatic ERG control—then explore interactive GPS maps, power
-              zones, and 180-day fitness trends.
+              VeloPulse brings together a full-screen Three.js cycling studio with
+              a frameless telemetry HUD, automatic FTMS trainer control, and deep
+              post-ride analytics—all running smoothly in your browser or desktop app.
             </p>
-            <div class="hero-actions">
-              <a href="#download" class="btn btn-primary btn-lg">Download VeloPulse</a>
-              <a href="#features" class="btn btn-ghost btn-lg">See the features</a>
-              <a href="https://velopulse.velopulse-app.workers.dev/demo" class="btn btn-primary btn-lg">Try the demo in your browser</a>
+            <div class="inline-links">
+              <a href="https://velopulse.velopulse-app.workers.dev/demo">Open live demo &rarr;</a>
+              <span class="dot" aria-hidden="true">&middot;</span>
+              <a href="#download">Install desktop or Android &darr;</a>
+              <span class="dot" aria-hidden="true">&middot;</span>
+              <a href="https://github.com/frr0/VeloPulse">Source on GitHub &#8599;</a>
             </div>
           </div>
-          <figure class="hero-visual">
+
+          <figure class="hero-stage">
             <img
-              class="shot shot-desktop"
+              class="shot"
               src="screenshots/ride-studio-3d-road.jpg"
-              alt="The 3D Road View in VeloPulse Ride Studio: an articulated 3D cyclist riding down a stylized New York avenue with frameless side HUD metrics for power, target watts, cadence, heart rate, speed and W'bal, plus a transparent workout interval chart at the bottom left and compact controls at the bottom right."
+              alt="Full-screen 3D Road View in VeloPulse Ride Studio: an articulated 3D cyclist riding through New York with borderless side telemetry, prominent target watts, transparent bottom-left workout profile, and compact controls."
               width="1920"
               height="1080"
               loading="eager"
               decoding="async"
             />
-            <figcaption>Full-screen 3D Road View in Ride Studio — crisp, frameless HUD over a lightweight Three.js world</figcaption>
+            <figcaption>
+              Full-screen 3D Road View (New York) — borderless high-contrast HUD over a procedural Three.js world
+            </figcaption>
           </figure>
         </div>
       </section>
 
-      <section id="features">
+      <!-- 3D GRAPHICS & STUDIO: Card-free editorial columns with left accent hairlines -->
+      <section class="band" id="studio">
         <div class="container">
-          <div class="section-head">
-            <p class="section-tag">3D Ride Studio &amp; visual design</p>
-            <h2>Lightweight 3D graphics built for focus and speed</h2>
-            <p>
-              No heavy multi-gigabyte downloads or noisy overlays: VeloPulse
-              renders stylized, low-poly 3D worlds right in your browser with
-              clean, high-contrast typography at the edges so the road and your
-              target power stay effortless to read.
+          <div class="band-head">
+            <p class="eyebrow">3D Graphics &amp; Frameless HUD</p>
+            <h2>Designed to stay out of your way—and light on your GPU</h2>
+            <p class="band-intro">
+              Instead of multi-gigabyte game engines or opaque boxes covering the
+              screen, VeloPulse renders clean low-poly worlds procedurally with
+              floating high-contrast typography anchored to the edges.
             </p>
           </div>
-          <div class="feature-grid">
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-12 4 8 3-4 5 8H3z"/></svg>
-              </div>
-              <h3>4 stylized 3D worlds &amp; landmarks</h3>
-              <p>
-                Ride through Valley, New York, Rome, or Paris—complete with the
-                Empire State Building, Statue of Liberty, Colosseum, St. Peter's
-                Dome, Eiffel Tower, and glowing illuminated buildings at night.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-              </div>
-              <h3>Frameless HUD &amp; Eco 30fps mode</h3>
-              <p>
-                Borderless floating metrics with crisp drop shadows keep live
-                power and target watts readable on any sky. Toggle Eco mode for
-                ultra-low GPU usage, press H to hide the HUD, or switch to
-                Classic view anytime.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 15l3-6h4"/><circle cx="16" cy="5" r="1.2"/></svg>
-              </div>
-              <h3>Articulated cyclist &amp; pedal-to-start</h3>
-              <p>
-                Your 3D road cyclist pedals in sync with your real speed and
-                shares the road with overtaking NPC riders. Start pedaling on
-                your FTMS trainer and the session launches automatically.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M9 9l2 2 2-4 2 3"/></svg>
-              </div>
-              <h3>12 built-in workouts &amp; .zwo runner</h3>
-              <p>
-                Browse structured sessions by category with mini power-profile
-                previews or drop in any Zwift .zwo file. VeloPulse controls ERG
-                wattage automatically for every interval.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="5"/></svg>
-              </div>
-              <h3>Virtual GPS .fit &amp; Intervals.icu sync</h3>
-              <p>
-                Every ride generates a .fit file with a real scenic GPS route
-                map, saves permanently inside VeloPulse with duplicate
-                protection, and uploads to Intervals.icu in one click.
-              </p>
-            </article>
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l4-4 3 3 5-6 4 4"/><path d="M4 19h16"/></svg>
-              </div>
-              <h3>Live W'bal reserve</h3>
-              <p>
-                While you ride, VeloPulse shows live how much anaerobic reserve
-                (W') you have left, so you can manage efforts above threshold.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
 
-      <section id="activities">
-        <div class="container">
-          <div class="activity-panel">
-            <div>
-              <p class="section-tag">The activity page</p>
-              <h2>Every session on a single page</h2>
-              <p class="lead" style="margin-bottom: 20px">
-                Every activity has a page with the GPS route map and charts over
-                time for elevation, heart rate, power and cadence. Next to them
-                you find the time spent in each zone and aerobic decoupling,
-                that is how much your heart rate drifts up at constant power.
-              </p>
-              <ul class="metric-list">
-                <li><span>Normalized power</span><span>NP</span></li>
-                <li><span>Intensity factor</span><span>IF</span></li>
-                <li><span>Work done</span><span>kJ</span></li>
-                <li><span>Time in each zone</span><span>power and heart rate</span></li>
-                <li><span>Aerobic decoupling</span><span>Pw:Hr</span></li>
-                <li><span>W'bal reserve</span><span>chart over time</span></li>
-              </ul>
-              <div class="definition-grid">
-                <div class="definition">
-                  <h3>Critical power (CP)</h3>
-                  <p>
-                    The highest power you can hold for a long time before you
-                    have to ease off.
-                  </p>
-                </div>
-                <div class="definition">
-                  <h3>W' reserve</h3>
-                  <p>
-                    How much energy you can spend above critical power before
-                    you run out.
-                  </p>
-                </div>
-              </div>
-              <p style="color: var(--text-muted); font-size: 0.92rem; margin: 16px 0 0">
-                VeloPulse estimates CP and W' directly from your power duration
-                curve.
+          <div class="editorial-grid">
+            <div class="editorial-item">
+              <span class="item-num">01</span>
+              <h3>Four stylized 3D worlds</h3>
+              <p>
+                Switch instantly between <strong>Valley</strong>, <strong>New York</strong>,
+                <strong>Rome</strong>, and <strong>Paris</strong>—complete with the Empire
+                State Building, Statue of Liberty, Colosseum, St. Peter's Dome, Eiffel Tower,
+                and glowing illuminated windows at night.
               </p>
             </div>
-            <figure class="route-card">
-              <img
-                class="shot shot-desktop"
-                src="screenshots/activity-map-telemetry-new.jpg"
-                alt="The activity page of VeloPulse in dark Material 3 styling: interactive Leaflet GPS route map across Manhattan and Brooklyn paired with synchronized altitude and power charts over time."
-                width="1920"
-                height="1080"
-                loading="lazy"
-                decoding="async"
-              />
-              <figcaption>Interactive GPS route map paired with synchronized altitude and power telemetry</figcaption>
-            </figure>
-          </div>
-          <div style="margin-top: 28px">
-            <figure class="route-card">
-              <img
-                class="shot shot-desktop"
-                src="screenshots/activity-zones-wbal.jpg"
-                alt="Activity analytics in VeloPulse: 7-zone Coggan Power Zones histogram on the left, and synchronized Speed (with elevation backdrop and hover tooltip) and W'bal Reserve (kJ) charts on the right."
-                width="1920"
-                height="1080"
-                loading="lazy"
-                decoding="async"
-              />
-              <figcaption>Color-coded Coggan Power Zones, Speed with elevation backdrop, and live W'bal reserve curve</figcaption>
-            </figure>
+
+            <div class="editorial-item">
+              <span class="item-num">02</span>
+              <h3>Frameless HUD &amp; Eco 30fps mode</h3>
+              <p>
+                Borderless telemetry with crisp dark shadows keeps live watts and
+                amber target power unmistakable against any sky. Run in ultra-light
+                <strong>Eco mode</strong> or <strong>60fps</strong>, press <strong>H</strong>
+                to hide the HUD, or toggle back to Classic view anytime.
+              </p>
+            </div>
+
+            <div class="editorial-item">
+              <span class="item-num">03</span>
+              <h3>Articulated cyclist &amp; pedal-to-start</h3>
+              <p>
+                Ride behind an animated 3D road cyclist synchronized 1:1 with your
+                speed alongside overtaking NPC riders. Start pedaling on your FTMS
+                trainer and the session begins automatically—no need to reach for Start.
+              </p>
+            </div>
+
+            <div class="editorial-item">
+              <span class="item-num">04</span>
+              <h3>12 structured workouts &amp; Zwift .zwo</h3>
+              <p>
+                Choose from 12 built-in sessions filtered by category (Recovery,
+                Endurance, Sweet Spot, Threshold, VO2 Max, Sprint, Test) or drop in
+                any <code>.zwo</code> file while VeloPulse handles ERG wattage automatically.
+              </p>
+            </div>
+
+            <div class="editorial-item">
+              <span class="item-num">05</span>
+              <h3>Virtual GPS .FIT &amp; permanent storage</h3>
+              <p>
+                Every workout embeds a real scenic GPS loop (Dolomites, Central Park,
+                Rome, or Paris) inside its <code>.fit</code> file, saves permanently in
+                VeloPulse with duplicate protection, and uploads to Intervals.icu in one click.
+              </p>
+            </div>
+
+            <div class="editorial-item">
+              <span class="item-num">06</span>
+              <h3>Four lighting atmospheres</h3>
+              <p>
+                Adapt the mood of your pain cave with <strong>Day</strong>,
+                <strong>Golden Hour</strong>, <strong>Mist</strong>, and
+                <strong>Night</strong>—featuring streetlamps, glowing buildings,
+                and a front bike headlight.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="fitness">
+      <!-- ANALYTICS: Clean split narrative + 2 curated high-res screenshots -->
+      <section class="band" id="activities">
         <div class="container">
-          <div class="section-head">
-            <p class="section-tag">Fitness analytics</p>
-            <h2>Understand your fitness, not just your workout</h2>
-            <p>
-              VeloPulse works out your fitness and your fatigue and shows how
-              you recover between workouts.
+          <div class="band-head">
+            <p class="eyebrow">Post-Ride Analytics &amp; Fitness</p>
+            <h2>Every ride, map, and biometric stream in one dark canvas</h2>
+            <p class="band-intro">
+              Open any session—recorded in VeloPulse or synced from Intervals.icu,
+              Strava, and Garmin <code>.fit</code>—to inspect interactive Leaflet
+              GPS maps, synchronized telemetry charts, Coggan power zones, W'bal
+              reserve, and 180-day CTL/ATL fitness trends.
             </p>
           </div>
-          <div class="feature-grid">
-            <article class="feature-card">
-              <h3>Fitness and fatigue (CTL, ATL, TSB)</h3>
+
+          <figure class="showcase-figure">
+            <img
+              class="shot"
+              src="screenshots/activity-map-telemetry-new.jpg"
+              alt="VeloPulse Activity Detail view showing an interactive Leaflet GPS route map across Manhattan and Brooklyn alongside synchronized Altitude and Power telemetry charts."
+              width="1920"
+              height="1080"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              Interactive Leaflet GPS route map synced with Altitude and Power streams
+            </figcaption>
+          </figure>
+
+          <div class="spec-strip">
+            <div class="spec-col">
+              <h3>Telemetry &amp; Power Zones</h3>
               <p>
-                CTL (fitness), ATL (fatigue) and TSB (form) tell you how much
-                load you have built up and how ready you are to push.
+                7-zone Coggan distribution, Normalized Power (NP), Intensity Factor (IF),
+                work (kJ), aerobic decoupling (Pw:Hr), and interactive hover tooltips
+                with elevation backdrop.
               </p>
-            </article>
-            <article class="feature-card">
-              <h3>Recovery ring</h3>
+            </div>
+            <div class="spec-col">
+              <h3>Critical Power &amp; W'bal</h3>
               <p>
-                A recovery ring based on heart rate variability (HRV), resting
-                heart rate and sleep.
+                Estimated directly from your recorded power curve to track anaerobic
+                reserve live during workouts and across every post-ride chart.
               </p>
-            </article>
-            <article class="feature-card">
-              <h3>Sleep, HRV, VO2max and resting heart rate</h3>
+            </div>
+            <div class="spec-col">
+              <h3>180-Day Fitness &amp; Recovery</h3>
               <p>
-                VeloPulse tracks sleep duration and quality, heart rate
-                variability (HRV), VO2max, and resting heart rate over time
-                using only recorded metrics.
+                Longitudinal CTL (Fitness), ATL (Fatigue), TSB (Form), HRV, resting HR,
+                sleep, and VO2max—stored permanently in VeloPulse with zero fabricated fallbacks.
               </p>
-            </article>
-            <article class="feature-card">
-              <h3>Seamless data imports</h3>
-              <p>
-                Connect Intervals.icu or Strava, import Garmin .fit files
-                directly from your bike computer, or explore right away in demo
-                mode.
-              </p>
-            </article>
+            </div>
           </div>
-          <div class="shots-row">
-            <figure>
-              <img
-                class="shot shot-desktop"
-                src="screenshots/dashboard-today.png"
-                alt="The Today page of VeloPulse: the daily recovery ring at 83%, the cards for fitness (CTL), fatigue (ATL) and form (TSB), the training load of the last 7 days and the sleep, HRV, resting heart rate and VO2max data."
-                width="1892"
-                height="903"
-                loading="lazy"
-                decoding="async"
-              />
-              <figcaption>The "Today" page, with the recovery of the day</figcaption>
-            </figure>
-            <figure>
-              <img
-                class="shot shot-desktop"
-                src="screenshots/fitness-form.png"
-                alt="The Fitness &amp; Form page of VeloPulse: the chart of fitness (CTL) and fatigue (ATL) over the last 30 days, form (TSB) and estimated threshold power (eFTP)."
-                width="1892"
-                height="903"
-                loading="lazy"
-                decoding="async"
-              />
-              <figcaption>Fitness, fatigue and form over time</figcaption>
-            </figure>
-          </div>
+
+          <figure class="showcase-figure">
+            <img
+              class="shot"
+              src="screenshots/activity-zones-wbal.jpg"
+              alt="VeloPulse Activity Analytics showing the 7-zone Coggan Power Zones histogram, Speed chart with elevation overlay and interactive hover tooltip, and W'bal Reserve curve in kilojoules."
+              width="1920"
+              height="1080"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              Coggan Power Zones histogram, Speed with elevation backdrop, and W'bal anaerobic reserve
+            </figcaption>
+          </figure>
         </div>
       </section>
 
-      <section id="download">
+      <!-- DOWNLOAD: Minimal hairline list (no heavy box, no big buttons) -->
+      <section class="band" id="download">
         <div class="container">
-          <div class="section-head">
-            <p class="section-tag">Where it runs</p>
-            <h2>One app, on every device you own</h2>
-            <p>VeloPulse works on the web and as an installed app.</p>
+          <div class="band-head">
+            <p class="eyebrow">Cross-Platform</p>
+            <h2>Run in your browser or install natively</h2>
+            <p class="band-intro">
+              Use VeloPulse directly in Chrome or Edge with Web Bluetooth, or
+              grab a standalone build for Android, Linux, Windows, or macOS.
+            </p>
           </div>
-          <ul class="platform-list">
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              Web
+
+          <ul class="download-rows">
+            <li>
+              <span class="dl-name">Web App (Chrome / Edge)</span>
+              <span class="dl-meta">Zero install &middot; Web Bluetooth</span>
+              <a class="dl-link" href="https://velopulse.velopulse-app.workers.dev/">Open app &#8599;</a>
             </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 19h4"/></svg>
-              Android
+            <li>
+              <span class="dl-name">Android</span>
+              <span class="dl-meta">APK &middot; ~5 MB &middot; Native BLE</span>
+              <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse.apk">Download APK &darr;</a>
             </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 19h4"/></svg>
-              iPhone
+            <li>
+              <span class="dl-name">Linux (AppImage)</span>
+              <span class="dl-meta">x86_64 &middot; ~134 MB</span>
+              <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x86_64.AppImage">Download AppImage &darr;</a>
             </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              Windows
+            <li>
+              <span class="dl-name">Linux (tar.gz)</span>
+              <span class="dl-meta">x86_64 &middot; ~128 MB</span>
+              <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x64.tar.gz">Download tar.gz &darr;</a>
             </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              macOS
+            <li>
+              <span class="dl-name">Windows 11</span>
+              <span class="dl-meta">Portable zip &middot; ~163 MB</span>
+              <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-win-x64.zip">Download zip &darr;</a>
             </li>
-            <li class="platform-chip">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8"/></svg>
-              Linux
+            <li>
+              <span class="dl-name">macOS</span>
+              <span class="dl-meta">App bundle zip &middot; ~392 MB</span>
+              <a class="dl-link" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-mac-x64.zip">Download zip &darr;</a>
             </li>
           </ul>
 
-          <div class="shots-row shots-row-mobile">
-            <figure>
-              <img
-                class="shot shot-mobile"
-                src="screenshots/mobile-dashboard.jpg"
-                alt="The Today page of VeloPulse on a phone: the recovery ring at 82%, the cards for fitness, fatigue and form, and the sleep, HRV, resting heart rate and VO2max data."
-                width="1151"
-                height="2560"
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-            <figure>
-              <img
-                class="shot shot-mobile"
-                src="screenshots/mobile-ride-studio.jpg"
-                alt="The Ride Studio of VeloPulse on a phone, with the power, cadence, heart rate and speed tiles, the chart of the interval workout and the tab bar at the bottom."
-                width="1151"
-                height="2560"
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-            <figure>
-              <img
-                class="shot shot-mobile"
-                src="screenshots/mobile-activity-map.jpg"
-                alt="The activity detail of VeloPulse on a phone: the GPS route map in Montreal and the stats for distance, time, elevation gain, load, speed and intensity."
-                width="1151"
-                height="2560"
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-            <figure>
-              <img
-                class="shot shot-mobile"
-                src="screenshots/mobile-training-plan.jpg"
-                alt="The training plan of VeloPulse on a phone, with upcoming sessions in the calendar: a Sweet Spot workout, a zone 2 ride and a recovery day."
-                width="1151"
-                height="2560"
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-          </div>
-          <p class="shots-caption">
-            On a phone, a tab bar at the bottom takes you to Today, Studio,
-            Fitness, Activities and Plan.
+          <p class="footnote">
+            Open-source under the MIT License on
+            <a href="https://github.com/frr0/VeloPulse">GitHub</a>.
+            iOS builds can be compiled from source with Xcode.
           </p>
-
-          <!--
-            The demo is private until the owner makes it visible to everyone
-            from the hosting page: whoever opens the link without permission
-            gets a "private demo" page instead. The address is absolute
-            because this page also runs on GitHub Pages.
-          -->
-          <div class="hero-actions" style="justify-content: center; margin: 28px 0 32px">
-            <a class="btn btn-primary btn-lg" href="https://velopulse.velopulse-app.workers.dev/demo">Try the demo in your browser</a>
-          </div>
-
-          <div class="download-box">
-            <ul class="download-list">
-              <li>
-                <div>
-                  <strong>Android</strong>
-                  <span class="download-size">about 5 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse.apk">
-                  Download the APK
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>Linux (AppImage)</strong>
-                  <span class="download-size">about 134 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x86_64.AppImage">
-                  Download the AppImage
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>Linux (tar.gz)</strong>
-                  <span class="download-size">about 128 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-linux-x64.tar.gz">
-                  Download the tar.gz
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>Windows</strong>
-                  <span class="download-size">about 163 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-win-x64.zip">
-                  Download the zip
-                </a>
-              </li>
-              <li>
-                <div>
-                  <strong>macOS</strong>
-                  <span class="download-size">about 392 MB</span>
-                </div>
-                <a class="btn btn-ghost" href="https://github.com/frr0/VeloPulse/releases/latest/download/VeloPulse-mac-x64.zip">
-                  Download the zip
-                </a>
-              </li>
-            </ul>
-            <ul class="download-notes">
-              <li>
-                The links always point to the latest version published on
-                GitHub. The macOS file is almost 400 MB: on a mobile network
-                it is better to wait for Wi-Fi.
-              </li>
-              <li>
-                On Android, the first time you open it your phone asks for
-                permission to install apps from this source.
-              </li>
-              <li>
-                For iPhone there is no file to download: you need Xcode to
-                install the app from the source code.
-              </li>
-              <li>
-                The web version runs in your browser with nothing to install,
-                but it needs Chrome, Edge or another Chromium-based browser:
-                only these give access to the Bluetooth sensors on your trainer.
-              </li>
-              <li>
-                The code of VeloPulse is public on
-                <a href="https://github.com/frr0/VeloPulse">GitHub</a>.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section id="get-started">
-        <div class="container">
-          <div class="section-head">
-            <p class="section-tag">In three steps</p>
-            <h2>How to get started</h2>
-          </div>
-          <ol class="steps">
-            <li>
-              <h3>Open the site or install the app</h3>
-              <p>Use VeloPulse from your browser, or install the app for your system.</p>
-            </li>
-            <li>
-              <h3>Connect your trainer or try the simulator</h3>
-              <p>
-                Connect your trainer and the Bluetooth sensors, or use the
-                simulator to ride a workout without any hardware.
-              </p>
-            </li>
-            <li>
-              <h3>Connect your sources or try the demo</h3>
-              <p>
-                Sign in to connect Intervals.icu, Strava, or upload Garmin .fit
-                files—or jump straight into demo mode with sample rides.
-              </p>
-            </li>
-          </ol>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <div>
-          <div class="footer-brand">
-            <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-              <circle cx="18.5" cy="17.5" r="3.5" />
-              <circle cx="5.5" cy="17.5" r="3.5" />
-              <circle cx="15" cy="5" r="1" />
-              <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
-            </svg>
-            VeloPulse
-          </div>
-          <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 280px">
-            Indoor training studio and performance analytics for people who
-            ride a bike.
-          </p>
+        <div class="footer-brand">
+          <svg
+            class="logo-mark"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <circle cx="18.5" cy="17.5" r="3.5" />
+            <circle cx="5.5" cy="17.5" r="3.5" />
+            <circle cx="15" cy="5" r="1" />
+            <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
+          </svg>
+          <span>VeloPulse</span>
         </div>
-        <div class="footer-col">
-          <h4>The site</h4>
-          <ul>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#get-started">How to get started</a></li>
-          </ul>
+        <div class="footer-links">
+          <a href="#studio">3D Studio</a>
+          <a href="#activities">Analytics</a>
+          <a href="#download">Download</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="termini.html">Terms</a>
         </div>
-        <div class="footer-col">
-          <h4>Legal</h4>
-          <ul>
-            <li><a href="privacy.html">Privacy policy</a></li>
-            <li><a href="termini.html">Terms of service</a></li>
-            <li><a href="https://github.com/frr0/VeloPulse">Source code on GitHub</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="container footer-bottom">
-        <span>&copy; <span data-year>2026</span> VeloPulse</span>
       </div>
     </footer>
 
-    <script src="js/main.js"></script>
+    <script src="js/main.js" defer></script>
   </body>
 </html>
