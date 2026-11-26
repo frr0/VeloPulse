@@ -140,6 +140,50 @@ export async function getActivityDetails(apiKey: string, activityId: string): Pr
   return request<Activity>(`/activity/${activityId}`, apiKey);
 }
 
+/**
+ * Uploads a recorded .FIT activity file directly to Intervals.icu.
+ * Endpoint: POST /api/v1/athlete/{id}/activities (multipart/form-data)
+ */
+export async function uploadActivityFitToIntervals(params: {
+  apiKey: string;
+  athleteId?: string;
+  fitBytes: Uint8Array;
+  filename: string;
+  name?: string;
+  description?: string;
+}): Promise<{ id: string }> {
+  const id = (params.athleteId || '0').trim() || '0';
+  const query = new URLSearchParams();
+  if (params.name) query.append('name', params.name);
+  if (params.description) query.append('description', params.description);
+  const qs = query.toString();
+
+  const formData = new FormData();
+  const blob = new Blob([params.fitBytes], { type: 'application/octet-stream' });
+  formData.append('file', blob, params.filename);
+
+  const response = await fetch(`${BASE_URL}/athlete/${id}/activities${qs ? `?${qs}` : ''}`, {
+    method: 'POST',
+    headers: {
+      Authorization: getAuthHeader(params.apiKey),
+      Accept: 'application/json',
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new IntervalsApiError(
+        'Intervals.icu ha rifiutato il caricamento: controlla la tua API Key.',
+        response.status
+      );
+    }
+    throw new IntervalsApiError(`Errore caricamento su Intervals.icu (HTTP ${response.status})`, response.status);
+  }
+
+  return response.json();
+}
+
 function describeStreamsError(err: unknown): string {
   if (err instanceof IntervalsApiError) {
     if (err.status === 401 || err.status === 403) {

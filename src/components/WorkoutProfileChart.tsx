@@ -11,6 +11,8 @@ interface WorkoutProfileChartProps {
   onSelectInterval?: (index: number) => void;
   onOpenWorkoutModal?: () => void;
   isCompact?: boolean;
+  heightClassName?: string;
+  variant?: 'card' | 'hud';
 }
 
 interface PlotSize {
@@ -223,6 +225,8 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
   onSelectInterval,
   onOpenWorkoutModal,
   isCompact = false,
+  heightClassName,
+  variant = 'card',
 }) => {
   const plotRef = useRef<HTMLDivElement>(null);
   const [plotSize, setPlotSize] = useState<PlotSize | null>(null);
@@ -264,10 +268,30 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
   }, [hasWorkout]);
 
   if (!workout || workout.intervals.length === 0) {
+    if (variant === 'hud') {
+      return (
+        <button
+          type="button"
+          onClick={onOpenWorkoutModal}
+          className="text-left pl-3 border-l-[3px] border-[#00E5A3] py-1 group cursor-pointer"
+          style={{ textShadow: '0 2px 10px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.95)' }}
+        >
+          <div className="flex items-center gap-1.5 text-sm font-black text-white group-hover:text-[#00E5A3] transition-colors">
+            <Dumbbell className="w-4 h-4 text-[#00E5A3]" />
+            <span>Scegli Workout (.zwo)</span>
+          </div>
+          <div className="text-[11px] font-bold text-white/80 mt-0.5">
+            Free Ride attivo • Clicca per caricare un allenamento
+          </div>
+        </button>
+      );
+    }
     return (
       <div
         onClick={onOpenWorkoutModal}
-        className="w-full rounded-xl sm:rounded-2xl bg-[#1F2025]/90 border border-[#383941] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all h-32 sm:h-40 md:h-44 p-4"
+        className={`w-full rounded-xl sm:rounded-2xl bg-[#1F2025]/85 backdrop-blur-md border border-[#383941] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#00E5A3]/40 transition-all p-3 ${
+          heightClassName || 'h-32 sm:h-40 md:h-44'
+        }`}
       >
         <div className="flex items-center gap-2 text-sm md:text-base text-[#00E5A3] font-bold">
           <Dumbbell className="w-4 h-4" />
@@ -288,9 +312,75 @@ export const WorkoutProfileChart: React.FC<WorkoutProfileChartProps> = ({
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
+  if (variant === 'hud') {
+    const hudShadow: React.CSSProperties = {
+      textShadow: '0 2px 10px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.95)',
+    };
+    return (
+      <div
+        className={`w-full pl-3 border-l-[3px] border-[#00E5A3] flex flex-col overflow-hidden ${
+          heightClassName || 'h-28 sm:h-32'
+        }`}
+      >
+        {/* Frameless HUD Header */}
+        <div
+          className="flex items-center justify-between gap-2 pb-1 text-xs leading-none shrink-0"
+          style={hudShadow}
+        >
+          <button
+            type="button"
+            onClick={onOpenWorkoutModal}
+            className="flex items-center gap-1.5 min-w-0 truncate text-left hover:text-[#00E5A3] transition-colors"
+            title="Cambia workout"
+          >
+            <Dumbbell className="w-3.5 h-3.5 text-[#00E5A3] shrink-0" />
+            <span className="font-black text-white truncate">{workout.title}</span>
+            <span className="text-white/80 font-mono text-[11px] shrink-0">
+              • {Math.floor(workout.totalDurationSeconds / 60)}m
+            </span>
+          </button>
+          <span className="font-mono font-extrabold text-yellow-300 text-[11px] shrink-0">
+            FTP {ftp}W
+          </span>
+        </div>
+
+        {/* Transparent SVG Plot with crisp drop-shadow */}
+        <div
+          ref={plotRef}
+          className="relative w-full flex-1 overflow-hidden min-h-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
+        >
+          {plotSize && plotSize.width > 0 && plotSize.height > 0 && (
+            <WorkoutProfilePlot
+              workout={workout}
+              width={plotSize.width}
+              height={plotSize.height}
+              currentSecond={currentSecond}
+              currentIntervalIndex={currentIntervalIndex}
+              maxPowerPercent={maxPowerPercent}
+              isCompact={true}
+              onSelectInterval={onSelectInterval}
+            />
+          )}
+        </div>
+
+        {/* Frameless Timeline */}
+        <div
+          className="flex justify-between items-center pt-0.5 text-[10px] font-mono font-bold text-white/80 leading-none shrink-0"
+          style={hudShadow}
+        >
+          <span>00:00</span>
+          <span>{formatMmSs(totalDuration / 2)}</span>
+          <span>{formatMmSs(totalDuration)}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="w-full rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border border-[#383941] shadow-lg backdrop-blur-md flex flex-col overflow-hidden h-40 sm:h-48 md:h-52 lg:h-56"
+      className={`w-full rounded-xl sm:rounded-2xl bg-[#1F2025]/85 border border-[#383941] shadow-lg backdrop-blur-md flex flex-col overflow-hidden ${
+        heightClassName || 'h-40 sm:h-48 md:h-52 lg:h-56'
+      }`}
     >
       {/* Workout Header Info */}
       <div className="px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between text-xs sm:text-sm leading-none gap-2 min-w-0 bg-[#1F2025] border-b border-[#383941]/50 shrink-0">

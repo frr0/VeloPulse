@@ -1,8 +1,17 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Download, CheckCircle2, Trophy, Flame, Zap, Heart, Activity, ArrowRight, X } from 'lucide-react';
+import { Download, CheckCircle2, Trophy, X, CloudUpload, Loader2, MapPin, AlertCircle } from 'lucide-react';
 import { SessionSummary } from '../types';
-import { downloadFitFile } from '../services/fit/fitGenerator';
+import { createFitFileInfo, downloadFitFile } from '../services/fit/fitGenerator';
+import { uploadActivityFitToIntervals } from '../services/intervals/api';
+import { useApp } from '../context/AppContext';
+
+const WORLD_MAP_LABELS: Record<string, string> = {
+  valley: 'Dolomites Valley',
+  newyork: 'New York (Central Park)',
+  roma: 'Rome (Colosseum Loop)',
+  paris: 'Paris (Eiffel & Champs-Élysées)',
+};
 
 interface SessionSummaryModalProps {
   isOpen: boolean;
@@ -17,8 +26,52 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
   summary,
   workoutTitle,
 }) => {
+  const { credentials, refreshData } = useApp();
+  const canUploadIntervals = Boolean(credentials && !credentials.isDemo && credentials.apiKey);
+
+  const [autoUpload, setAutoUpload] = useState<boolean>(() => {
+    return localStorage.getItem('velopulse_auto_upload_intervals') === 'true';
+  });
+  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const autoUploadedSummaryRef = useRef<SessionSummary | null>(null);
+
+  const handleToggleAutoUpload = (checked: boolean) => {
+    setAutoUpload(checked);
+    try {
+      localStorage.setItem('velopulse_auto_upload_intervals', String(checked));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleUploadIntervals = async () => {
+    if (!summary || !credentials || credentials.isDemo || !credentials.apiKey) return;
+    setUploadState('uploading');
+    setUploadError(null);
+    try {
+      const fileInfo = createFitFileInfo(summary);
+      const worldLabel = WORLD_MAP_LABELS[summary.virtualWorld || 'valley'] || 'Virtual Ride';
+      await uploadActivityFitToIntervals({
+        apiKey: credentials.apiKey,
+        athleteId: credentials.athleteId,
+        fitBytes: fileInfo.bytes,
+        filename: fileInfo.filename,
+        name: workoutTitle ? `${workoutTitle} — ${worldLabel}` : `VeloPulse Virtual Ride — ${worldLabel}`,
+        description: `Recorded with VeloPulse 3D Studio (${worldLabel}).`,
+      });
+      setUploadState('success');
+      refreshData();
+    } catch (err: any) {
+      setUploadState('error');
+      setUploadError(err?.message || 'Upload failed');
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
+      setUploadState('idle');
+      setUploadError(null);
       try {
         confetti({
           particleCount: 100,
@@ -30,7 +83,38 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
         // Confetti fallback
       }
     }
-  }, [isOpen]);
+  }, [isOpen, summary]);
+
+  // Trigger automatic upload to Intervals.icu if enabled by the user
+  useEffect(() => {
+    if (
+      isOpen &&
+      summary &&
+      autoUpload &&
+      canUploadIntervals &&
+      autoUploadedSummaryRef.current !== summary
+    ) {
+      autoUploadedSummaryRef.current = summary;
+      handleUploadIntervals();
+    }
+  }, [isOpen, summary, autoUpload, canUploadIntervals]);
+
+  // Sparkline/SVG chart of power over time (must run before any early return to satisfy Rules of Hooks)
+  const powerPoints = useMemo(() => {
+    if (!summary?.samples || summary.samples.length < 2) return '';
+    const samples = summary.samples;
+    const maxPower = Math.max(100, summary.maxPowerWatts);
+    const width = 600;
+    const height = 90;
+
+    return samples
+      .map((s, idx) => {
+        const x = (idx / (samples.length - 1)) * width;
+        const y = height - (s.power / maxPower) * (height - 8);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  }, [summary]);
 
   if (!isOpen || !summary) return null;
 
@@ -47,23 +131,6 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
     }
     return `${mins}m ${secs}s`;
   };
-
-  // Sparkline/SVG chart of power over time
-  const powerPoints = useMemo(() => {
-    if (!summary.samples || summary.samples.length < 2) return '';
-    const samples = summary.samples;
-    const maxPower = Math.max(100, summary.maxPowerWatts);
-    const width = 600;
-    const height = 90;
-
-    return samples
-      .map((s, idx) => {
-        const x = (idx / (samples.length - 1)) * width;
-        const y = height - (s.power / maxPower) * (height - 8);
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-  }, [summary]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
@@ -214,25 +281,85 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-3">
-          <button
-            onClick={handleDownloadFit}
-            className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-95"
-          >
-            <Download className="w-4 h-4 stroke-[2.5]" />
-            DOWNLOAD .FIT FILE
-          </button>
+        <div className="pt-4 border-t border-slate-800 space-y-3">
+          {/* Virtual GPS Map + Auto-upload option */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 text-emerald-300 font-semibold">
+              <MapPin className="w-3.5 h-3.5" />
+              Virtual GPS Map: {WORLD_MAP_LABELS[summary.virtualWorld || 'valley'] || 'Dolomites Valley'}
+            </span>
 
-          <button
-            onClick={onClose}
-            className="w-full sm:w-auto py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-colors"
-          >
-            Done
-          </button>
+            {canUploadIntervals && (
+              <label className="inline-flex items-center gap-2 text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoUpload}
+                  onChange={(e) => handleToggleAutoUpload(e.target.checked)}
+                  className="rounded border-slate-600 bg-slate-800 text-[#00E5A3] focus:ring-[#00E5A3]"
+                />
+                <span>Auto-upload su Intervals.icu</span>
+              </label>
+            )}
+          </div>
+
+          {uploadState === 'error' && uploadError && (
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            {canUploadIntervals && (
+              <button
+                onClick={handleUploadIntervals}
+                disabled={uploadState === 'uploading' || uploadState === 'success'}
+                className={`w-full sm:flex-1 py-3 px-5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  uploadState === 'success'
+                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                    : 'bg-[#00E5A3] hover:bg-[#26ebad] text-slate-950 shadow-lg shadow-[#00E5A3]/20 active:scale-95'
+                }`}
+              >
+                {uploadState === 'uploading' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>CARICAMENTO...</span>
+                  </>
+                ) : uploadState === 'success' ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>CARICATA SU INTERVALS.ICU</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudUpload className="w-4 h-4" />
+                    <span>UPLOAD INTERVALS.ICU</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <button
+              onClick={handleDownloadFit}
+              className="w-full sm:flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 transform active:scale-95"
+            >
+              <Download className="w-4 h-4 stroke-[2.5]" />
+              DOWNLOAD .FIT
+            </button>
+
+            <button
+              onClick={onClose}
+              className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-colors"
+            >
+              Done
+            </button>
+          </div>
         </div>
 
         <p className="text-[11px] text-center text-slate-500 mt-2">
-          Your .FIT file includes all power, speed, cadence, and HR telemetry and can be uploaded directly to Strava, Garmin Connect, and Intervals.icu.
+          {canUploadIntervals
+            ? 'Il file .FIT include la traccia GPS virtuale ed è pronto per Intervals.icu, Strava e Garmin Connect.'
+            : 'Il file .FIT include la traccia GPS virtuale (caricabile su Strava/Garmin/Intervals.icu). Accedi con la tua API Key di Intervals.icu per il caricamento diretto.'}
         </p>
       </div>
     </div>

@@ -135,6 +135,7 @@ function MainApp() {
 
   // Active workout loaded from Calendar
   const [activeWorkoutFromCalendar, setActiveWorkoutFromCalendar] = useState<ParsedWorkout | null>(null);
+  const [isRoadViewActive, setIsRoadViewActive] = useState(false);
 
   const handleNavigateToFitness = (subTab?: AnalyticsTab) => {
     if (subTab) setAnalyticsTab(subTab);
@@ -175,14 +176,16 @@ function MainApp() {
       />
 
       <main
-        className={`flex-1 w-full mx-auto flex flex-col max-w-7xl px-4 sm:px-6 lg:px-8 ${
-          currentTab === 'ride' && !selectedActivity
+        className={`flex-1 w-full mx-auto flex flex-col ${
+          currentTab === 'ride' && !selectedActivity && isRoadViewActive && !isAndroid()
+            ? 'min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-hidden p-0'
+            : currentTab === 'ride' && !selectedActivity
             ? isAndroid()
-              ? 'pt-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] sm:py-8'
-              : 'min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] py-4 sm:py-6 lg:overflow-hidden justify-between'
+              ? 'max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] sm:py-8'
+              : 'max-w-7xl px-4 sm:px-6 lg:px-8 min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:max-h-[calc(100dvh-4rem)] py-4 sm:py-6 lg:overflow-hidden justify-between'
             : isAndroid()
-            ? 'pt-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] sm:py-8'
-            : 'py-6 sm:py-8'
+            ? 'max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] sm:py-8'
+            : 'max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8'
         }`}
       >
         {selectedActivity ? (
@@ -217,6 +220,7 @@ function MainApp() {
                 activeWorkoutFromCalendar={activeWorkoutFromCalendar}
                 onClearCalendarWorkout={() => setActiveWorkoutFromCalendar(null)}
                 useImperial={useImperial}
+                onRoadModeChange={setIsRoadViewActive}
               />
             )}
 

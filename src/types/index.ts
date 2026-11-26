@@ -147,6 +147,7 @@ export interface SessionSummary {
   trainingStressScore: number;
   intensityFactor: number;
   wbal?: SessionWbal | null; // Absent when the session had no CP estimate
+  virtualWorld?: 'valley' | 'newyork' | 'roma' | 'paris';
   samples: TelemetrySample[];
 }
 

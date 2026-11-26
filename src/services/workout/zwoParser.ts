@@ -265,16 +265,33 @@ export function recalculateWorkoutFtp(workout: ParsedWorkout, newFtp: number): P
   return parseZwoWorkout(workout.rawXml, newFtp);
 }
 
+export type WorkoutCategory =
+  | 'Recovery'
+  | 'Endurance'
+  | 'Sweet Spot'
+  | 'Threshold'
+  | 'VO2 Max'
+  | 'Sprint'
+  | 'Test';
+
+export interface SampleWorkoutItem {
+  name: string;
+  category: WorkoutCategory;
+  description: string;
+  xml: string;
+}
+
 /**
  * Built-in workouts for instant selection
  */
-export const SAMPLE_WORKOUTS: { name: string; description: string; xml: string }[] = [
+export const SAMPLE_WORKOUTS: SampleWorkoutItem[] = [
   {
     name: 'Sweet Spot Progression (2x10 min)',
+    category: 'Sweet Spot',
     description: 'Classic sweet spot training to raise your threshold power without excessive fatigue. Includes warm-up and cool-down.',
     xml: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-  <author>VeloTrain Coach</author>
+  <author>VeloPulse Coach</author>
   <name>Sweet Spot Progression (2x10 min)</name>
   <description>2x10min sweet spot intervals at 88-92% FTP with 4min recovery.</description>
   <sportType>bike</sportType>
@@ -289,28 +306,95 @@ export const SAMPLE_WORKOUTS: { name: string; description: string; xml: string }
 </workout_file>`,
   },
   {
-    name: 'VO2 Max Boost (5x3 min)',
-    description: 'High aerobic power intervals designed to increase maximum oxygen uptake and punchy climbing power.',
+    name: 'Zone 2 Endurance Cruise (45 min)',
+    category: 'Endurance',
+    description: 'Steady aerobic base ride at 65–72% FTP to build mitochondrial density and fat oxidation.',
     xml: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-  <author>VeloTrain Coach</author>
-  <name>VO2 Max Boost (5x3 min)</name>
-  <description>5 repeats of 3 minutes at 115% FTP with 3 minutes easy recovery.</description>
+  <author>VeloPulse Coach</author>
+  <name>Zone 2 Endurance Cruise (45 min)</name>
+  <description>45 minutes steady Zone 2 endurance with gentle cadence changes.</description>
   <sportType>bike</sportType>
   <workout>
-    <Warmup Duration="600" PowerLow="0.50" PowerHigh="0.80" Cadence="90"/>
-    <SteadyState Duration="180" Power="0.60" Cadence="85"/>
-    <IntervalsT Repeat="5" OnDuration="180" OffDuration="180" OnPower="1.15" OffPower="0.50" Cadence="98" CadenceRest="80"/>
-    <Cooldown Duration="300" PowerLow="0.60" PowerHigh="0.40" Cadence="85"/>
+    <Warmup Duration="360" PowerLow="0.45" PowerHigh="0.65" Cadence="85"/>
+    <SteadyState Duration="600" Power="0.68" Cadence="88"/>
+    <SteadyState Duration="600" Power="0.72" Cadence="92"/>
+    <SteadyState Duration="600" Power="0.68" Cadence="86"/>
+    <SteadyState Duration="300" Power="0.72" Cadence="90"/>
+    <Cooldown Duration="240" PowerLow="0.62" PowerHigh="0.42" Cadence="85"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: 'Aerobic Base Builder (60 min)',
+    category: 'Endurance',
+    description: 'One-hour structured endurance ride with gentle Z2/Z3 waves to keep the legs engaged.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
+  <name>Aerobic Base Builder (60 min)</name>
+  <description>60 minutes undulating endurance between 65% and 78% FTP.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="480" PowerLow="0.45" PowerHigh="0.68" Cadence="85"/>
+    <SteadyState Duration="600" Power="0.70" Cadence="90"/>
+    <SteadyState Duration="300" Power="0.78" Cadence="88"/>
+    <SteadyState Duration="600" Power="0.68" Cadence="90"/>
+    <SteadyState Duration="300" Power="0.78" Cadence="88"/>
+    <SteadyState Duration="600" Power="0.70" Cadence="90"/>
+    <SteadyState Duration="300" Power="0.76" Cadence="88"/>
+    <Cooldown Duration="420" PowerLow="0.65" PowerHigh="0.42" Cadence="85"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: 'Tempo Cadence Drills (40 min)',
+    category: 'Sweet Spot',
+    description: '3x8 min tempo blocks alternating high cadence spinning and low-cadence strength.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
+  <name>Tempo Cadence Drills (40 min)</name>
+  <description>3x8min at 82-85% FTP with alternating cadence targets.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="420" PowerLow="0.45" PowerHigh="0.75" Cadence="88"/>
+    <SteadyState Duration="480" Power="0.82" Cadence="95"/>
+    <SteadyState Duration="180" Power="0.55" Cadence="85"/>
+    <SteadyState Duration="480" Power="0.84" Cadence="72"/>
+    <SteadyState Duration="180" Power="0.55" Cadence="85"/>
+    <SteadyState Duration="480" Power="0.85" Cadence="92"/>
+    <Cooldown Duration="180" PowerLow="0.62" PowerHigh="0.40" Cadence="85"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: 'FTP Threshold (2x15 min)',
+    category: 'Threshold',
+    description: 'Sustained race-pace threshold blocks right at 98–100% FTP to push your functional threshold higher.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
+  <name>FTP Threshold (2x15 min)</name>
+  <description>2x15min sustained threshold intervals at 98% FTP.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="600" PowerLow="0.45" PowerHigh="0.80" Cadence="90"/>
+    <SteadyState Duration="120" Power="0.55" Cadence="85"/>
+    <SteadyState Duration="900" Power="0.98" Cadence="92"/>
+    <SteadyState Duration="300" Power="0.52" Cadence="85"/>
+    <SteadyState Duration="900" Power="1.00" Cadence="92"/>
+    <Cooldown Duration="360" PowerLow="0.62" PowerHigh="0.40" Cadence="85"/>
   </workout>
 </workout_file>`,
   },
   {
     name: 'Over-Under Threshold (3x9 min)',
+    category: 'Threshold',
     description: 'Alternate between just below and just above threshold (95% and 105% FTP) to train lactate clearance.',
     xml: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-  <author>VeloTrain Coach</author>
+  <author>VeloPulse Coach</author>
   <name>Over-Under Threshold (3x9 min)</name>
   <description>3 sets of 9 minutes alternating 2min Under / 1min Over.</description>
   <sportType>bike</sportType>
@@ -326,11 +410,86 @@ export const SAMPLE_WORKOUTS: { name: string; description: string; xml: string }
 </workout_file>`,
   },
   {
-    name: 'FTP Ramp Test Protocol',
-    description: 'Progressive ramp test starting at 100W and stepping up by 20W every minute until exhaustion.',
+    name: 'VO2 Max Boost (5x3 min)',
+    category: 'VO2 Max',
+    description: 'High aerobic power intervals designed to increase maximum oxygen uptake and punchy climbing power.',
     xml: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-  <author>VeloTrain Coach</author>
+  <author>VeloPulse Coach</author>
+  <name>VO2 Max Boost (5x3 min)</name>
+  <description>5 repeats of 3 minutes at 115% FTP with 3 minutes easy recovery.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="600" PowerLow="0.50" PowerHigh="0.80" Cadence="90"/>
+    <SteadyState Duration="180" Power="0.60" Cadence="85"/>
+    <IntervalsT Repeat="5" OnDuration="180" OffDuration="180" OnPower="1.15" OffPower="0.50" Cadence="98" CadenceRest="80"/>
+    <Cooldown Duration="300" PowerLow="0.60" PowerHigh="0.40" Cadence="85"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: '30/30 Micro-Intervals (2x10)',
+    category: 'VO2 Max',
+    description: 'Fast 30s surges at 120% FTP with 30s float recovery to maximize time near VO2max.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
+  <name>30/30 Micro-Intervals (2x10)</name>
+  <description>2 sets of 10x(30s @ 120% / 30s @ 55%) with 5min rest between sets.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="480" PowerLow="0.45" PowerHigh="0.78" Cadence="90"/>
+    <IntervalsT Repeat="10" OnDuration="30" OffDuration="30" OnPower="1.20" OffPower="0.55" Cadence="100" CadenceRest="85"/>
+    <SteadyState Duration="300" Power="0.50" Cadence="85"/>
+    <IntervalsT Repeat="10" OnDuration="30" OffDuration="30" OnPower="1.20" OffPower="0.55" Cadence="100" CadenceRest="85"/>
+    <Cooldown Duration="300" PowerLow="0.60" PowerHigh="0.40" Cadence="85"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: '40/20 Punchy Climbs (2x8)',
+    category: 'VO2 Max',
+    description: 'Race-simulation 40s attacks at 118% FTP with short 20s recoveries for steep climbs and breakaways.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
+  <name>40/20 Punchy Climbs (2x8)</name>
+  <description>2 sets of 8x(40s @ 118% / 20s @ 52%) with 4min easy spin between sets.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="480" PowerLow="0.45" PowerHigh="0.75" Cadence="88"/>
+    <IntervalsT Repeat="8" OnDuration="40" OffDuration="20" OnPower="1.18" OffPower="0.52" Cadence="96" CadenceRest="82"/>
+    <SteadyState Duration="240" Power="0.50" Cadence="85"/>
+    <IntervalsT Repeat="8" OnDuration="40" OffDuration="20" OnPower="1.18" OffPower="0.52" Cadence="96" CadenceRest="82"/>
+    <Cooldown Duration="300" PowerLow="0.60" PowerHigh="0.40" Cadence="85"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: 'Sprint Neuromuscular Kickers (35 min)',
+    category: 'Sprint',
+    description: 'Short explosive 15-second sprints at 150% FTP with generous recovery to sharpen top-end snap.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
+  <name>Sprint Neuromuscular Kickers (35 min)</name>
+  <description>8x15s explosive sprints at 150% FTP with 2min easy spinning.</description>
+  <sportType>bike</sportType>
+  <workout>
+    <Warmup Duration="480" PowerLow="0.45" PowerHigh="0.75" Cadence="90"/>
+    <IntervalsT Repeat="8" OnDuration="15" OffDuration="120" OnPower="1.50" OffPower="0.52" Cadence="110" CadenceRest="85"/>
+    <SteadyState Duration="240" Power="0.62" Cadence="90"/>
+    <Cooldown Duration="300" PowerLow="0.55" PowerHigh="0.38" Cadence="82"/>
+  </workout>
+</workout_file>`,
+  },
+  {
+    name: 'FTP Ramp Test Protocol',
+    category: 'Test',
+    description: 'Progressive ramp test stepping up every minute until exhaustion to estimate your current FTP.',
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<workout_file>
+  <author>VeloPulse Coach</author>
   <name>FTP Ramp Test Protocol</name>
   <description>Standard 1-minute step test to evaluate FTP.</description>
   <sportType>bike</sportType>
@@ -355,10 +514,11 @@ export const SAMPLE_WORKOUTS: { name: string; description: string; xml: string }
   },
   {
     name: 'Active Recovery Spin (30 min)',
+    category: 'Recovery',
     description: 'Easy recovery ride at low intensity to promote blood flow, clear fatigue, and spin the legs.',
     xml: `<?xml version="1.0" encoding="UTF-8"?>
 <workout_file>
-  <author>VeloTrain Coach</author>
+  <author>VeloPulse Coach</author>
   <name>Active Recovery Spin (30 min)</name>
   <description>30 minutes easy spinning at 50-55% FTP.</description>
   <sportType>bike</sportType>

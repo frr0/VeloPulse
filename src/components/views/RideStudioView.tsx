@@ -7,6 +7,7 @@ import { WorkoutModal } from '../WorkoutModal';
 import { SettingsModal } from '../SettingsModal';
 import { SessionSummaryModal } from '../SessionSummaryModal';
 import { FitDownloadCard } from '../FitDownloadCard';
+import { RoadScene3D, RoadTheme, RoadQuality, RoadWorld } from '../RoadScene3D';
 import { createFitFileInfo, downloadFitFile } from '../../services/fit/fitGenerator';
 import { Capacitor } from '@capacitor/core';
 
@@ -47,6 +48,23 @@ import {
   Settings as SettingsIcon,
   Download,
   BatteryMedium,
+  Eye,
+  EyeOff,
+  LayoutGrid,
+  Mountain,
+  Sun,
+  Sunset,
+  CloudFog,
+  Moon,
+  Leaf,
+  Sparkles,
+  Maximize2,
+  Minimize2,
+  Play,
+  Pause,
+  Square,
+  SkipBack,
+  SkipForward,
 } from 'lucide-react';
 
 /**
@@ -81,6 +99,7 @@ interface RideStudioViewProps {
   activeWorkoutFromCalendar?: ParsedWorkout | null;
   onClearCalendarWorkout?: () => void;
   useImperial?: boolean;
+  onRoadModeChange?: (isRoad: boolean) => void;
 }
 
 export const RideStudioView: React.FC<RideStudioViewProps> = ({
@@ -95,6 +114,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   activeWorkoutFromCalendar,
   onClearCalendarWorkout,
   useImperial = false,
+  onRoadModeChange,
 }) => {
   const isNative = Capacitor.isNativePlatform();
   const { powerCurve } = useApp();
@@ -113,6 +133,88 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   // Modals state
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const isSummaryModalOpenRef = useRef(false);
+
+  useEffect(() => {
+    isSummaryModalOpenRef.current = isSummaryModalOpen;
+  }, [isSummaryModalOpen]);
+
+  // 3D Road View preferences (persisted locally; defaults to lightweight Eco 3D Road)
+  const [viewMode, setViewMode] = useState<'road' | 'classic'>(() => {
+    const saved = localStorage.getItem('velopulse_ride_view_mode');
+    return saved === 'classic' ? 'classic' : 'road';
+  });
+  const [roadTheme, setRoadTheme] = useState<RoadTheme>(() => {
+    const saved = localStorage.getItem('velopulse_road_theme');
+    if (saved === 'day' || saved === 'golden' || saved === 'mist' || saved === 'night') {
+      return saved;
+    }
+    return 'day';
+  });
+  const [roadQuality, setRoadQuality] = useState<RoadQuality>(() => {
+    const saved = localStorage.getItem('velopulse_road_quality');
+    return saved === 'normal' ? 'normal' : 'eco';
+  });
+  const [roadWorld, setRoadWorld] = useState<RoadWorld>(() => {
+    const saved = localStorage.getItem('velopulse_road_world');
+    if (saved === 'valley' || saved === 'newyork' || saved === 'roma' || saved === 'paris') {
+      return saved;
+    }
+    return 'valley';
+  });
+  const [hudHidden, setHudHidden] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const roadContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onRoadModeChange?.(viewMode === 'road');
+    return () => {
+      onRoadModeChange?.(false);
+    };
+  }, [viewMode, onRoadModeChange]);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const handleToggleFullscreen = () => {
+    const el = roadContainerRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('velopulse_ride_view_mode', viewMode);
+      localStorage.setItem('velopulse_road_theme', roadTheme);
+      localStorage.setItem('velopulse_road_quality', roadQuality);
+      localStorage.setItem('velopulse_road_world', roadWorld);
+    } catch {
+      // ignore storage errors
+    }
+  }, [viewMode, roadTheme, roadQuality, roadWorld]);
+
+  // Keyboard shortcut 'H' to toggle clean HUD in Road View
+  useEffect(() => {
+    if (viewMode !== 'road') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'h' || e.key === 'H') {
+        setHudHidden((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [viewMode]);
 
   // Workout & Engine state
   const [currentWorkout, setCurrentWorkout] = useState<ParsedWorkout | null>(null);
@@ -340,6 +442,15 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
           targetPower: curTarget,
         });
       } else {
+        // Auto-start directly from trainer pedaling when idle (never auto-resumes from paused,
+        // never auto-stops when pedaling stops, and blocked while viewing session summary).
+        const trainerSpd = trainerSpeedRef.current ?? 0;
+        const hasPedalingMotion = cadence >= 15 && (power >= 20 || trainerSpd >= 3);
+        if (sessionStatus === 'idle' && !isSummaryModalOpenRef.current && hasPedalingMotion) {
+          handleStartSession();
+          return;
+        }
+
         const curTarget = workoutEngineRef.current.calculateInstantaneousTargetWatts();
         const pZone = getPowerZoneNumber(power, settings.ftp);
         const hrZone = getHeartRateZoneInfo(heartRate, settings.maxHeartRate, settings.hrZones).zone;
@@ -499,13 +610,14 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
       trainingStressScore,
       intensityFactor,
       wbal: sessionWbal,
+      virtualWorld: roadWorld,
       samples,
     };
   };
 
   const handleFinishSession = () => {
     setSessionStatus('idle');
-    workoutEngineRef.current.finish();
+    workoutEngineRef.current.stop();
 
     const samples = [...samplesRef.current];
     const startTime = sessionStartTimeRef.current || (samples.length > 0 ? new Date(samples[0].timestamp) : new Date());
@@ -525,6 +637,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
     } catch (err) {
       console.error('Failed to generate FIT file info:', err);
     }
+    isSummaryModalOpenRef.current = true;
     setIsSummaryModalOpen(true);
   };
 
@@ -639,11 +752,34 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
     : (telemetry.distanceMeters / 1000).toFixed(2);
   const distUnit = useImperial ? 'mi' : 'km';
 
+  const ROAD_THEMES: { id: RoadTheme; label: string; icon: React.ReactNode }[] = [
+    { id: 'day', label: 'Day', icon: <Sun className="w-3.5 h-3.5" /> },
+    { id: 'golden', label: 'Golden', icon: <Sunset className="w-3.5 h-3.5" /> },
+    { id: 'mist', label: 'Mist', icon: <CloudFog className="w-3.5 h-3.5" /> },
+    { id: 'night', label: 'Night', icon: <Moon className="w-3.5 h-3.5" /> },
+  ];
+
+  const ROAD_WORLDS: { id: RoadWorld; label: string }[] = [
+    { id: 'valley', label: 'Valley' },
+    { id: 'newyork', label: 'New York' },
+    { id: 'roma', label: 'Rome' },
+    { id: 'paris', label: 'Paris' },
+  ];
+
+  // Crisp high-contrast shadow so floating HUD numbers stay razor-sharp on any sky/road
+  const hudTextShadow: React.CSSProperties = {
+    textShadow: '0 2px 10px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.95)',
+  };
+
   return (
-    <div className="flex-1 min-h-0 w-full flex flex-col justify-start gap-2.5 sm:gap-3 animate-fadeIn select-none lg:overflow-hidden h-full">
-      {/* Simulation banner if active */}
-      {devicesState.isSimulated && (
-        <div className="py-1.5 px-3 rounded-xl bg-purple-950/70 border border-purple-800/80 text-purple-200 text-xs flex items-center justify-between shadow-sm">
+    <div
+      className={`flex-1 min-h-0 w-full flex flex-col justify-start animate-fadeIn select-none lg:overflow-hidden h-full ${
+        viewMode === 'road' && !isNative ? 'gap-0' : 'gap-2.5 sm:gap-3'
+      }`}
+    >
+      {/* Simulation banner if active (in Classic view; in Road view it floats inside the canvas) */}
+      {devicesState.isSimulated && viewMode === 'classic' && (
+        <div className="py-1.5 px-3 rounded-xl bg-purple-950/70 border border-purple-800/80 text-purple-200 text-xs flex items-center justify-between shadow-sm shrink-0">
           <div className="flex items-center gap-2 truncate">
             <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping shrink-0" />
             <span className="font-bold shrink-0">Virtual Simulator:</span>
@@ -658,8 +794,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         </div>
       )}
 
-      {/* FIT Download notification (dismissible) */}
-      {fitFileInfo && sessionSummary && (
+      {/* FIT Download notification (dismissible, Classic view) */}
+      {fitFileInfo && sessionSummary && viewMode === 'classic' && (
         <FitDownloadCard
           summary={sessionSummary}
           fitBlobUrl={fitFileInfo.blobUrl}
@@ -671,35 +807,569 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         />
       )}
 
-      {/* Current Interval Strip (when workout is active) */}
-      {currentWorkout && engineState.currentInterval && (
-        <div className="rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border border-[#383941] px-3.5 py-2 flex items-center justify-between gap-3 text-xs sm:text-sm">
-          <div className="flex items-center gap-2.5 truncate">
-            <div
-              className="w-3 h-7 rounded-full shrink-0"
-              style={{ backgroundColor: currentPowerZone.color }}
+      {viewMode === 'road' ? (
+        /* ==================== 3D ROAD VIEW (FULL SCREEN + HIGH-CONTRAST FRAMELESS HUD) ==================== */
+        <div
+          ref={roadContainerRef}
+          className={`relative flex-1 min-h-[520px] w-full overflow-hidden bg-[#0b1224] ${
+            isNative ? 'rounded-2xl border border-[#383941]' : ''
+          }`}
+        >
+          {/* 3D Procedural Low-Poly Road Canvas */}
+          <div className="absolute inset-0">
+            <RoadScene3D
+              speedKmh={sessionStatus === 'running' ? telemetry.speedKmh : 0}
+              theme={roadTheme}
+              quality={roadQuality}
+              world={roadWorld}
             />
-            <div className="truncate">
-              <span className="font-black text-slate-100">
-                {engineState.currentInterval.type} ({engineState.currentIntervalIndex + 1}/{currentWorkout.intervals.length})
-              </span>
-              <span className="text-slate-400 ml-2 text-xs">
-                Target: <strong className="text-white font-mono text-sm sm:text-base">{engineState.instantaneousTargetPower}W</strong>
-                {engineState.instantaneousTargetCadence && (
-                  <span className="text-slate-400 font-mono text-xs sm:text-sm"> • {engineState.instantaneousTargetCadence}rpm</span>
-                )}
-              </span>
+          </div>
+
+          {/* Soft edge scrims (NOT colored boxes/tiles) so floating white numbers pop cleanly */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/55 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+          {!hudHidden && (
+            <>
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-44 sm:w-56 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-44 sm:w-56 bg-gradient-to-l from-black/60 via-black/25 to-transparent" />
+            </>
+          )}
+
+          {/* TOP OVERLAY BAR: Interval Status (left) + World/Theme/Fullscreen/Classic Controls (right) */}
+          <div className="absolute top-3 inset-x-3 z-10 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+            {/* Left: Current Interval or Free Ride + Simulator pill */}
+            <div className="pointer-events-auto flex items-center gap-2 min-w-0 max-w-[55%]">
+              {!hudHidden && currentWorkout && engineState.currentInterval ? (
+                <div className="flex items-center gap-3 pl-2.5 border-l-4 min-w-0" style={{ borderColor: currentPowerZone.color }}>
+                  <div className="min-w-0" style={hudTextShadow}>
+                    <div className="text-xs sm:text-sm font-black text-white truncate leading-tight">
+                      {engineState.currentInterval.type}{' '}
+                      <span className="text-slate-200/80 font-semibold">
+                        ({engineState.currentIntervalIndex + 1}/{currentWorkout.intervals.length})
+                      </span>
+                    </div>
+                    <div className="text-xs sm:text-sm text-slate-100 font-mono leading-tight mt-0.5">
+                      Target <strong className="text-amber-300 text-base sm:text-lg font-black">{engineState.instantaneousTargetPower}W</strong>
+                      {engineState.instantaneousTargetCadence && (
+                        <span className="text-slate-200"> • {engineState.instantaneousTargetCadence}rpm</span>
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className="pl-3 border-l border-white/25 text-2xl sm:text-3xl font-black font-mono text-[#00E5A3] leading-none shrink-0"
+                    style={hudTextShadow}
+                  >
+                    {formatTime(engineState.intervalRemainingSeconds)}
+                  </div>
+                </div>
+              ) : !hudHidden ? (
+                <div className="flex items-center gap-2 text-sm font-black text-white" style={hudTextShadow}>
+                  <Mountain className="w-4 h-4 text-[#00E5A3]" />
+                  <span>Free Ride</span>
+                </div>
+              ) : null}
+
+              {!hudHidden && devicesState.isSimulated && (
+                <button
+                  onClick={() => bluetoothManager.stopSimulation()}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-600/85 hover:bg-purple-500 text-white text-[11px] font-bold shadow-md transition-all"
+                  title="Ferma il simulatore virtuale"
+                >
+                  <span className="w-2 h-2 rounded-full bg-purple-200 animate-ping" />
+                  <span>Sim ON • Esci</span>
+                </button>
+              )}
+
+              {!hudHidden && !devicesState.trainer.connected && !devicesState.isSimulated && sessionStatus === 'idle' && (
+                <button
+                  onClick={() => bluetoothManager.startSimulation()}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-600/90 hover:bg-purple-500 text-white text-[11px] font-bold shadow-md transition-all"
+                  title="Avvia il simulatore virtuale per provare senza rullo"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Simula</span>
+                </button>
+              )}
+            </div>
+
+            {/* Right: World selector, Theme, Eco/60fps, Fullscreen, Hide HUD, Classic */}
+            <div className="pointer-events-auto flex items-center gap-1 rounded-xl bg-black/55 backdrop-blur-md border border-white/15 p-1 shadow-lg">
+              {!hudHidden && (
+                <>
+                  {/* World selector: Valley / New York / Roma */}
+                  <div className="flex items-center gap-0.5 pr-1 border-r border-white/15">
+                    {ROAD_WORLDS.map((w) => (
+                      <button
+                        key={w.id}
+                        onClick={() => setRoadWorld(w.id)}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                          roadWorld === w.id
+                            ? 'bg-[#00E5A3] text-slate-950'
+                            : 'text-slate-200 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {w.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Theme selector */}
+                  <div className="hidden md:flex items-center gap-0.5 pr-1 border-r border-white/15">
+                    {ROAD_THEMES.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => setRoadTheme(t.id)}
+                        title={`Tema ${t.label}`}
+                        className={`p-1.5 rounded-lg transition-all ${
+                          roadTheme === t.id
+                            ? 'bg-white/20 text-[#00E5A3]'
+                            : 'text-slate-300 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {t.icon}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Quality toggle */}
+                  <button
+                    onClick={() => setRoadQuality((q) => (q === 'eco' ? 'normal' : 'eco'))}
+                    title={
+                      roadQuality === 'eco'
+                        ? 'Modalità Eco attiva (leggera, ~30fps, DPR 1x). Clicca per 60fps'
+                        : 'Modalità Normale (60fps). Clicca per Eco leggera'
+                    }
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                      roadQuality === 'eco'
+                        ? 'bg-emerald-500/25 text-emerald-300'
+                        : 'bg-sky-500/25 text-sky-300'
+                    }`}
+                  >
+                    <Leaf className="w-3 h-3" />
+                    <span className="hidden sm:inline">{roadQuality === 'eco' ? 'Eco' : '60fps'}</span>
+                  </button>
+
+                  {/* Native Browser Fullscreen */}
+                  {!isNative && (
+                    <button
+                      onClick={handleToggleFullscreen}
+                      title={isFullscreen ? 'Esci da schermo intero' : 'Schermo intero'}
+                      className="p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                      {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Hide/Show HUD */}
+              <button
+                onClick={() => setHudHidden((h) => !h)}
+                title={hudHidden ? 'Mostra HUD (tasto H)' : 'Nascondi HUD (tasto H)'}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-all"
+              >
+                {hudHidden ? <Eye className="w-3.5 h-3.5 text-[#00E5A3]" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {hudHidden && <span className="text-[#00E5A3]">HUD</span>}
+              </button>
+
+              {/* Back to Classic View */}
+              {!hudHidden && (
+                <button
+                  onClick={() => setViewMode('classic')}
+                  title="Torna alla vista Classic (senza video 3D)"
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-200 hover:text-white hover:bg-white/10 border-l border-white/15 pl-2 transition-all"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Classic</span>
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="text-right shrink-0">
-            <span className="text-xs text-slate-400 font-bold uppercase mr-1.5 hidden sm:inline">Interval:</span>
-            <span className="text-xl sm:text-3xl font-black font-mono text-[#00E5A3] leading-none">
-              {formatTime(engineState.intervalRemainingSeconds)}
-            </span>
-          </div>
+          {/* FIT Download notification floating inside Road View */}
+          {fitFileInfo && sessionSummary && !hudHidden && (
+            <div className="absolute top-16 inset-x-4 sm:inset-x-48 z-20">
+              <FitDownloadCard
+                summary={sessionSummary}
+                fitBlobUrl={fitFileInfo.blobUrl}
+                fitFilename={fitFileInfo.filename}
+                fitSizeBytes={fitFileInfo.sizeBytes}
+                base64Data={fitFileInfo.base64Data}
+                onOpenSummaryModal={() => setIsSummaryModalOpen(true)}
+                onDismiss={() => setFitFileInfo(null)}
+              />
+            </div>
+          )}
+
+          {/* LEFT SIDE FRAMELESS HIGH-CONTRAST HUD: Power, Cadence, Heart Rate */}
+          {!hudHidden && (
+            <div className="absolute left-4 top-20 z-10 flex flex-col gap-4 w-36 sm:w-44 pointer-events-none" style={hudTextShadow}>
+              {/* POWER */}
+              <div className="pl-3 border-l-[3px]" style={{ borderColor: currentPowerZone.color }}>
+                <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-white/85">
+                  <span className="flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5" style={{ color: currentPowerZone.color }} />
+                    Power
+                  </span>
+                  <span className="font-mono" style={{ color: currentPowerZone.color }}>
+                    {currentPowerZone.name}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-4xl sm:text-5xl font-black font-mono text-white leading-none tracking-tight">
+                    {telemetry.power}
+                  </span>
+                  <span className="text-xs font-extrabold text-white/80">W</span>
+                </div>
+                <div className="mt-1.5 h-1.5 w-full rounded-full bg-black/50 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, powerGaugePercent)}%`,
+                      backgroundColor: currentPowerZone.color,
+                    }}
+                  />
+                </div>
+                {/* Prominent Target Watts readout */}
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
+                    Target
+                  </span>
+                  <span className="text-2xl sm:text-3xl font-black font-mono text-amber-300 leading-none">
+                    {telemetry.targetPower}
+                    <span className="text-xs font-extrabold ml-0.5">W</span>
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between text-[11px] font-mono font-bold text-white/85">
+                  <span>3s {telemetry.power3s}W</span>
+                  <span>{Math.round((telemetry.targetPower / settings.ftp) * 100)}% FTP</span>
+                </div>
+              </div>
+
+              {/* CADENCE */}
+              <div className="pl-3 border-l-[3px] border-[#00E5A3]">
+                <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-white/85">
+                  <span className="flex items-center gap-1">
+                    <Activity className="w-3.5 h-3.5 text-[#00E5A3]" />
+                    Cadence
+                  </span>
+                  {telemetry.targetCadence && (
+                    <span className="font-mono text-[#00E5A3]">{telemetry.targetCadence}</span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-3xl sm:text-4xl font-black font-mono text-white leading-none tracking-tight">
+                    {telemetry.cadence}
+                  </span>
+                  <span className="text-xs font-extrabold text-white/80">RPM</span>
+                </div>
+              </div>
+
+              {/* HEART RATE */}
+              <div className="pl-3 border-l-[3px] border-rose-500">
+                <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-white/85">
+                  <span className="flex items-center gap-1">
+                    <Heart className="w-3.5 h-3.5 text-rose-400" />
+                    HR
+                  </span>
+                  <span className="font-mono text-rose-300">
+                    {telemetry.heartRate > 0 ? `Z${telemetry.hrZone}` : '--'}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-3xl sm:text-4xl font-black font-mono text-white leading-none tracking-tight">
+                    {telemetry.heartRate || '--'}
+                  </span>
+                  <span className="text-xs font-extrabold text-white/80">BPM</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* RIGHT SIDE FRAMELESS HIGH-CONTRAST HUD: Speed, Time, Distance, Work/W'bal */}
+          {!hudHidden && (
+            <div className="absolute right-4 top-20 z-10 flex flex-col gap-4 w-36 sm:w-44 text-right pointer-events-none" style={hudTextShadow}>
+              {/* SPEED */}
+              <div className="pr-3 border-r-[3px] border-emerald-400">
+                <div className="flex items-center justify-end gap-1 text-[11px] font-extrabold uppercase tracking-wider text-white/85">
+                  <span>Speed</span>
+                  <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
+                <div className="flex items-baseline justify-end gap-1 mt-0.5">
+                  <span className="text-4xl sm:text-5xl font-black font-mono text-white leading-none tracking-tight">
+                    {displaySpeed.toFixed(1)}
+                  </span>
+                  <span className="text-xs font-extrabold text-emerald-300">{speedUnit}</span>
+                </div>
+                <div className="mt-1 text-xs font-mono font-bold text-white/90">
+                  {displayDist} {distUnit}
+                </div>
+              </div>
+
+              {/* TIME */}
+              <div className="pr-3 border-r-[3px] border-cyan-400">
+                <div className="flex items-center justify-end gap-1 text-[11px] font-extrabold uppercase tracking-wider text-white/85">
+                  <span>Time</span>
+                  <Clock className="w-3.5 h-3.5 text-cyan-300" />
+                </div>
+                <div className="text-3xl sm:text-4xl font-black font-mono text-white leading-none tracking-tight mt-0.5">
+                  {formatTime(telemetry.elapsedSeconds)}
+                </div>
+                {currentWorkout && (
+                  <div className="mt-1 text-xs font-mono font-bold text-white/85">
+                    Rem {formatTime(engineState.workoutRemainingSeconds)}
+                  </div>
+                )}
+              </div>
+
+              {/* WORK / CALORIES / W'BAL */}
+              <div className="pr-3 border-r-[3px] border-amber-400 space-y-1">
+                <div className="text-xs font-mono font-extrabold text-white">
+                  {Math.round(telemetry.workKj)} <span className="text-amber-300">kJ</span> • {telemetry.calories}{' '}
+                  <span className="text-orange-300">kcal</span>
+                </div>
+                {wbalDisplay && (
+                  <div className="text-xs font-mono font-extrabold text-white">
+                    W′bal{' '}
+                    <span className={wbalDisplay.isLow ? 'text-amber-300' : 'text-sky-300'}>
+                      {Math.round(wbalDisplay.percent)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* MINIMAL CORNER READOUT WHEN HUD IS HIDDEN */}
+          {hudHidden && (
+            <div
+              className="absolute bottom-4 left-4 z-10 flex items-center gap-4 text-base font-black font-mono text-white pointer-events-none"
+              style={hudTextShadow}
+            >
+              <span style={{ color: currentPowerZone.color }}>{telemetry.power}W</span>
+              <span>{telemetry.cadence} rpm</span>
+              <span className="text-emerald-300">
+                {displaySpeed.toFixed(1)} {speedUnit}
+              </span>
+              <span className="text-white/85">{formatTime(telemetry.elapsedSeconds)}</span>
+            </div>
+          )}
+
+          {/* BOTTOM OVERLAY: Frameless Workout Chart (bottom-left) + Frameless Controls Dock (bottom-right) */}
+          {!hudHidden && (
+            <div className="absolute bottom-3 inset-x-4 z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-3 pointer-events-none">
+              {/* Bottom-Left: Frameless High-Visibility Workout Profile HUD */}
+              <div className="w-full sm:w-[380px] md:w-[440px] max-w-full pointer-events-auto">
+                <WorkoutProfileChart
+                  workout={currentWorkout}
+                  currentSecond={engineState.workoutElapsedSeconds}
+                  currentIntervalIndex={engineState.currentIntervalIndex}
+                  ftp={settings.ftp}
+                  onSelectInterval={(_idx) => {}}
+                  onOpenWorkoutModal={() => setIsWorkoutModalOpen(true)}
+                  variant="hud"
+                  heightClassName="h-28 sm:h-32"
+                />
+              </div>
+
+              {/* Bottom-Right: Frameless Minimal Controls Dock matching Side HUD */}
+              <div
+                className="flex flex-col items-end gap-2 pr-3 border-r-[3px] border-[#00E5A3] pointer-events-auto shrink-0"
+                style={hudTextShadow}
+              >
+                {/* Row 1: Primary Session Controls + Interval Skip / ERG Bias */}
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  {sessionStatus === 'idle' && (
+                    <button
+                      onClick={handleStartSession}
+                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#00E5A3] hover:bg-[#26ebad] text-slate-950 font-black text-xs shadow-lg active:scale-95 transition-all"
+                      style={{ textShadow: 'none' }}
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>START</span>
+                    </button>
+                  )}
+
+                  {sessionStatus === 'running' && (
+                    <>
+                      <button
+                        onClick={handlePauseSession}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-lg active:scale-95 transition-all"
+                        style={{ textShadow: 'none' }}
+                      >
+                        <Pause className="w-3.5 h-3.5 fill-current" />
+                        <span>PAUSE</span>
+                      </button>
+                      <button
+                        onClick={handleFinishSession}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-black/55 hover:bg-rose-600/90 border border-rose-400/50 text-rose-200 hover:text-white font-bold text-xs backdrop-blur-sm active:scale-95 transition-all"
+                      >
+                        <Square className="w-3 h-3 fill-current" />
+                        <span>STOP</span>
+                      </button>
+                    </>
+                  )}
+
+                  {sessionStatus === 'paused' && (
+                    <>
+                      <button
+                        onClick={handleResumeSession}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#00E5A3] hover:bg-[#26ebad] text-slate-950 font-black text-xs shadow-lg active:scale-95 transition-all"
+                        style={{ textShadow: 'none' }}
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>RESUME</span>
+                      </button>
+                      <button
+                        onClick={handleFinishSession}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-black/55 hover:bg-rose-600/90 border border-rose-400/50 text-rose-200 hover:text-white font-bold text-xs backdrop-blur-sm active:scale-95 transition-all"
+                      >
+                        <Square className="w-3 h-3 fill-current" />
+                        <span>FINISH</span>
+                      </button>
+                    </>
+                  )}
+
+                  {currentWorkout ? (
+                    <>
+                      {/* Skip Interval */}
+                      <div className="flex items-center gap-0.5 rounded-lg bg-black/45 backdrop-blur-sm border border-white/15 px-1 py-0.5">
+                        <button
+                          onClick={() => handleSkipInterval(false)}
+                          title="Intervallo precedente"
+                          className="p-1 text-white/90 hover:text-[#00E5A3] transition-colors"
+                        >
+                          <SkipBack className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleSkipInterval(true)}
+                          title="Intervallo successivo"
+                          className="p-1 text-white/90 hover:text-[#00E5A3] transition-colors"
+                        >
+                          <SkipForward className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* ERG Bias */}
+                      <div className="flex items-center gap-1 rounded-lg bg-black/45 backdrop-blur-sm border border-white/15 px-1.5 py-1 font-mono text-xs">
+                        <button
+                          onClick={() => handleAdjustErgBias(-5)}
+                          className="px-1 font-extrabold text-white/85 hover:text-[#00E5A3]"
+                        >
+                          -5%
+                        </button>
+                        <span className="font-black text-[#00E5A3]">{engineState.ergBiasPercent}%</span>
+                        <button
+                          onClick={() => handleAdjustErgBias(5)}
+                          className="px-1 font-extrabold text-white/85 hover:text-[#00E5A3]"
+                        >
+                          +5%
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    /* Manual Target Watts in Free Ride */
+                    <div className="flex items-center gap-1 rounded-lg bg-black/45 backdrop-blur-sm border border-white/15 px-1.5 py-1 font-mono text-xs">
+                      <button
+                        onClick={() => handleAdjustManualWatts(-10)}
+                        className="px-1 font-extrabold text-white/85 hover:text-amber-300"
+                      >
+                        -10W
+                      </button>
+                      <span className="font-black text-amber-300">{telemetry.targetPower}W</span>
+                      <button
+                        onClick={() => handleAdjustManualWatts(10)}
+                        className="px-1 font-extrabold text-white/85 hover:text-amber-300"
+                      >
+                        +10W
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Row 2: Quick Tools (Workout, Sensors, .FIT, Settings) */}
+                <div className="flex items-center gap-3 text-xs font-extrabold text-white/90">
+                  <button
+                    onClick={() => setIsWorkoutModalOpen(true)}
+                    className="flex items-center gap-1 hover:text-[#00E5A3] transition-colors"
+                    title="Seleziona Workout (.zwo)"
+                  >
+                    <Dumbbell className="w-3.5 h-3.5 text-[#00E5A3]" />
+                    <span>Workout</span>
+                  </button>
+                  <button
+                    onClick={() => setIsBluetoothModalOpen(true)}
+                    className="flex items-center gap-1 hover:text-[#00E5A3] transition-colors"
+                    title="Sensori Bluetooth"
+                  >
+                    <Bluetooth className="w-3.5 h-3.5 text-[#00E5A3]" />
+                    <span>Sensors</span>
+                  </button>
+                  <button
+                    onClick={handleExportFit}
+                    className="flex items-center gap-1 hover:text-emerald-300 transition-colors"
+                    title="Scarica file .FIT"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>.FIT</span>
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="flex items-center gap-1 hover:text-white transition-colors"
+                    title="Impostazioni"
+                  >
+                    <SettingsIcon className="w-3.5 h-3.5 text-white/85" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      ) : (
+        /* ==================== CLASSIC COCKPIT VIEW ==================== */
+        <>
+          {/* Current Interval Strip + Switch to 3D Road button */}
+          <div className="flex items-center justify-between gap-2 shrink-0">
+            {currentWorkout && engineState.currentInterval ? (
+              <div className="flex-1 rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border border-[#383941] px-3.5 py-2 flex items-center justify-between gap-3 text-xs sm:text-sm min-w-0">
+                <div className="flex items-center gap-2.5 truncate">
+                  <div
+                    className="w-3 h-7 rounded-full shrink-0"
+                    style={{ backgroundColor: currentPowerZone.color }}
+                  />
+                  <div className="truncate">
+                    <span className="font-black text-slate-100">
+                      {engineState.currentInterval.type} ({engineState.currentIntervalIndex + 1}/{currentWorkout.intervals.length})
+                    </span>
+                    <span className="text-slate-400 ml-2 text-xs">
+                      Target: <strong className="text-white font-mono text-sm sm:text-base">{engineState.instantaneousTargetPower}W</strong>
+                      {engineState.instantaneousTargetCadence && (
+                        <span className="text-slate-400 font-mono text-xs sm:text-sm"> • {engineState.instantaneousTargetCadence}rpm</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <span className="text-xs text-slate-400 font-bold uppercase mr-1.5 hidden sm:inline">Interval:</span>
+                  <span className="text-xl sm:text-3xl font-black font-mono text-[#00E5A3] leading-none">
+                    {formatTime(engineState.intervalRemainingSeconds)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1" />
+            )}
+
+            <button
+              onClick={() => setViewMode('road')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#00E5A3]/40 text-[#00E5A3] text-xs font-bold shrink-0 transition-all"
+              title="Attiva la vista strada 3D leggera"
+            >
+              <Mountain className="w-4 h-4" />
+              <span>3D Road</span>
+            </button>
+          </div>
 
       {/* 
         2. PRIMARY METRICS: POWER, CADENCE, HEART RATE, SPEED
@@ -937,6 +1607,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         isCompact={isNative}
       />
+        </>
+      )}
 
       {/* WORKOUT SELECTION MODAL */}
       <WorkoutModal

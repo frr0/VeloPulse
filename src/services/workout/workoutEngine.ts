@@ -107,8 +107,8 @@ export class WorkoutEngine {
   }
 
   public finish() {
+    if (this.status === 'finished') return;
     this.status = 'finished';
-    this.playTone(1320, 0.4, 'sine');
     this.emitState();
     this.onFinished?.();
   }
