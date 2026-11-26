@@ -35,10 +35,9 @@ VeloPulse runs natively or as an app on all major operating systems:
 All pre-compiled packages are available in the [GitHub Releases](https://github.com/frr0/Cycling-App/releases) section.
 
 <p align="center">
-  <img src="docs/screenshots/mobile-dashboard.jpg" width="24%" alt="Mobile Dashboard & Readiness" />
-  <img src="docs/screenshots/mobile-ride-studio.jpg" width="24%" alt="Mobile Ride Studio" />
-  <img src="docs/screenshots/mobile-activity-map.jpg" width="24%" alt="Mobile Activity & Route Map" />
-  <img src="docs/screenshots/mobile-training-plan.jpg" width="24%" alt="Mobile Training Plan" />
+  <img src="docs/screenshots/mobile-dashboard.jpg" width="28%" alt="Mobile Dashboard & Readiness" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-ride-studio.jpg" width="28%" alt="Mobile Ride Studio" />
 </p>
 
 ### Live demo
@@ -53,10 +52,6 @@ the address shows a "Private demo" page instead of the app.
 ## Key Features
 
 ### 1. Lightweight 3D Road Studio & Smart Trainer Control
-
-<p align="center">
-  <img src="docs/screenshots/ride-studio-3d-road.jpg" alt="Ride Studio 3D Road View - New York with Frameless Telemetry HUD and Articulated Cyclist" width="100%" />
-</p>
 
 * **Lightweight Procedural 3D Graphics (Three.js)**:
   * **4 Stylized Low-Poly Worlds**: ride through **Valley** (scenic mountain loop), **New York** (Manhattan avenues, Empire State Building, Statue of Liberty, One WTC), **Rome** (sampietrini roads, umbrella pines, Colosseum, Arch of Constantine, St. Peter's Dome), and **Paris** (Haussmann boulevards, Eiffel Tower, Arc de Triomphe, Louvre Pyramid).
@@ -82,11 +77,8 @@ the address shows a "Private demo" page instead of the app.
 ### 2. Dedicated Activity Page, Interactive GPS Map & Telemetry Visuals
 
 <p align="center">
-  <img src="docs/screenshots/activity-map-telemetry-new.jpg" alt="Activity Detail - Interactive GPS Route Map with Altitude and Power Telemetry Charts" width="100%" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/activity-zones-wbal.jpg" alt="Activity Analytics - Coggan Power Zones Histogram, Speed with Elevation Backdrop, and W'bal Reserve" width="100%" />
+  <img src="docs/screenshots/activity-map-telemetry-new.jpg" alt="Activity Detail - Interactive GPS Route Map with Altitude and Power Telemetry Charts" width="49%" />
+  <img src="docs/screenshots/activity-zones-wbal.jpg" alt="Activity Analytics - Coggan Power Zones Histogram, Speed with Elevation Backdrop, and W'bal Reserve" width="49%" />
 </p>
 
 * **Dedicated Two-Column Activity View**:
@@ -104,10 +96,6 @@ the address shows a "Private demo" page instead of the app.
 ---
 
 ### 3. Athletic Performance & Recovery Analytics
-
-<p align="center">
-  <img src="docs/screenshots/fitness-form.png" alt="Fitness & Form Analytics - CTL vs ATL Modeling" width="100%" />
-</p>
 
 * **Multi-Source Sync & Demo Mode**:
   * Connect **Intervals.icu**, link **Strava** via OAuth, or import **Garmin `.fit`** files directly—or explore immediately in demo mode.
