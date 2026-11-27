@@ -17,6 +17,9 @@ run_worker_first = ["/api/*"]
 [observability]
 enabled = true
 
+# Required by `wrangler preview` (Cloudflare Workers Builds runs it for non-production branches).
+[previews]
+
 # Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
 #   STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_STATE_SECRET,
 #   STRAVA_WEBHOOK_VERIFY_TOKEN, STRAVA_WEBHOOK_SUBSCRIPTION_ID (optional),
