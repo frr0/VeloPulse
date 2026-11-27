@@ -2,6 +2,7 @@ import { SessionSummary } from '../types';
 import { Activity, Wellness } from '../types/intervals';
 import { ActivityStream } from './intervals/api';
 import { buildRouteSampler, VirtualWorldId } from './fit/fitGenerator';
+import { toWallClockString, wallClockMs } from '../utils/activityTime';
 
 const LOCAL_ACTIVITIES_KEY = 'velopulse_local_activities_v1';
 const LOCAL_STREAMS_PREFIX = 'velopulse_local_streams_v1_';
@@ -20,8 +21,9 @@ export function isDuplicateActivity(
   if (a.id && b.id && a.id === b.id) return true;
   if (!a.start_date_local || !b.start_date_local) return false;
 
-  const tA = new Date(a.start_date_local).getTime();
-  const tB = new Date(b.start_date_local).getTime();
+  // Wall-clock comparison: sources use different zone suffixes for the same local time.
+  const tA = wallClockMs(a.start_date_local);
+  const tB = wallClockMs(b.start_date_local);
   if (!Number.isFinite(tA) || !Number.isFinite(tB)) return false;
 
   if (Math.abs(tA - tB) > DUPLICATE_TIME_WINDOW_MS) return false;
@@ -107,40 +109,72 @@ export function loadLocalActivityStreams(activityId: string): ActivityStream[] |
 }
 
 /**
- * Deduplicates a list of activities across providers (Intervals.icu, Strava, Garmin, VeloPulse)
- * and merges locally saved VeloPulse activities without creating duplicates.
- * If a remote activity matches a local VeloPulse ride (±5 min & similar duration),
- * the remote one wins (preserving the local virtual GPS track if remote has none).
+ * Which copy of a duplicated ride leads. Intervals.icu first: its id is the one
+ * the detail view uses to load full streams, and it carries training load.
+ * Then the original device file, then Strava, then sessions recorded here.
  */
-export function mergeWithLocalActivities(remoteActivities: Activity[]): Activity[] {
-  const local = loadLocalActivities();
-  const deduped: Activity[] = [];
+const SOURCE_PRIORITY: Record<string, number> = {
+  intervals: 0,
+  garmin: 1,
+  strava: 2,
+  manual: 3,
+  velopulse: 4,
+};
 
-  for (const act of remoteActivities) {
-    const existingIdx = deduped.findIndex((existing) => isDuplicateActivity(existing, act));
-    if (existingIdx === -1) {
-      deduped.push(act);
-    } else if (!deduped[existingIdx].icu_latlng && act.icu_latlng) {
-      deduped[existingIdx] = { ...deduped[existingIdx], icu_latlng: act.icu_latlng };
-    }
+function sourceOf(act: Activity): string {
+  if (act.source) return act.source;
+  return isLocalVeloPulseActivity(act.id) ? 'velopulse' : 'intervals';
+}
+
+const isEmpty = (v: unknown) =>
+  v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+
+/**
+ * Merges two records of the same ride: the higher-priority one keeps its values,
+ * the other only fills fields it is missing (e.g. a Strava GPS route on an
+ * Intervals.icu indoor record, or local streams on a synced ride).
+ */
+function mergeDuplicate(a: Activity, b: Activity): Activity {
+  const [primary, secondary] =
+    (SOURCE_PRIORITY[sourceOf(a)] ?? 9) <= (SOURCE_PRIORITY[sourceOf(b)] ?? 9) ? [a, b] : [b, a];
+  const merged: Activity = { ...primary };
+  const target = merged as unknown as Record<string, unknown>;
+  for (const [key, value] of Object.entries(secondary)) {
+    if (key === 'id' || key === 'source' || key === 'sources' || key === 'name') continue;
+    if (isEmpty(target[key]) && !isEmpty(value)) target[key] = value;
   }
-
-  for (const localAct of local) {
-    const matchIdx = deduped.findIndex((existing) => isDuplicateActivity(existing, localAct));
-    if (matchIdx === -1) {
-      deduped.push(localAct);
-    } else if (!deduped[matchIdx].icu_latlng && localAct.icu_latlng) {
-      deduped[matchIdx] = {
-        ...deduped[matchIdx],
-        icu_latlng: localAct.icu_latlng,
-        velopulse_streams: deduped[matchIdx].velopulse_streams || loadLocalActivityStreams(localAct.id) || undefined,
-      };
-    }
-  }
-
-  return deduped.sort(
-    (a, b) => new Date(b.start_date_local).getTime() - new Date(a.start_date_local).getTime()
+  merged.source = sourceOf(primary) as Activity['source'];
+  merged.sources = Array.from(
+    new Set([...(a.sources ?? [sourceOf(a)]), ...(b.sources ?? [sourceOf(b)])])
   );
+  return merged;
+}
+
+/**
+ * Collapses the same ride reported by several sources (Intervals.icu, Strava,
+ * Garmin .FIT, sessions recorded in the app) into a single activity, so each
+ * ride appears once everywhere (lists, calendar, weekly load, fitness charts).
+ */
+export function dedupeActivities(activities: Activity[]): Activity[] {
+  const deduped: Activity[] = [];
+  for (const act of activities) {
+    const idx = deduped.findIndex((existing) => isDuplicateActivity(existing, act));
+    if (idx === -1) deduped.push(act);
+    else deduped[idx] = mergeDuplicate(deduped[idx], act);
+  }
+  return deduped.sort(
+    (a, b) => wallClockMs(b.start_date_local) - wallClockMs(a.start_date_local)
+  );
+}
+
+/** Remote activities (all sources) plus sessions recorded on this device, de-duplicated. */
+export function mergeWithLocalActivities(remoteActivities: Activity[]): Activity[] {
+  const local = loadLocalActivities().map((act) => ({
+    ...act,
+    source: 'velopulse' as const,
+    velopulse_streams: act.velopulse_streams || loadLocalActivityStreams(act.id) || undefined,
+  }));
+  return dedupeActivities([...remoteActivities, ...local]);
 }
 
 /**
@@ -251,7 +285,7 @@ export function saveLocalWorkoutSession(
 
   const activity: Activity = {
     id,
-    start_date_local: startDate.toISOString(),
+    start_date_local: toWallClockString(startDate),
     name: activityName,
     type: 'VirtualRide',
     description: `Recorded locally in VeloPulse 3D Studio (${worldLabel}).`,
