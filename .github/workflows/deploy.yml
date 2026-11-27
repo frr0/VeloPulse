@@ -1,0 +1,48 @@
+name: Deploy to Cloudflare
+
+# Every push to master (including merged pull requests) is tested, built and
+# deployed to the production Worker. Pull requests are only checked by ci.yml.
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never run two deploys at once; a newer push waits for the running one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Test, build and deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run typecheck:worker
+      - run: npm test
+
+      # Public values (Supabase URL and publishable key), set as repository variables.
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      # Worker secrets (Strava, Supabase service role) already live on Cloudflare
+      # and are kept across deploys; only the API token is needed here.
+      - run: npx wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
