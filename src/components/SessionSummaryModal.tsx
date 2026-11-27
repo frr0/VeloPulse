@@ -6,6 +6,7 @@ import { createFitFileInfo, downloadFitFile } from '../services/fit/fitGenerator
 import { uploadActivityFitToIntervals } from '../services/intervals/api';
 import { findDuplicateActivity } from '../services/localWorkouts';
 import { useApp } from '../context/AppContext';
+import { toWallClockString } from '../utils/activityTime';
 
 const WORLD_MAP_LABELS: Record<string, string> = {
   valley: 'Dolomites Valley',
@@ -50,9 +51,9 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
     if (!summary || !credentials || credentials.isDemo || !credentials.apiKey) return;
 
     // Prevent double upload if this ride already exists on Intervals.icu / Strava / Garmin
-    const startIso = (
+    const startIso = toWallClockString(
       summary.startTime instanceof Date ? summary.startTime : new Date(summary.startTime || Date.now())
-    ).toISOString();
+    );
     const existingRemote = findDuplicateActivity(
       activities,
       { start_date_local: startIso, moving_time: summary.totalTimerTimeSeconds },

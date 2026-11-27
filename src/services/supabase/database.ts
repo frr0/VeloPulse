@@ -63,6 +63,7 @@ function mapRowToActivity(row: Record<string, any>): Activity {
   return {
     ...raw,
     id: String(row.external_id || row.id),
+    source: row.provider,
     name: row.name || raw.name || 'Activity',
     type: row.type || raw.type || 'Ride',
     start_date_local: row.start_date_local || raw.start_date_local,
@@ -164,7 +165,9 @@ export async function loadUserBundle(
         .select('*')
         .eq('user_id', userId)
         .order('start_date_local', { ascending: false })
-        .limit(200),
+        // The same ride can be stored once per source (Intervals.icu, Strava, Garmin)
+        // and is merged on display, so fetch enough rows to cover that.
+        .limit(600),
       client
         .from('wellness')
         .select('*')

@@ -156,6 +156,10 @@ export interface Activity {
   icu_latlng?: [number, number][];
   indoor?: boolean;
   trainer?: boolean;
+  /** Where this record comes from (Supabase `provider`, or 'velopulse' for local sessions). */
+  source?: 'intervals' | 'strava' | 'garmin' | 'manual' | 'velopulse';
+  /** All sources that reported this same ride, after de-duplication. */
+  sources?: string[];
   velopulse_streams?: Array<{
     type: string;
     name?: string;

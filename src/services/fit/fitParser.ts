@@ -1,5 +1,6 @@
 import { Decoder, Stream } from '@garmin/fitsdk';
 import { Activity } from '../../types/intervals';
+import { toWallClockString } from '../../utils/activityTime';
 
 const SEMICIRCLES_TO_DEGREES = 180 / Math.pow(2, 31);
 
@@ -21,6 +22,28 @@ function toIsoDate(value: unknown): string {
     if (!Number.isNaN(d.getTime())) return d.toISOString();
   }
   return new Date().toISOString();
+}
+
+/** Seconds between the Unix epoch and the FIT epoch (1989-12-31T00:00:00Z). */
+const FIT_EPOCH_OFFSET_S = 631065600;
+
+function fitTimeMs(value: unknown): number | null {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getTime();
+  if (typeof value === 'number' && Number.isFinite(value)) return (value + FIT_EPOCH_OFFSET_S) * 1000;
+  return null;
+}
+
+/**
+ * The device's UTC offset in minutes, from the activity message
+ * (`localTimestamp` is the bike computer's local clock, `timestamp` is UTC).
+ * Returns undefined when the file does not carry it.
+ */
+function deviceOffsetMinutes(activity: Record<string, any> | undefined): number | undefined {
+  const utc = fitTimeMs(activity?.timestamp);
+  const local = fitTimeMs(activity?.localTimestamp);
+  if (utc === null || local === null) return undefined;
+  const minutes = Math.round((local - utc) / 60_000 / 15) * 15;
+  return Math.abs(minutes) <= 14 * 60 ? minutes : undefined;
 }
 
 function mapSportToType(sport: unknown, subSport: unknown): string {
@@ -66,8 +89,12 @@ export async function parseFitFileToActivity(file: File): Promise<Activity> {
   const session = (messages?.sessionMesgs?.[0] ?? {}) as Record<string, any>;
   const records = (messages?.recordMesgs ?? []) as Array<Record<string, any>>;
 
-  const startIso = toIsoDate(session.startTime ?? records[0]?.timestamp);
-  const externalId = `fit_${file.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date(startIso).getTime()}`;
+  const startUtcIso = toIsoDate(session.startTime ?? records[0]?.timestamp);
+  // Stored as wall-clock local time like every other source (see utils/activityTime).
+  // Falls back to this device's time zone when the file has no local timestamp.
+  const activityMesg = (messages?.activityMesgs?.[0] ?? undefined) as Record<string, any> | undefined;
+  const startIso = toWallClockString(new Date(startUtcIso), deviceOffsetMinutes(activityMesg));
+  const externalId = `fit_${file.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date(startUtcIso).getTime()}`;
 
   // Downsample GPS track if very long (keep up to ~500 points for smooth map rendering)
   const latlng: [number, number][] = [];
