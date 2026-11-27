@@ -12,7 +12,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "vitest run src/utils/__tests__",
+    "test": "vitest run src/utils/__tests__ worker/__tests__",
+    "typecheck:worker": "tsc -p worker/tsconfig.json",
+    "worker:dev": "npm run build && npx wrangler dev",
+    "worker:deploy": "npm run build && npx wrangler deploy",
     "preview": "vite preview",
     "start": "electron .",
     "dist": "npm run build && electron-builder --linux AppImage deb",

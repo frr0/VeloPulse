@@ -24,6 +24,8 @@ import {
   saveUserUnits,
   saveVeloPulseActivityToDatabase,
   syncStravaViaBackend,
+  disconnectStravaViaBackend,
+  getStravaAuthorizeUrl,
   UserDatabaseBundle,
 } from '../services/supabase/database';
 import { DataProvider, ProviderConnection } from '../services/supabase/types';
@@ -85,7 +87,8 @@ interface AppContextType {
   signInWithGoogle: () => Promise<void>;
   // Data Providers (Supabase DB)
   connectIntervals: (apiKey: string, athleteId?: string) => Promise<void>;
-  disconnectProvider: (provider: DataProvider) => Promise<void>;
+  /** Resolves with a confirmation message to show the user. */
+  disconnectProvider: (provider: DataProvider) => Promise<string>;
   connectStrava: () => Promise<void>;
   syncStrava: () => Promise<number>;
   importGarminFit: (file: File) => Promise<Activity>;
@@ -481,20 +484,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const disconnectProvider = async (provider: DataProvider) => {
-    if (!authUser) return;
+  const disconnectProvider = async (provider: DataProvider): Promise<string> => {
+    if (!authUser) return '';
     setError(null);
-    await disconnectProviderConnection(authUser.id, provider);
+    let message = `Disconnected ${provider}.`;
+    if (provider === 'strava') {
+      // Server-side: revokes access on Strava and deletes all Strava data.
+      message = await disconnectStravaViaBackend();
+    } else {
+      await disconnectProviderConnection(authUser.id, provider);
+    }
     const bundle = await loadUserBundle(authUser.id, authUser.email);
     applySupabaseBundle(bundle, authUser.id);
+    return message;
   };
 
   const connectStrava = async () => {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) throw new Error('Session expired. Please sign in again.');
-    window.location.href = `/api/strava/auth?token=${encodeURIComponent(token)}`;
+    window.location.href = await getStravaAuthorizeUrl();
   };
 
   const syncStrava = async () => {

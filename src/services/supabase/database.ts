@@ -55,6 +55,9 @@ function mapProfileToAthlete(profile: DbProfile | null, fallbackEmail?: string |
   };
 }
 
+const PROVIDER_CONNECTION_COLUMNS =
+  'id,user_id,provider,status,external_athlete_id,api_key,last_synced_at,last_error,updated_at';
+
 function mapRowToActivity(row: Record<string, any>): Activity {
   const raw = (row.raw_data && typeof row.raw_data === 'object' ? row.raw_data : {}) as Partial<Activity>;
   return {
@@ -151,7 +154,11 @@ export async function loadUserBundle(
   const [profileRes, connectionsRes, activitiesRes, wellnessRes, eventsRes, powerCurveRes] =
     await Promise.all([
       client.from('profiles').select('*').eq('id', userId).maybeSingle(),
-      client.from('provider_connections').select('*').eq('user_id', userId),
+      client
+        .from('provider_connections')
+        // Explicit columns: OAuth tokens are not readable from the browser.
+        .select(PROVIDER_CONNECTION_COLUMNS)
+        .eq('user_id', userId),
       client
         .from('activities')
         .select('*')
@@ -478,30 +485,43 @@ export async function importFitFileToDatabase(userId: string, file: File): Promi
   return parsed;
 }
 
-/**
- * Calls the Cloudflare Pages Function `/api/strava/sync` using the user's Supabase JWT.
- */
-export async function syncStravaViaBackend(): Promise<{ synced: number }> {
+async function callStravaBackend<T>(
+  path: 'authorize' | 'sync' | 'disconnect'
+): Promise<T> {
   const client = requireSupabase();
   const { data } = await client.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error('Session expired. Please sign in again.');
 
-  const res = await fetch('/api/strava/sync', {
+  const res = await fetch(`/api/strava/${path}`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    },
+    credentials: 'same-origin',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
   });
+  const payload = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) throw new Error(payload.error || `Strava error (HTTP ${res.status})`);
+  return payload;
+}
 
-  const payload = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(
-      (payload as { error?: string }).error || `Strava sync error (HTTP ${res.status})`
-    );
-  }
-  return { synced: Number((payload as { synced?: number }).synced || 0) };
+/** Starts Strava OAuth: the backend returns the Strava consent URL (no token in URLs). */
+export async function getStravaAuthorizeUrl(): Promise<string> {
+  const { url } = await callStravaBackend<{ url: string }>('authorize');
+  return url;
+}
+
+/** Imports recent Strava activities through the Worker (`/api/strava/sync`). */
+export async function syncStravaViaBackend(): Promise<{ synced: number; removed: number }> {
+  const payload = await callStravaBackend<{ synced?: number; removed?: number }>('sync');
+  return { synced: Number(payload.synced || 0), removed: Number(payload.removed || 0) };
+}
+
+/**
+ * Revokes access on Strava and deletes every Strava-derived row.
+ * Returns the deletion confirmation to show the user.
+ */
+export async function disconnectStravaViaBackend(): Promise<string> {
+  const payload = await callStravaBackend<{ message?: string }>('disconnect');
+  return payload.message || 'Strava disconnected and Strava data deleted.';
 }
 
 /**
