@@ -4,7 +4,12 @@
  * Uses the service role key, which bypasses RLS, so every query here must
  * filter by the user id it was given. Never forward these responses to the
  * browser as they are.
+ *
+ * OAuth tokens are encrypted before they are written and decrypted after they
+ * are read (see crypto.ts): callers only ever handle plaintext tokens, the
+ * database only ever stores ciphertext.
  */
+import { decryptToken, encryptToken, isEncrypted } from './crypto';
 import type { ConfiguredEnv } from './env';
 
 export interface StravaConnection {
@@ -15,8 +20,46 @@ export interface StravaConnection {
   token_expires_at: string | null;
 }
 
+const TOKEN_FIELDS = ['access_token', 'refresh_token'] as const;
+const CONNECTION_COLUMNS = 'user_id,external_athlete_id,access_token,refresh_token,token_expires_at';
+
 export class SupabaseAdmin {
   constructor(private readonly env: ConfiguredEnv) {}
+
+  /** Returns a copy of `fields` with token values encrypted for `userId`. */
+  private async encryptTokens(
+    userId: string,
+    fields: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    const out = { ...fields };
+    for (const name of TOKEN_FIELDS) {
+      const value = out[name];
+      if (typeof value === 'string' && value) {
+        out[name] = await encryptToken(value, this.env.STRAVA_TOKEN_KEY, userId);
+      }
+    }
+    return out;
+  }
+
+  /** Decrypts a stored row; legacy plaintext tokens are re-encrypted in place. */
+  private async decryptConnection(row: StravaConnection | undefined): Promise<StravaConnection | null> {
+    if (!row) return null;
+    const conn = { ...row };
+    let legacy = false;
+    for (const name of TOKEN_FIELDS) {
+      const value = conn[name];
+      if (!value) continue;
+      if (!isEncrypted(value)) legacy = true;
+      conn[name] = await decryptToken(value, this.env.STRAVA_TOKEN_KEY, conn.user_id);
+    }
+    if (legacy) {
+      await this.patchStravaConnection(conn.user_id, {
+        access_token: conn.access_token,
+        refresh_token: conn.refresh_token,
+      }).catch(() => undefined);
+    }
+    return conn;
+  }
 
   private headers(extra: HeadersInit = {}): HeadersInit {
     return {
@@ -52,33 +95,35 @@ export class SupabaseAdmin {
   async getStravaConnection(userId: string): Promise<StravaConnection | null> {
     const res = await this.rest(
       `provider_connections?user_id=eq.${encodeURIComponent(userId)}&provider=eq.strava` +
-        '&select=user_id,external_athlete_id,access_token,refresh_token,token_expires_at'
+        `&select=${CONNECTION_COLUMNS}`
     );
     const rows = (await res.json()) as StravaConnection[];
-    return rows[0] ?? null;
+    return this.decryptConnection(rows[0]);
   }
 
   async getStravaConnectionByAthlete(athleteId: string): Promise<StravaConnection | null> {
     const res = await this.rest(
       `provider_connections?external_athlete_id=eq.${encodeURIComponent(athleteId)}&provider=eq.strava` +
-        '&select=user_id,external_athlete_id,access_token,refresh_token,token_expires_at'
+        `&select=${CONNECTION_COLUMNS}`
     );
     const rows = (await res.json()) as StravaConnection[];
-    return rows[0] ?? null;
+    return this.decryptConnection(rows[0]);
   }
 
-  async upsertStravaConnection(row: Record<string, unknown>): Promise<void> {
+  async upsertStravaConnection(row: Record<string, unknown> & { user_id: string }): Promise<void> {
+    const body = await this.encryptTokens(row.user_id, { ...row, provider: 'strava' });
     await this.rest('provider_connections?on_conflict=user_id,provider', {
       method: 'POST',
       headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ ...row, provider: 'strava' }),
+      body: JSON.stringify(body),
     });
   }
 
   async patchStravaConnection(userId: string, patch: Record<string, unknown>): Promise<void> {
+    const body = await this.encryptTokens(userId, patch);
     await this.rest(
       `provider_connections?user_id=eq.${encodeURIComponent(userId)}&provider=eq.strava`,
-      { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) }
+      { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) }
     );
   }
 

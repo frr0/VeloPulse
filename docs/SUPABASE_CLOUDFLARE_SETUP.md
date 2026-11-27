@@ -89,6 +89,9 @@ routes `/api/*` to it). Until a custom domain is bought, the app runs on
 Steps:
 
 1. Apply `supabase/migrations/0002_protect_oauth_tokens.sql` (tokens become unreadable from the browser).
+   Strava tokens are also encrypted (AES-256-GCM) by the Worker with `STRAVA_TOKEN_KEY`, which never
+   reaches Supabase: the dashboard and database dumps only show `v1:…` ciphertext. Losing or rotating
+   the key only means users have to press "Connect Strava" again.
 2. Create an app at [strava.com/settings/api](https://www.strava.com/settings/api).
    **Authorization Callback Domain** = the host only, e.g. `velopulse.<your-account>.workers.dev`
    (`localhost` is always allowed for local testing). When you switch to a custom domain, change it here.
@@ -97,6 +100,7 @@ Steps:
    npx wrangler secret put STRAVA_CLIENT_ID
    npx wrangler secret put STRAVA_CLIENT_SECRET
    openssl rand -base64 32 | npx wrangler secret put STRAVA_STATE_SECRET
+   openssl rand -base64 32 | npx wrangler secret put STRAVA_TOKEN_KEY   # encrypts Strava tokens in the DB
    openssl rand -hex 16    | npx wrangler secret put STRAVA_WEBHOOK_VERIFY_TOKEN   # note the value
    npx wrangler secret put SUPABASE_URL
    npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY

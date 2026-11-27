@@ -1,16 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import worker from '../index';
 import type { ConfiguredEnv } from '../env';
+import { decryptToken, encryptToken } from '../crypto';
 import { handleWebhookValidation, processWebhookEvent } from '../strava/handlers';
 import { signState, verifyState } from '../strava/state';
 
 const SECRET = 'test-secret-test-secret-test-secret';
+const TOKEN_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
+const OTHER_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(9)));
 
 const env: ConfiguredEnv = {
   ASSETS: { fetch: async () => new Response('asset') },
   STRAVA_CLIENT_ID: '1',
   STRAVA_CLIENT_SECRET: 'cs',
   STRAVA_STATE_SECRET: SECRET,
+  STRAVA_TOKEN_KEY: TOKEN_KEY,
   STRAVA_WEBHOOK_VERIFY_TOKEN: 'verify-me',
   SUPABASE_URL: 'https://db.example',
   SUPABASE_SERVICE_ROLE_KEY: 'srk',
@@ -44,6 +48,40 @@ describe('OAuth state', () => {
   });
 });
 
+describe('token encryption', () => {
+  it('round-trips and never stores the plaintext', async () => {
+    const stored = await encryptToken('secret-token', TOKEN_KEY, 'user-1');
+    expect(stored.startsWith('v1:')).toBe(true);
+    expect(stored).not.toContain('secret-token');
+    expect(await decryptToken(stored, TOKEN_KEY, 'user-1')).toBe('secret-token');
+  });
+
+  it('uses a fresh IV for every encryption', async () => {
+    const a = await encryptToken('same', TOKEN_KEY, 'user-1');
+    const b = await encryptToken('same', TOKEN_KEY, 'user-1');
+    expect(a).not.toBe(b);
+  });
+
+  it('fails with the wrong key or when copied to another user row', async () => {
+    const stored = await encryptToken('secret-token', TOKEN_KEY, 'user-1');
+    await expect(decryptToken(stored, OTHER_KEY, 'user-1')).rejects.toThrow();
+    await expect(decryptToken(stored, TOKEN_KEY, 'user-2')).rejects.toThrow();
+  });
+
+  it('passes legacy plaintext through and re-encrypts it in the database', async () => {
+    expect(await decryptToken('old-plain', TOKEN_KEY, 'user-1')).toBe('old-plain');
+
+    const calls = stubBackend({ activityOnStrava: true });
+    await processWebhookEvent(env, event({}));
+    const patch = calls.bodies.find((b) => b.includes('refresh_token'));
+    expect(patch).toBeDefined();
+    const parsed = JSON.parse(patch!);
+    expect(parsed.access_token.startsWith('v1:')).toBe(true);
+    expect(parsed.refresh_token.startsWith('v1:')).toBe(true);
+    expect(await decryptToken(parsed.refresh_token, TOKEN_KEY, 'user-1')).toBe('rt');
+  });
+});
+
 describe('webhook validation', () => {
   const url = (token: string) =>
     `https://app.example/api/strava/webhook?hub.mode=subscribe&hub.verify_token=${token}&hub.challenge=abc`;
@@ -59,6 +97,7 @@ describe('webhook validation', () => {
 /** Fake Supabase + Strava backed by in-memory state, recording every call. */
 function stubBackend(opts: { activityOnStrava: boolean; tokenRevoked?: boolean }) {
   const calls: string[] = [];
+  const bodies: string[] = [];
   const connection = {
     user_id: 'user-1',
     external_athlete_id: '42',
@@ -70,6 +109,7 @@ function stubBackend(opts: { activityOnStrava: boolean; tokenRevoked?: boolean }
     const url = String(input);
     const method = init?.method || 'GET';
     calls.push(`${method} ${url}`);
+    if (typeof init?.body === 'string') bodies.push(init.body);
     if (url.startsWith('https://db.example/rest/v1/provider_connections') && method === 'GET') {
       return Response.json([connection]);
     }
@@ -87,7 +127,7 @@ function stubBackend(opts: { activityOnStrava: boolean; tokenRevoked?: boolean }
     }
     throw new Error(`unexpected fetch ${method} ${url}`);
   });
-  return calls;
+  return Object.assign(calls, { bodies });
 }
 
 const event = (over: Partial<Parameters<typeof processWebhookEvent>[1]>) => ({
