@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Privacy Policy | VeloPulse</title>
+    <title>Privacy Policy | VeloLab</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300E5A3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='18.5' cy='17.5' r='3.5'/><circle cx='5.5' cy='17.5' r='3.5'/><circle cx='15' cy='5' r='1'/><path d='M12 17.5V14l-3-3 4-3 2 3h2'/></svg>" />
     <meta name="theme-color" content="#080A0F" />
     <style>
@@ -103,6 +103,16 @@
         font-size: 0.85rem;
         font-weight: 700;
       }
+      h3 {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 1.5rem 0 0.5rem;
+      }
+      .todo-inline {
+        color: #ffb38a;
+        font-weight: 700;
+      }
       a {
         color: #00e5a3;
         text-decoration: underline;
@@ -143,151 +153,244 @@
             <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
           </svg>
         </div>
-        <span class="brand">VELO<span>PULSE</span></span>
+        <span class="brand">VELO<span>LAB</span></span>
       </header>
 
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: November 3, 2026</p>
+      <p class="updated">Last updated: November 27, 2026</p>
 
-      <div class="todo">TO BE COMPLETED: data controller and contact address</div>
-
-      <h2>What VeloPulse is</h2>
+      <h2>Who we are</h2>
       <p>
-        VeloPulse is a demo dashboard for indoor cycling training. It is an application
-        that runs entirely in your browser: it has no account system of its own and no
-        server that receives or stores your data. This page explains what data the app
-        processes and how.
+        VeloLab (“the app”, “we”) is an indoor cycling and training analytics app,
+        available as a web app, an Android/iOS app and a desktop program.
+      </p>
+      <p>
+        <strong>Data controller:</strong>
+        Francesco Ranellucci, Italy.
+        <strong>Contact for any privacy request:</strong>
+        <a href="mailto:fra.ranellucci@gmail.com">fra.ranellucci@gmail.com</a>. We answer within 30
+        days.
       </p>
 
-      <h2>Your Intervals.icu API key</h2>
-      <p>
-        To see your real data, you paste your personal Intervals.icu API key into the
-        login screen. The app:
-      </p>
+      <h2>Summary</h2>
       <ul>
-        <li>
-          stores the key <strong>in plain text</strong> in the browser's local storage
-          (<code>localStorage</code>) on the device you are using;
-        </li>
-        <li>
-          uses it only to authenticate you directly with Intervals.icu when the browser
-          calls its APIs.
-        </li>
+        <li>We only use your data to show <strong>you</strong> your own training. Nobody
+          else sees it.</li>
+        <li>We do not sell, rent or share your data, and we do not use it for advertising.</li>
+        <li>We do not use your data to train, fine-tune or feed any AI or machine-learning
+          model.</li>
+        <li>You can disconnect any service and delete your data at any time.</li>
       </ul>
-      <p>
-        The key is never sent to a VeloPulse server, because VeloPulse does not have
-        one. Anyone with access to your device or browser can read the stored key: do
-        not enter it on a shared or public computer, and sign out of the app when you
-        are done.
-      </p>
 
-      <h2>Demo mode</h2>
-      <p>
-        You can also use VeloPulse in demo mode, with made-up sample data: in this case
-        you do not need to enter any key, and no real data is read.
-      </p>
-      <p>
-        <strong>On the published demo of this site, demo mode is the only mode
-        available.</strong> The site does not ask you for any API key, has no login
-        screen, and does not read any real data from Intervals.icu. On opening, it also
-        clears any key and data that a previous version of the site may have stored in
-        your browser's local storage. To connect your real Intervals.icu profile, you
-        need the Android app, the desktop program, or the site built from source.
-      </p>
-
-      <h2>Data downloaded from Intervals.icu and settings</h2>
-      <p>
-        Once you sign in with your key, the app downloads activities, wellness data,
-        calendar events, and the power curve from Intervals.icu, and stores them in the
-        browser's local storage so they load faster next time. Your settings too (FTP,
-        heart rate zones, weight, unit preferences) stay there only.
-      </p>
-
-      <h2>How long data is kept, and how to delete it</h2>
-      <p>
-        Your API key, downloaded data, and settings stay in the browser's local storage
-        until you delete them. To delete them:
-      </p>
-      <ul>
-        <li>press "Disconnect account" in the app, or</li>
-        <li>clear this site's browsing data in your browser.</li>
-      </ul>
-      <p>
-        Since VeloPulse has no server, <strong>there is no account to delete with
-        us</strong>: your training data stays on Intervals.icu under their rules, not
-        ours.
-      </p>
-
-      <h2>Third-party services</h2>
+      <h2>Ways to use the app</h2>
       <div class="card">
         <p style="margin-top: 0">
-          <strong>Intervals.icu</strong> — is the independent data controller for your
-          training data. Your browser talks directly to its servers when it downloads
-          or sends data: VeloPulse is not an intermediary. See
-          <a href="https://intervals.icu/privacy" target="_blank" rel="noopener">Intervals.icu's privacy policy</a>.
+          <strong>Demo mode</strong> — made-up sample data, no account, no real data read.
+          On the published demo site this is the only mode available.
         </p>
         <p>
-          <strong>OpenStreetMap and CARTO</strong> — when you open a route map, your
-          browser downloads the map tiles from these services: they receive the IP
-          address of whoever is viewing the map at that moment.
+          <strong>Local mode</strong> — you paste your Intervals.icu API key. The key and
+          the data downloaded from Intervals.icu stay in your browser’s local storage on
+          your device; your browser talks to Intervals.icu directly.
         </p>
         <p style="margin-bottom: 0">
-          <strong>Bluetooth sensors</strong> — if you connect a smart trainer, a power
-          meter, a cadence sensor, or a heart rate strap, the app communicates with
-          those devices directly from the browser. The data stays on the device you are
-          using and is not sent to any VeloPulse server.
+          <strong>Account mode</strong> — you create an account (e-mail and password, or
+          Google sign-in). Your data is stored in our database so it is available on all
+          your devices. The rest of this page mainly describes this mode.
         </p>
       </div>
 
-      <h2>.fit files</h2>
-      <p>
-        The <code>.fit</code> files of recorded sessions are generated by the device and
-        downloaded directly by you: they never pass through any VeloPulse server.
-      </p>
-
-      <h2>What VeloPulse does not do</h2>
-      <p>
-        The app itself contains no analytics code, no profiling cookies, no
-        emails, no payments and no push notifications. The website that hosts
-        the app counts visits, as described below.
-      </p>
-
-      <h2>Where this site is hosted</h2>
-      <p>
-        This demo site is hosted on institorAI's infrastructure. The demo version is
-        private: it only opens with an access link, is not indexed, and is meant for
-        testing and demonstrations.
-      </p>
-
-      <h2>Visit statistics on this website</h2>
-      <p>
-        This website uses the visit statistics of institorAI. They set no
-        cookies and write nothing on your device. This section applies to the
-        website only, not to the desktop app or the Android app.
-      </p>
-      <p>Each visit records:</p>
+      <h2>What data we process, and why</h2>
       <ul>
-        <li>the page you visit, without the query string;</li>
-        <li>the site you came from;</li>
         <li>
-          the campaign of the link, if it has one (<code>utm_source</code>,
-          <code>utm_medium</code>, <code>utm_campaign</code>);
+          <strong>Account data</strong>: e-mail address, password (stored only as a hash
+          by our authentication provider), and, with Google sign-in, your name and
+          profile picture. Purpose: letting you sign in. Legal basis: contract (Art.
+          6(1)(b) GDPR).
         </li>
-        <li>your country;</li>
-        <li>the kind of device, and the family of your browser and operating
-          system.</li>
+        <li>
+          <strong>Profile and settings</strong>: FTP, weight, heart-rate and power zones,
+          units, city/country if you enter them. Purpose: computing your training
+          metrics. Legal basis: contract.
+        </li>
+        <li>
+          <strong>Training data</strong>: activities (date, duration, distance, power,
+          heart rate, cadence, speed, elevation, GPS route), wellness data (e.g. HRV,
+          resting heart rate, sleep), calendar events and power curve, from the sources
+          you connect or the files you import. Weight, heart rate and wellness data are
+          health-related data: we process them only because you explicitly ask us to,
+          by connecting a source or importing a file (Art. 9(2)(a) GDPR). You can
+          withdraw this consent at any time by disconnecting the source or deleting the
+          data.
+        </li>
+        <li>
+          <strong>Sessions recorded in the app</strong>: power, cadence, heart rate and
+          speed read from your Bluetooth sensors, and the generated <code>.fit</code>
+          file. Legal basis: contract.
+        </li>
+        <li>
+          <strong>Technical data</strong>: the hosting provider processes your IP address
+          and request details to deliver the app and protect it from abuse; error logs
+          are kept for a short time to fix problems. Legal basis: legitimate interest
+          (Art. 6(1)(f) GDPR).
+        </li>
       </ul>
+
+      <h2>Connected services</h2>
+
+      <h3>Strava</h3>
       <p>
-        Your IP address and your user agent only serve to compute a fingerprint
-        that changes every day, which tells a repeated visit from a new one.
-        Neither of them is stored. Raw data is kept for 30 days and daily
-        totals for 13 months. The legal basis is legitimate interest: counting
-        visits to a website. The data controller is the owner of this site;
-        institorAI processes the data on their behalf.
+        If you press “Connect Strava”, you are sent to Strava, which asks you to allow
+        VeloLab to <strong>read your activities, including private ones</strong>
+        (scopes <code>read</code> and <code>activity:read_all</code>). We do not ask for
+        permission to read your Strava profile or to post on your behalf.
+      </p>
+      <ul>
+        <li>
+          <strong>What we collect</strong>: for each activity, its Strava id, name, sport
+          type, start time, distance, moving and elapsed time, elevation gain, average
+          and maximum speed, heart rate and power, energy, cadence, whether it was on a
+          trainer, and the summary GPS route with start and end coordinates. We also
+          store your Strava athlete id and the access tokens Strava gives us.
+        </li>
+        <li>
+          <strong>How</strong>: when you press “Sync Strava” (the last 60 days), and
+          automatically when Strava notifies us that you created, changed or deleted an
+          activity.
+        </li>
+        <li>
+          <strong>Who sees it</strong>: only you. Strava data is never shown to other
+          users, never combined into public pages, rankings or feeds, and never given to
+          third parties, advertisers or AI providers.
+        </li>
+        <li>
+          <strong>Tokens</strong>: Strava access tokens are kept on our servers only,
+          never sent to your browser, and used only to read your own activities.
+        </li>
+        <li>
+          <strong>Deletions on Strava</strong>: if you delete an activity on Strava, we
+          delete our copy within 48 hours.
+        </li>
+        <li>
+          <strong>Withdrawing consent and deleting Strava data</strong>: press the
+          disconnect button next to Strava in Profile → Data Sources, or revoke VeloLab
+          in your Strava settings (Settings → My Apps). In both cases we revoke our
+          access and permanently delete all activities imported from Strava and your
+          Strava tokens. When you disconnect from the app you see a written
+          confirmation with the number of deleted activities and the time of deletion;
+          if you revoke from Strava, we delete everything within 30 days at the latest
+          (normally within minutes), and you can ask us by e-mail for a written
+          confirmation.
+        </li>
+        <li>
+          Strava may collect and use data about how you use the Strava API through our
+          app (usage data) according to
+          <a href="https://www.strava.com/legal/privacy" target="_blank" rel="noopener">Strava’s privacy policy</a>.
+          VeloLab is an independent app and is not affiliated with, sponsored or
+          endorsed by Strava.
+        </li>
+      </ul>
+
+      <h3>Intervals.icu</h3>
+      <p>
+        If you connect Intervals.icu you enter your personal API key. In account mode
+        the key is stored in our database, readable only by your account, and used to
+        download your activities, wellness data, calendar and power curve, and to upload
+        sessions you record, when you ask us to or when you turn on automatic upload. In local mode it stays in your browser.
+        You can remove it at any time with the disconnect button. See
+        <a href="https://intervals.icu/privacy" target="_blank" rel="noopener">Intervals.icu’s privacy policy</a>.
       </p>
 
-      <h2>Contact</h2>
-      <div class="todo">TO BE COMPLETED: data controller and contact address</div>
+      <h3>Garmin <code>.fit</code> files</h3>
+      <p>
+        If you import a <code>.fit</code> file, it is read on your device and the
+        resulting activity is stored in your account. The file itself is not uploaded.
+      </p>
+
+      <h2>Where your data is stored, and who processes it</h2>
+      <p>We use these providers (sub-processors), bound by data processing agreements:</p>
+      <div class="card">
+        <p style="margin-top: 0">
+          <strong>Supabase</strong> — authentication and database (account, profile,
+          connections, training data). Data is stored in the European Union
+          (Ireland).
+        </p>
+        <p>
+          <strong>Cloudflare</strong> — hosting of the web app and of the server
+          functions that talk to Strava; processes IP addresses and request logs.
+        </p>
+        <p>
+          <strong>Google</strong> — only if you choose “Sign in with Google”.
+        </p>
+        <p style="margin-bottom: 0">
+          <strong>OpenStreetMap and CARTO</strong> — map tiles. When you open a map, your
+          browser downloads tiles from them, so they receive your IP address.
+        </p>
+      </div>
+      <p>
+        Some of these providers are based in or may process data in the United States.
+        In that case transfers rely on the EU–US Data Privacy Framework or on the
+        European Commission’s Standard Contractual Clauses.
+      </p>
+      <p>
+        <strong>Bluetooth sensors</strong> are read directly by your device. Live sensor
+        data is not sent anywhere until you save the session.
+      </p>
+
+      <h2>Data on your device</h2>
+      <p>
+        The app keeps settings, a cache of your data for faster loading and offline use,
+        and sessions recorded on that device in the browser’s local storage. You can
+        delete it by signing out and clearing this site’s data in your browser (or
+        uninstalling the app). We use no advertising or tracking cookies; sign-in uses
+        only the storage strictly needed to keep you logged in.
+      </p>
+
+      <h2>How long we keep data</h2>
+      <ul>
+        <li>Account, profile and training data: as long as your account exists.</li>
+        <li>Data from a connected service: until you disconnect that service (for
+          Strava, see above) or delete your account.</li>
+        <li>Technical logs: a few days at the hosting provider.</li>
+      </ul>
+
+      <h2>Your rights</h2>
+      <p>
+        Under the GDPR you can ask us at any time to access your data and receive a copy
+        of it, correct it, delete it, restrict or object to its processing, and receive
+        it in a portable format. You can withdraw your consent at any time, without
+        affecting what was done before. To delete your whole account and all its data,
+        or for any other request, write to the contact address above; we confirm the
+        deletion in writing. You also have the right to lodge a complaint with a
+        supervisory authority, in Italy the
+        <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la protezione dei dati personali</a>.
+      </p>
+
+      <h2>Security</h2>
+      <p>
+        Data travels over encrypted connections (HTTPS). Database access is restricted
+        so that each account can only read its own rows, and third-party tokens are
+        handled only on our servers. If we ever discover a breach affecting your data,
+        we will notify you and the competent authorities as the law requires.
+      </p>
+
+      <h2>Children</h2>
+      <p>The app is not intended for people under 16.</p>
+
+      <h2>Hosted demo</h2>
+      <p>
+        The private demo site is hosted on institorAI’s infrastructure, works only in
+        demo mode and counts visits without cookies: the page, referrer, campaign
+        parameters, country, device type and browser family. IP address and user agent
+        only compute a fingerprint that changes every day and are not stored. Raw data
+        is kept for 30 days, daily totals for 13 months.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If we change this policy in a way that affects how your data is used, we will
+        tell you in the app and, where required, ask for your consent again.
+      </p>
 
       <footer>
         <a href="/">Back to the app</a>

@@ -72,18 +72,49 @@ This guide walks through configuring the authenticated **VeloPulse** webapp on *
 
 ---
 
-## 4. (Optional) Enable Strava OAuth via Cloudflare Pages Functions
+## 4. (Optional) Enable Strava
 
-The repository includes ready-to-use **Cloudflare Pages Functions** in `functions/api/strava/`:
-- `GET /api/strava/auth`
-- `GET /api/strava/callback`
-- `POST /api/strava/sync`
+The Worker in `worker/` serves the web app and the Strava backend (`wrangler.toml`
+routes `/api/*` to it). Until a custom domain is bought, the app runs on
+`velopulse.<your-account>.workers.dev` (the `name` in `wrangler.toml`).
 
-To enable them:
-1. Create an app at [strava.com/settings/api](https://www.strava.com/settings/api) and set **Authorization Callback Domain** to your Cloudflare domain.
-2. Add encrypted environment variables on Cloudflare Pages:
-   - `STRAVA_CLIENT_ID`
-   - `STRAVA_CLIENT_SECRET`
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-3. Redeploy to activate the **Connect Strava** button in Profile.
+| Endpoint | Purpose |
+| :--- | :--- |
+| `POST /api/strava/authorize` | Returns the Strava consent URL (signed `state` + browser-bound cookie) |
+| `GET /api/strava/callback` | OAuth redirect target; stores tokens server-side |
+| `POST /api/strava/sync` | Imports the last 60 days; removes activities deleted on Strava |
+| `POST /api/strava/disconnect` | Revokes access on Strava and deletes all Strava data, returns a confirmation |
+| `GET/POST /api/strava/webhook` | Strava push events: new/updated/deleted activities, deauthorization |
+
+Steps:
+
+1. Apply `supabase/migrations/0002_protect_oauth_tokens.sql` (tokens become unreadable from the browser).
+   Strava tokens are also encrypted (AES-256-GCM) by the Worker with `STRAVA_TOKEN_KEY`, which never
+   reaches Supabase: the dashboard and database dumps only show `v1:…` ciphertext. Losing or rotating
+   the key only means users have to press "Connect Strava" again.
+2. Create an app at [strava.com/settings/api](https://www.strava.com/settings/api).
+   **Authorization Callback Domain** = the host only, e.g. `velopulse.<your-account>.workers.dev`
+   (`localhost` is always allowed for local testing). When you switch to a custom domain, change it here.
+3. Set the secrets:
+   ```bash
+   npx wrangler secret put STRAVA_CLIENT_ID
+   npx wrangler secret put STRAVA_CLIENT_SECRET
+   openssl rand -base64 32 | npx wrangler secret put STRAVA_STATE_SECRET
+   openssl rand -base64 32 | npx wrangler secret put STRAVA_TOKEN_KEY   # encrypts Strava tokens in the DB
+   openssl rand -hex 16    | npx wrangler secret put STRAVA_WEBHOOK_VERIFY_TOKEN   # note the value
+   npx wrangler secret put SUPABASE_URL
+   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   ```
+4. Deploy: `npm run worker:deploy` (build variables `VITE_SUPABASE_*` must be set in the shell or `.env.local`).
+5. Register the webhook once (one subscription per Strava app):
+   ```bash
+   curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+     -F client_id=$STRAVA_CLIENT_ID -F client_secret=$STRAVA_CLIENT_SECRET \
+     -F callback_url=https://velopulse.<your-account>.workers.dev/api/strava/webhook \
+     -F verify_token=<the STRAVA_WEBHOOK_VERIFY_TOKEN value>
+   ```
+   Strava answers `{"id": N}`; optionally store it with
+   `npx wrangler secret put STRAVA_WEBHOOK_SUBSCRIPTION_ID` so other events are ignored.
+   After a domain change: delete the subscription (`DELETE /push_subscriptions/N`) and create it again.
+6. Local testing: put the same values in `.dev.vars` and run `npm run worker:dev`
+   (the Vite dev server alone does not run `/api/*`).

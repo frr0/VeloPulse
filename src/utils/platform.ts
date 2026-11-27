@@ -21,3 +21,14 @@ export const isMobile = (): boolean => {
  * provide the exact same layout, bottom bar, and mobile optimizations.
  */
 export const isAndroid = (): boolean => isMobile();
+
+/**
+ * Strava OAuth runs through the web backend (`/api/strava/*` on the same origin),
+ * so it only works in the web app served over http(s), not inside the
+ * Capacitor (Android/iOS) shell or the Electron desktop program (file://).
+ */
+export const supportsServerIntegrations = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  if (Capacitor.isNativePlatform()) return false;
+  return window.location.protocol === 'https:' || window.location.protocol === 'http:';
+};

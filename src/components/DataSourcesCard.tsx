@@ -8,8 +8,9 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { supportsServerIntegrations } from '../utils/platform';
 
 export const DataSourcesCard: React.FC = () => {
   const {
@@ -58,12 +59,40 @@ export const DataSourcesCard: React.FC = () => {
     }
   };
 
+  // Result of the Strava OAuth redirect (`/?strava=<status>`), shown once.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('strava');
+    if (!status) return;
+    const messages: Record<string, string> = {
+      connected: 'Strava connected. Press "Sync Strava" to import your activities.',
+      cancelled: 'Strava authorization was cancelled.',
+      missing_scope: 'Strava needs permission to read your activities. Please try again and keep that box ticked.',
+      invalid_state: 'The Strava authorization link expired or was opened in another browser. Please try again.',
+    };
+    setFeedback({
+      text: messages[status] || 'Strava connection failed. Please try again.',
+      isError: status !== 'connected',
+    });
+    params.delete('strava');
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  }, []);
+
   const handleDisconnect = async (provider: 'intervals' | 'strava' | 'garmin') => {
+    if (
+      provider === 'strava' &&
+      !window.confirm(
+        'Disconnect Strava? Access will be revoked and all activities imported from Strava will be permanently deleted from this app.'
+      )
+    ) {
+      return;
+    }
     setBusyProvider(provider);
     setFeedback(null);
     try {
-      await disconnectProvider(provider);
-      setFeedback({ text: `Disconnected ${provider}.` });
+      const message = await disconnectProvider(provider);
+      setFeedback({ text: message || `Disconnected ${provider}.` });
     } catch (err: any) {
       setFeedback({ text: err?.message || 'Failed to disconnect provider.', isError: true });
     } finally {
@@ -258,12 +287,14 @@ export const DataSourcesCard: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                OAuth2 via Cloudflare Pages Functions. Imports activities, power, HR, and GPS routes.
+                Imports your activity summaries and routes. Disconnecting revokes access and deletes all Strava data.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              {stravaConn ? (
+              {!supportsServerIntegrations() ? (
+                <span className="text-xs text-slate-400">Available in the web app</span>
+              ) : stravaConn ? (
                 <>
                   <button
                     type="button"
