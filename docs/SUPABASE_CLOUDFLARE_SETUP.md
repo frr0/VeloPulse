@@ -105,7 +105,12 @@ Steps:
    npx wrangler secret put SUPABASE_URL
    npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
    ```
-4. Deploy: `npm run worker:deploy` (build variables `VITE_SUPABASE_*` must be set in the shell or `.env.local`).
+4. Deploy: every push to `master` is deployed by `.github/workflows/deploy.yml`
+   (tests, build, `wrangler deploy`). It needs, in GitHub -> Settings -> Secrets and variables -> Actions:
+   - secret `CLOUDFLARE_API_TOKEN` (Cloudflare token from the "Edit Cloudflare Workers" template)
+   - variables `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (public values)
+
+   Manual deploy from a local checkout is still possible with `npm run worker:deploy`.
 5. Register the webhook once (one subscription per Strava app):
    ```bash
    curl -X POST https://www.strava.com/api/v3/push_subscriptions \
