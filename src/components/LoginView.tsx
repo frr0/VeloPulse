@@ -301,7 +301,7 @@ export const LoginView: React.FC = () => {
               disabled={loading}
               className="w-full flex items-center justify-center gap-2.5 bg-[#2F3037] hover:bg-[#383941] border border-[#383941] text-white font-bold text-xs py-3 px-4 rounded-xl transition-all disabled:opacity-50"
             >
-              <span>Continua con Google</span>
+              <span>Continue with Google</span>
             </button>
           </>
         ) : (

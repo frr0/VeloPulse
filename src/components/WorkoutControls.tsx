@@ -280,10 +280,10 @@ export const WorkoutControls: React.FC<WorkoutControlsProps> = ({
               <button
                 onClick={onExportFit}
                 className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-emerald-500/40 text-emerald-300 font-bold text-xs shadow-sm transition-all transform active:scale-95"
-                title="Genera e scarica file .FIT per la sessione corrente"
+                title="Generate and download a .FIT file for the current session"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>SCARICA .FIT</span>
+                <span>DOWNLOAD .FIT</span>
               </button>
             )}
           </>
@@ -467,7 +467,7 @@ export const WorkoutControls: React.FC<WorkoutControlsProps> = ({
                 ? 'bg-[#00E5A3]/15 border-[#00E5A3]/40 text-[#00E5A3]'
                 : 'bg-[#2F3037] border-[#383941] text-slate-300 hover:bg-[#3E4049]'
             }`}
-            title="Seleziona allenamento (.zwo)"
+            title="Select workout (.zwo)"
           >
             <Dumbbell className="w-3.5 h-3.5 text-[#00E5A3]" />
             <span className="max-w-[140px] truncate">
@@ -480,7 +480,7 @@ export const WorkoutControls: React.FC<WorkoutControlsProps> = ({
           <button
             onClick={onOpenBluetooth}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-[#383941] text-xs font-bold text-slate-200 transition-colors"
-            title="Sensori Bluetooth"
+            title="Bluetooth sensors"
           >
             <Bluetooth className="w-3.5 h-3.5 text-[#00E5A3]" />
             <span>Sensors</span>

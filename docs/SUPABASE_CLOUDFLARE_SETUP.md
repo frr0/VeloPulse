@@ -33,9 +33,13 @@ This guide walks through configuring the authenticated **VeloPulse** webapp on *
 1. Go to **Authentication → Providers**:
    - **Email** is enabled by default (Email + Password).
    - *(Optional)* Enable **Google** by adding your Client ID/Secret from Google Cloud Console.
+     In Google Cloud the OAuth client is a **Web application** whose only authorized redirect URI
+     is `https://<project-ref>.supabase.co/auth/v1/callback` (the web app and the phone app share it).
 2. Go to **Authentication → URL Configuration**:
    - **Site URL**: `https://<your-cloudflare-domain>`
-   - **Redirect URLs**: add both `https://<your-cloudflare-domain>/**` and `http://localhost:5173/**`.
+   - **Redirect URLs**: add `https://<your-cloudflare-domain>/**`, `http://localhost:5173/**`, and
+     `com.velopulse.app://auth-callback` (Google sign-in in the Android/iOS app returns through this link;
+     without it Supabase sends the phone back to the Site URL and the app never signs in).
 
 ---
 
@@ -81,7 +85,8 @@ routes `/api/*` to it). Until a custom domain is bought, the app runs on
 | Endpoint | Purpose |
 | :--- | :--- |
 | `POST /api/strava/authorize` | Returns the Strava consent URL (signed `state` + browser-bound cookie) |
-| `GET /api/strava/callback` | OAuth redirect target; stores tokens server-side |
+| `GET /api/strava/callback` | OAuth redirect target; stores tokens server-side (web), or sends the phone back to the app through `com.velopulse.app://strava` |
+| `POST /api/strava/exchange` | Phone app only: finishes the link with the code, the app session, and the nonce the app kept |
 | `POST /api/strava/sync` | Imports the last 60 days; removes activities deleted on Strava |
 | `POST /api/strava/disconnect` | Revokes access on Strava and deletes all Strava data, returns a confirmation |
 | `GET/POST /api/strava/webhook` | Strava push events: new/updated/deleted activities, deauthorization |

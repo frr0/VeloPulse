@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onExportFit}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-xs font-bold text-emerald-300 shadow-sm shadow-emerald-500/15 transition-all"
-              title="Scarica o genera file .FIT compatibile con Garmin e Strava"
+              title="Download or generate a .FIT file compatible with Garmin and Strava"
             >
               <Download className="w-3.5 h-3.5 stroke-[2.5]" />
               <span className="hidden xs:inline sm:inline">Esporta .FIT</span>

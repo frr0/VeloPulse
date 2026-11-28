@@ -17,6 +17,9 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        // PKCE: OAuth returns a one-time `?code=` instead of tokens in the URL.
+        // The phone app needs it to finish Google sign-in from its return link.
+        flowType: 'pkce',
       },
     })
   : null;

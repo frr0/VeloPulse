@@ -4,7 +4,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Capacitor](https://img.shields.io/badge/Capacitor-8.5-119EFF?logo=capacitor&logoColor=white)](https://capacitorjs.com/)
-[![Electron](https://img.shields.io/badge/Electron-44.7-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![Three.js](https://img.shields.io/badge/Three.js-3D_Road-000000?logo=threedotjs&logoColor=white)](https://threejs.org/)
 [![Garmin FIT SDK](https://img.shields.io/badge/Garmin_FIT_SDK-21.2-00508F)](https://developer.garmin.com/fit/overview/)
@@ -14,30 +13,39 @@
 Styled in a refined **Google Material 3 Dark theme** (charcoal scaffold `#131316`, surface containers, pill navigation, Material You accents, and a frameless high-contrast 3D HUD).
 
 <p align="center">
-  <img src="docs/screenshots/ride-studio-3d-road.jpg" alt="VeloLab 3D Road View - New York Virtual Cycling Studio with Frameless HUD" width="100%" />
+  <img src="docs/screenshots/web-ride.jpg" alt="VeloLab web app - 3D Road View with frameless HUD during a structured workout" width="100%" />
 </p>
 
 ---
 
 ## Cross-Platform Availability
 
-VeloLab runs natively or as an app on all major operating systems:
+VeloLab runs in the browser on any computer and as a native app on phones:
 
 | Platform | Format | Description |
 | :--- | :--- | :--- |
-| **Android** | `.apk` | Native Capacitor BLE with background wake-lock and direct `.fit` export |
-| **iOS** | Xcode Project | Native Capacitor iOS app with Bluetooth Central background capabilities |
-| **Windows 11** | `.zip` (Portable) | Standalone desktop application with `VeloPulse.exe` |
-| **macOS** | `.zip` (`.app`) | macOS standalone desktop application bundle |
-| **Linux** | `.AppImage` / `.tar.gz` | Universal Linux binaries + `VeloPulse-Linux.sh` launcher |
-| **Web** | Web App | Modern PWA/SPA optimized for Chrome, Edge, and Chromium |
+| **Web** | Web App | The full studio for computers, in Chrome, Edge, and Chromium (Web Bluetooth): 3D road, analytics, training plan |
+| **Android** | `.apk` | Simpler phone app with native Bluetooth LE, background wake-lock, and direct `.fit` export |
+| **iOS** | Xcode Project | Same phone app for iPhone, with Bluetooth Central background capabilities |
+
+The phone app is deliberately lighter than the web app. It keeps the same look and covers what you
+need on a phone: today's readiness, fitness trends, your activities with map and telemetry, and a
+data-only ride cockpit to pair the trainer and ride straight away (no 3D road). Strava and Google
+sign-in work in both, through the system browser on the phone.
+
+There are no separate desktop builds: on a computer, use the web app. On Linux, Chrome needs
+Web Bluetooth enabled at `chrome://flags/#enable-web-bluetooth` to connect to sensors.
 
 All pre-compiled packages are available in the [GitHub Releases](https://github.com/frr0/Cycling-App/releases) section.
 
 <p align="center">
-  <img src="docs/screenshots/mobile-dashboard.jpg" width="28%" alt="Mobile Dashboard & Readiness" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/mobile-ride-studio.jpg" width="28%" alt="Mobile Ride Studio" />
+  <img src="docs/screenshots/mobile-today.jpg" width="23%" alt="Phone app - Today: recovery ring, fitness, fatigue, form and weekly load" />
+  &nbsp;
+  <img src="docs/screenshots/mobile-ride.jpg" width="23%" alt="Phone app - data-only ride cockpit with live power, cadence, heart rate and speed" />
+  &nbsp;
+  <img src="docs/screenshots/mobile-fitness.jpg" width="23%" alt="Phone app - Fitness and Form chart with CTL, ATL and TSB" />
+  &nbsp;
+  <img src="docs/screenshots/mobile-activity-map.jpg" width="23%" alt="Phone app - activity detail with GPS map and summary metrics" />
 </p>
 
 ### Live demo
@@ -77,8 +85,8 @@ the address shows a "Private demo" page instead of the app.
 ### 2. Dedicated Activity Page, Interactive GPS Map & Telemetry Visuals
 
 <p align="center">
-  <img src="docs/screenshots/activity-map-telemetry-new.jpg" alt="Activity Detail - Interactive GPS Route Map with Altitude and Power Telemetry Charts" width="49%" />
-  <img src="docs/screenshots/activity-zones-wbal.jpg" alt="Activity Analytics - Coggan Power Zones Histogram, Speed with Elevation Backdrop, and W'bal Reserve" width="49%" />
+  <img src="docs/screenshots/web-activity-map.jpg" alt="Activity Detail - interactive GPS route map with altitude, heart rate and power telemetry charts" width="49%" />
+  <img src="docs/screenshots/web-activity-analytics.jpg" alt="Activity Analytics - heart rate and power zone histograms, cadence and speed with elevation backdrop" width="49%" />
 </p>
 
 * **Dedicated Two-Column Activity View**:
@@ -96,6 +104,11 @@ the address shows a "Private demo" page instead of the app.
 ---
 
 ### 3. Athletic Performance & Recovery Analytics
+
+<p align="center">
+  <img src="docs/screenshots/web-today.jpg" alt="Today page - recovery ring, fitness, fatigue and form, weekly load, wellness, power bests and recent activities" width="49%" />
+  <img src="docs/screenshots/web-fitness.jpg" alt="Fitness and Form - 180-day CTL, ATL and TSB chart" width="49%" />
+</p>
 
 * **Multi-Source Sync & Demo Mode**:
   * Connect **Intervals.icu**, link **Strava** via OAuth, or import **Garmin `.fit`** files directly—or explore immediately in demo mode.
@@ -146,26 +159,6 @@ Pre-built binaries can be downloaded directly from the [GitHub Releases](https:/
    ```
 3. Grant Bluetooth and Location permissions when prompted.
 
-### Windows 11
-1. Download `VeloPulse-win-x64.zip`.
-2. Extract the archive and launch `VeloPulse.exe`.
-
-### macOS
-1. Download `VeloPulse-mac-x64.zip`.
-2. Extract and move `VeloPulse.app` to your `/Applications` folder.
-
-### Linux
-1. Download `VeloPulse-linux-x86_64.AppImage` (or `VeloPulse-linux-x64.tar.gz`).
-2. Make it executable and run:
-   ```bash
-   chmod +x VeloPulse-linux-x86_64.AppImage
-   ./VeloPulse-linux-x86_64.AppImage --appimage-extract-and-run --no-sandbox
-   ```
-   *Or simply run the included universal launcher script:*
-   ```bash
-   ./VeloPulse-Linux.sh
-   ```
-
 ---
 
 ## Development & Building from Source
@@ -210,21 +203,6 @@ make down      # or: docker compose --profile prod down
 npm run build
 ```
 
-### Build Linux Desktop (AppImage & Tarball)
-```bash
-npm run dist:linux
-```
-
-### Build Windows 11 Desktop (Zip & Directory)
-```bash
-npm run dist:win
-```
-
-### Build macOS Desktop (Zip & App Bundle)
-```bash
-npm run dist:mac
-```
-
 ### Build Android APK
 ```bash
 npm run android:build
@@ -246,9 +224,6 @@ Opens the project in Xcode for signing and deployment to physical iPhones or iPa
 Cycling/
 ├── android/                     # Capacitor native Android project (Gradle, BLE permissions, FIT export)
 ├── ios/                         # Capacitor native iOS project (Xcode project, Info.plist BLE capabilities)
-├── electron/                    # Electron desktop runtime (Web Bluetooth, window management)
-│   ├── assets/icon.png          # App icon (512x512)
-│   └── main.cjs                 # Main Electron process
 ├── src/
 │   ├── components/
 │   │   ├── charts/              # Recharts components (Power Curve, HRV, Sleep, VO2 Max, Resting HR)
@@ -266,7 +241,6 @@ Cycling/
 │   │   └── intervals/           # Intervals.icu integration & demo datasets
 │   └── utils/                   # HR & Coggan power zones, critical power, polyline decoder, formatters
 ├── VeloPulse.apk                # Pre-compiled Android APK
-├── VeloPulse-Linux.sh           # Universal launcher script for Linux systems
 ├── Dockerfile                   # Multi-stage Docker image (dev Vite HMR + prod nginx)
 ├── docker-compose.yml           # Local dev and production preview services
 ├── Makefile                     # Shortcuts: make up, make build, make prod, make down

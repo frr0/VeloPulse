@@ -32,7 +32,7 @@ android/captures
 android/.externalNativeBuild
 android/.cxx
 
-# Electron release
+# Release artifacts
 release/*
 !release/.gitkeep
 *.AppImage

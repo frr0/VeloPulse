@@ -43,7 +43,7 @@ export const FitDownloadCard: React.FC<FitDownloadCardProps> = ({
       return;
     }
 
-    // Browser and Electron fallback
+    // Browser fallback
     setDownloaded(true);
   };
 
@@ -124,7 +124,7 @@ export const FitDownloadCard: React.FC<FitDownloadCardProps> = ({
           className="flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm tracking-wide shadow-xl shadow-emerald-500/25 transition-all transform active:scale-95 cursor-pointer"
         >
           <Download className="w-5 h-5 stroke-[2.5]" />
-          <span>SCARICA FILE .FIT</span>
+          <span>DOWNLOAD .FIT FILE</span>
         </a>
 
         {onOpenSummaryModal && (
