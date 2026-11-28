@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { DEMO_ONLY } from '../config/demoOnly';
 import {
   getActivities,
@@ -26,6 +29,8 @@ import {
   syncStravaViaBackend,
   disconnectStravaViaBackend,
   getStravaAuthorizeUrl,
+  getStravaAppAuthorization,
+  finishStravaAppAuthorization,
   UserDatabaseBundle,
 } from '../services/supabase/database';
 import { DataProvider, ProviderConnection } from '../services/supabase/types';
@@ -101,6 +106,12 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+/** Link the Worker opens to return to the phone app after Strava consent. */
+const STRAVA_APP_LINK = 'com.velopulse.app://strava';
+const STRAVA_APP_NONCE_KEY = 'velopulse_strava_oauth_nonce';
+/** Window event carrying a Strava OAuth result (the same values as the web `?strava=` flag). */
+export const STRAVA_STATUS_EVENT = 'velopulse:strava-status';
 
 const STORAGE_KEYS = {
   AUTH: 'intervals_pulse_auth',
@@ -501,8 +512,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const connectStrava = async () => {
     if (!supabase) throw new Error('Supabase is not configured.');
+    if (Capacitor.isNativePlatform()) {
+      // Strava consent opens in the system browser; the Worker sends it back to
+      // the app through the com.velopulse.app://strava link handled below.
+      const { url, nonce } = await getStravaAppAuthorization();
+      localStorage.setItem(STRAVA_APP_NONCE_KEY, nonce);
+      await Browser.open({ url });
+      return;
+    }
     window.location.href = await getStravaAuthorizeUrl();
   };
+
+  // Phone app: finish Strava OAuth when the system browser returns to the app.
+  const handleStravaAppReturn = async (link: string) => {
+    const url = new URL(link);
+    let status = url.searchParams.get('status') || 'error';
+    Browser.close().catch(() => undefined);
+
+    if (status === 'authorized') {
+      const nonce = localStorage.getItem(STRAVA_APP_NONCE_KEY) || '';
+      try {
+        await finishStravaAppAuthorization({
+          code: url.searchParams.get('code') || '',
+          state: url.searchParams.get('state') || '',
+          scope: url.searchParams.get('scope') || '',
+          nonce,
+        });
+        status = 'connected';
+        if (authUser) applySupabaseBundle(await loadUserBundle(authUser.id, authUser.email), authUser.id);
+      } catch {
+        status = 'error';
+      }
+    }
+    localStorage.removeItem(STRAVA_APP_NONCE_KEY);
+    window.dispatchEvent(new CustomEvent(STRAVA_STATUS_EVENT, { detail: status }));
+  };
+  const stravaReturnRef = useRef(handleStravaAppReturn);
+  stravaReturnRef.current = handleStravaAppReturn;
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listener = CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      if (url.startsWith(STRAVA_APP_LINK)) void stravaReturnRef.current(url);
+    });
+    return () => {
+      void listener.then((l) => l.remove());
+    };
+  }, []);
 
   const syncStrava = async () => {
     if (!authUser) throw new Error('Please sign in before syncing Strava.');

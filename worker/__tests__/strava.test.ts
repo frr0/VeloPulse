@@ -197,3 +197,105 @@ describe('router', () => {
     }
   });
 });
+
+describe('phone app OAuth', () => {
+  const ctx = { waitUntil: () => undefined };
+  const exp = () => Math.floor(Date.now() / 1000) + 600;
+
+  /** Signed-in user `user-1`, a working Strava token endpoint, and a writable database. */
+  function stubAppBackend() {
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method || 'GET';
+      calls.push(`${method} ${url}`);
+      if (url === 'https://db.example/auth/v1/user') return Response.json({ id: 'user-1' });
+      if (url === 'https://www.strava.com/oauth/token') {
+        return Response.json({ access_token: 'at', refresh_token: 'rt', expires_at: 2_000_000_000, athlete: { id: 42 } });
+      }
+      if (url.startsWith('https://db.example/rest/v1/')) return new Response(null, { status: 201 });
+      throw new Error(`unexpected fetch ${method} ${url}`);
+    });
+    return calls;
+  }
+
+  const exchange = (body: Record<string, string>) =>
+    worker.fetch(
+      new Request('https://app.example/api/strava/exchange', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer jwt', 'Content-Type': 'application/json', Origin: 'https://localhost' },
+        body: JSON.stringify(body),
+      }),
+      env,
+      ctx
+    );
+
+  it('returns the nonce to the app instead of setting a cookie', async () => {
+    stubAppBackend();
+    const res = await worker.fetch(
+      new Request('https://app.example/api/strava/authorize', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer jwt', 'Content-Type': 'application/json', Origin: 'https://localhost' },
+        body: JSON.stringify({ app: true }),
+      }),
+      env,
+      ctx
+    );
+    const body = (await res.json()) as { url: string; nonce: string };
+    expect(res.headers.get('Set-Cookie')).toBeNull();
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://localhost');
+    expect(body.nonce).toBeTruthy();
+    const state = new URL(body.url).searchParams.get('state')!;
+    expect((await verifyState(state, body.nonce, SECRET))?.app).toBe(true);
+  });
+
+  it('sends an app flow back to the app without linking anything', async () => {
+    const calls = stubAppBackend();
+    const state = await signState({ uid: 'user-1', nonce: 'n1', exp: exp(), app: true }, SECRET);
+    const res = await worker.fetch(
+      new Request(
+        `https://app.example/api/strava/callback?code=c1&scope=read,activity:read_all&state=${encodeURIComponent(state)}`
+      ),
+      env,
+      ctx
+    );
+    const location = new URL(res.headers.get('Location')!);
+    expect(res.status).toBe(302);
+    expect(location.protocol).toBe('com.velopulse.app:');
+    expect(location.searchParams.get('status')).toBe('authorized');
+    expect(location.searchParams.get('code')).toBe('c1');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('links Strava when the app returns its nonce with its own session', async () => {
+    const calls = stubAppBackend();
+    const state = await signState({ uid: 'user-1', nonce: 'n1', exp: exp(), app: true }, SECRET);
+    const res = await exchange({ code: 'c1', state, nonce: 'n1', scope: 'read,activity:read_all' });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: 'connected' });
+    expect(calls.some((c) => c.startsWith('POST https://db.example/rest/v1/provider_connections'))).toBe(true);
+  });
+
+  it('refuses a wrong nonce, another user, or a web state', async () => {
+    const calls = stubAppBackend();
+    const appState = await signState({ uid: 'user-1', nonce: 'n1', exp: exp(), app: true }, SECRET);
+    const otherUser = await signState({ uid: 'attacker', nonce: 'n1', exp: exp(), app: true }, SECRET);
+    const webState = await signState({ uid: 'user-1', nonce: 'n1', exp: exp() }, SECRET);
+    const scope = 'read,activity:read_all';
+    expect((await exchange({ code: 'c', state: appState, nonce: 'other', scope })).status).toBe(400);
+    expect((await exchange({ code: 'c', state: otherUser, nonce: 'n1', scope })).status).toBe(400);
+    expect((await exchange({ code: 'c', state: webState, nonce: 'n1', scope })).status).toBe(400);
+    expect(calls.some((c) => c.includes('strava.com') || c.includes('/rest/v1/'))).toBe(false);
+  });
+
+  it('answers CORS preflight only for the app origins', async () => {
+    const preflight = (origin: string) =>
+      worker.fetch(
+        new Request('https://app.example/api/strava/sync', { method: 'OPTIONS', headers: { Origin: origin } }),
+        env,
+        ctx
+      );
+    expect((await preflight('capacitor://localhost')).status).toBe(204);
+    expect((await preflight('https://evil.example')).status).toBe(403);
+  });
+});

@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import {
   Activity,
   Athlete,
@@ -488,18 +489,34 @@ export async function importFitFileToDatabase(userId: string, file: File): Promi
   return parsed;
 }
 
+/**
+ * Where the Worker API lives. The web app is served by the Worker itself, so it
+ * uses relative URLs; the phone app runs from its own WebView origin and calls
+ * the deployed Worker directly (override with VITE_API_BASE_URL).
+ */
+const API_BASE = Capacitor.isNativePlatform()
+  ? (import.meta.env.VITE_API_BASE_URL || 'https://velopulse.velopulse-app.workers.dev').replace(/\/+$/, '')
+  : '';
+
 async function callStravaBackend<T>(
-  path: 'authorize' | 'sync' | 'disconnect'
+  path: 'authorize' | 'exchange' | 'sync' | 'disconnect',
+  body?: Record<string, unknown>
 ): Promise<T> {
   const client = requireSupabase();
   const { data } = await client.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error('Session expired. Please sign in again.');
 
-  const res = await fetch(`/api/strava/${path}`, {
+  const res = await fetch(`${API_BASE}/api/strava/${path}`, {
     method: 'POST',
-    credentials: 'same-origin',
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    // The web flow needs the OAuth nonce cookie; the app never uses cookies.
+    credentials: API_BASE ? 'omit' : 'same-origin',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
   const payload = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new Error(payload.error || `Strava error (HTTP ${res.status})`);
@@ -510,6 +527,24 @@ async function callStravaBackend<T>(
 export async function getStravaAuthorizeUrl(): Promise<string> {
   const { url } = await callStravaBackend<{ url: string }>('authorize');
   return url;
+}
+
+/**
+ * Phone app: starts Strava OAuth. The app keeps the returned nonce and sends it
+ * back with `finishStravaAppAuthorization` when Strava returns to the app.
+ */
+export async function getStravaAppAuthorization(): Promise<{ url: string; nonce: string }> {
+  return callStravaBackend<{ url: string; nonce: string }>('authorize', { app: true });
+}
+
+/** Phone app: links Strava with the code Strava handed back through the Worker. */
+export async function finishStravaAppAuthorization(params: {
+  code: string;
+  state: string;
+  scope: string;
+  nonce: string;
+}): Promise<void> {
+  await callStravaBackend<{ status: string }>('exchange', params);
 }
 
 /** Imports recent Strava activities through the Worker (`/api/strava/sync`). */

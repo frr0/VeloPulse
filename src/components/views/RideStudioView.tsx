@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { MetricCard } from '../MetricCard';
 import { WorkoutProfileChart } from '../WorkoutProfileChart';
 import { WorkoutControls } from '../WorkoutControls';
@@ -7,9 +7,13 @@ import { WorkoutModal } from '../WorkoutModal';
 import { SettingsModal } from '../SettingsModal';
 import { SessionSummaryModal } from '../SessionSummaryModal';
 import { FitDownloadCard } from '../FitDownloadCard';
-import { RoadScene3D, RoadTheme, RoadQuality, RoadWorld } from '../RoadScene3D';
+import type { RoadTheme, RoadQuality, RoadWorld } from '../RoadScene3D';
+import { isMobile } from '../../utils/platform';
 import { createFitFileInfo, downloadFitFile } from '../../services/fit/fitGenerator';
 import { Capacitor } from '@capacitor/core';
+
+// Loaded on demand: the phone app has no 3D road, so it never loads three.js.
+const RoadScene3D = lazy(() => import('../RoadScene3D').then((m) => ({ default: m.RoadScene3D })));
 
 import {
   BluetoothDevicesState,
@@ -117,6 +121,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   onRoadModeChange,
 }) => {
   const isNative = Capacitor.isNativePlatform();
+  // The phone app keeps only the data cockpit for a quick ride on the trainer.
+  const roadAvailable = !isMobile();
   const { powerCurve, credentials, saveLocalSession } = useApp();
 
   // CP and W' estimated on the power curve the app already downloaded. Without
@@ -140,10 +146,11 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
   }, [isSummaryModalOpen]);
 
   // 3D Road View preferences (persisted locally; defaults to lightweight Eco 3D Road)
-  const [viewMode, setViewMode] = useState<'road' | 'classic'>(() => {
+  const [storedViewMode, setViewMode] = useState<'road' | 'classic'>(() => {
     const saved = localStorage.getItem('velopulse_ride_view_mode');
     return saved === 'classic' ? 'classic' : 'road';
   });
+  const viewMode: 'road' | 'classic' = roadAvailable ? storedViewMode : 'classic';
   const [roadTheme, setRoadTheme] = useState<RoadTheme>(() => {
     const saved = localStorage.getItem('velopulse_road_theme');
     if (saved === 'day' || saved === 'golden' || saved === 'mist' || saved === 'night') {
@@ -193,14 +200,14 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
 
   useEffect(() => {
     try {
-      localStorage.setItem('velopulse_ride_view_mode', viewMode);
+      localStorage.setItem('velopulse_ride_view_mode', storedViewMode);
       localStorage.setItem('velopulse_road_theme', roadTheme);
       localStorage.setItem('velopulse_road_quality', roadQuality);
       localStorage.setItem('velopulse_road_world', roadWorld);
     } catch {
       // ignore storage errors
     }
-  }, [viewMode, roadTheme, roadQuality, roadWorld]);
+  }, [storedViewMode, roadTheme, roadQuality, roadWorld]);
 
   // Keyboard shortcut 'H' to toggle clean HUD in Road View
   useEffect(() => {
@@ -823,12 +830,14 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         >
           {/* 3D Procedural Low-Poly Road Canvas */}
           <div className="absolute inset-0">
-            <RoadScene3D
-              speedKmh={sessionStatus === 'running' ? telemetry.speedKmh : 0}
-              theme={roadTheme}
-              quality={roadQuality}
-              world={roadWorld}
-            />
+            <Suspense fallback={null}>
+              <RoadScene3D
+                speedKmh={sessionStatus === 'running' ? telemetry.speedKmh : 0}
+                theme={roadTheme}
+                quality={roadQuality}
+                world={roadWorld}
+              />
+            </Suspense>
           </div>
 
           {/* Soft edge scrims (NOT colored boxes/tiles) so floating white numbers pop cleanly */}
@@ -1314,7 +1323,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                   <button
                     onClick={handleExportFit}
                     className="flex items-center gap-1 hover:text-emerald-300 transition-colors"
-                    title="Scarica file .FIT"
+                    title="Download .FIT file"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-300" />
                     <span>.FIT</span>
@@ -1335,6 +1344,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
         /* ==================== CLASSIC COCKPIT VIEW ==================== */
         <>
           {/* Current Interval Strip + Switch to 3D Road button */}
+          {(roadAvailable || (currentWorkout && engineState.currentInterval)) && (
           <div className="flex items-center justify-between gap-2 shrink-0">
             {currentWorkout && engineState.currentInterval ? (
               <div className="flex-1 rounded-xl sm:rounded-2xl bg-[#1F2025]/95 border border-[#383941] px-3.5 py-2 flex items-center justify-between gap-3 text-xs sm:text-sm min-w-0">
@@ -1367,6 +1377,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               <div className="flex-1" />
             )}
 
+            {roadAvailable && (
             <button
               onClick={() => setViewMode('road')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#00E5A3]/40 text-[#00E5A3] text-xs font-bold shrink-0 transition-all"
@@ -1375,7 +1386,9 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               <Mountain className="w-4 h-4" />
               <span>3D Road</span>
             </button>
+            )}
           </div>
+          )}
 
       {/* 
         2. PRIMARY METRICS: POWER, CADENCE, HEART RATE, SPEED

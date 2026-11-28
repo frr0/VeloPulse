@@ -3,6 +3,7 @@
  *
  *   POST /api/strava/authorize   start OAuth; returns { url } (session JWT in the Authorization header)
  *   GET  /api/strava/callback    OAuth redirect target registered on Strava
+ *   POST /api/strava/exchange    phone app only: finish OAuth with the code the callback handed back
  *   POST /api/strava/sync        import recent activities, drop the ones deleted on Strava
  *   POST /api/strava/disconnect  revoke access on Strava and delete every Strava-derived row
  *   GET  /api/strava/webhook     Strava subscription validation (hub.challenge)
@@ -14,7 +15,7 @@
  *   5.16 / 8.1 tokens stay server-side, signed state, no token in URLs
  */
 import { isConfigured, type ConfiguredEnv, type Env, type WorkerContext } from '../env';
-import { bearerToken, json, readCookie, redirectToApp } from '../http';
+import { bearerToken, json, readCookie, redirectToApp, redirectToNativeApp } from '../http';
 import { SupabaseAdmin, type StravaConnection } from '../supabase';
 import {
   STRAVA_SCOPE,
@@ -31,6 +32,7 @@ import {
   STATE_TTL_SECONDS,
   clearStateCookie,
   randomNonce,
+  readState,
   signState,
   stateCookie,
   verifyState,
@@ -63,16 +65,32 @@ export async function purgeStravaData(db: SupabaseAdmin, userId: string): Promis
 
 // --- OAuth ---------------------------------------------------------------------
 
+/** Body of `/api/strava/authorize`; `{ app: true }` when the phone app starts the flow. */
+async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
+  try {
+    const body = await request.json();
+    return body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function handleAuthorize(request: Request, env: Env): Promise<Response> {
   if (!isConfigured(env)) return notConfigured();
   const db = new SupabaseAdmin(env);
   const auth = await requireUser(request, db);
   if ('response' in auth) return auth.response;
 
+  const fromApp = (await readJsonBody(request)).app === true;
   const origin = new URL(request.url).origin;
   const nonce = randomNonce();
   const state = await signState(
-    { uid: auth.userId, nonce, exp: Math.floor(Date.now() / 1000) + STATE_TTL_SECONDS },
+    {
+      uid: auth.userId,
+      nonce,
+      exp: Math.floor(Date.now() / 1000) + STATE_TTL_SECONDS,
+      ...(fromApp ? { app: true } : {}),
+    },
     env.STRAVA_STATE_SECRET
   );
 
@@ -84,37 +102,32 @@ export async function handleAuthorize(request: Request, env: Env): Promise<Respo
   url.searchParams.set('scope', STRAVA_SCOPE);
   url.searchParams.set('state', state);
 
+  // The app keeps the nonce itself (the system browser that opens Strava does
+  // not share cookies with the app); the web keeps it in an HttpOnly cookie.
+  if (fromApp) return json({ url: url.toString(), nonce });
   return json({ url: url.toString() }, 200, { 'Set-Cookie': stateCookie(nonce) });
 }
 
-export async function handleCallback(request: Request, env: Env): Promise<Response> {
-  const url = new URL(request.url);
-  const origin = url.origin;
-  const clear = { 'Set-Cookie': clearStateCookie() };
-
-  if (!isConfigured(env)) return redirectToApp(origin, 'error', clear);
-  if (url.searchParams.get('error')) return redirectToApp(origin, 'cancelled', clear);
-
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
-  if (!code || !state) return redirectToApp(origin, 'error', clear);
-
-  const payload = await verifyState(state, readCookie(request, STATE_COOKIE), env.STRAVA_STATE_SECRET);
-  if (!payload) return redirectToApp(origin, 'invalid_state', clear);
-
+function hasActivityScope(scope: string): string[] | null {
   // Strava lets the user untick scopes on the consent page.
-  const granted = (url.searchParams.get('scope') || '').split(',');
-  if (!granted.includes('activity:read_all') && !granted.includes('activity:read')) {
-    return redirectToApp(origin, 'missing_scope', clear);
-  }
+  const granted = scope.split(',');
+  return granted.includes('activity:read_all') || granted.includes('activity:read') ? granted : null;
+}
 
+/** Exchanges the code and stores the connection. Returns the status for the UI. */
+async function linkStrava(
+  env: ConfiguredEnv,
+  userId: string,
+  code: string,
+  granted: string[]
+): Promise<'connected' | 'token_error' | 'db_error'> {
   const tokens = await exchangeCode(env, code);
-  if (!tokens) return redirectToApp(origin, 'token_error', clear);
+  if (!tokens) return 'token_error';
 
   const db = new SupabaseAdmin(env);
   try {
     await db.upsertStravaConnection({
-      user_id: payload.uid,
+      user_id: userId,
       status: 'connected',
       external_athlete_id: tokens.athlete?.id != null ? String(tokens.athlete.id) : null,
       access_token: tokens.access_token,
@@ -124,10 +137,77 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
       last_error: null,
     });
   } catch {
-    return redirectToApp(origin, 'db_error', clear);
+    return 'db_error';
+  }
+  return 'connected';
+}
+
+export async function handleCallback(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const origin = url.origin;
+  const clear = { 'Set-Cookie': clearStateCookie() };
+
+  if (!isConfigured(env)) return redirectToApp(origin, 'error', clear);
+
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+
+  // A flow started by the phone app goes back to the app, which finishes it
+  // through /api/strava/exchange with its session and its nonce. Nothing is
+  // linked here: the state is only read to choose where to send the browser.
+  const appState = state ? await readState(state, env.STRAVA_STATE_SECRET) : null;
+  if (appState?.app) {
+    if (url.searchParams.get('error')) return redirectToNativeApp('cancelled');
+    if (!code || !state) return redirectToNativeApp('error');
+    if (!hasActivityScope(url.searchParams.get('scope') || '')) return redirectToNativeApp('missing_scope');
+    return redirectToNativeApp('authorized', {
+      code,
+      state,
+      scope: url.searchParams.get('scope') || '',
+    });
   }
 
-  return redirectToApp(origin, 'connected', clear);
+  if (url.searchParams.get('error')) return redirectToApp(origin, 'cancelled', clear);
+  if (!code || !state) return redirectToApp(origin, 'error', clear);
+
+  const payload = await verifyState(state, readCookie(request, STATE_COOKIE), env.STRAVA_STATE_SECRET);
+  if (!payload || payload.app) return redirectToApp(origin, 'invalid_state', clear);
+
+  const granted = hasActivityScope(url.searchParams.get('scope') || '');
+  if (!granted) return redirectToApp(origin, 'missing_scope', clear);
+
+  return redirectToApp(origin, await linkStrava(env, payload.uid, code, granted), clear);
+}
+
+/**
+ * Phone app only. Finishes the OAuth flow the callback handed back to the app.
+ * The state must be signed, unexpired, issued for the app, carry the nonce the
+ * app kept, and belong to the signed-in user: a consent link started by someone
+ * else cannot attach their Strava account to this profile, nor this one to theirs.
+ */
+export async function handleExchange(request: Request, env: Env): Promise<Response> {
+  if (!isConfigured(env)) return notConfigured();
+  const db = new SupabaseAdmin(env);
+  const auth = await requireUser(request, db);
+  if ('response' in auth) return auth.response;
+
+  const body = await readJsonBody(request);
+  const str = (key: string) => (typeof body[key] === 'string' ? (body[key] as string) : '');
+  const code = str('code');
+  const state = str('state');
+  if (!code || !state) return json({ error: 'Missing code or state.' }, 400);
+
+  const payload = await verifyState(state, str('nonce') || null, env.STRAVA_STATE_SECRET);
+  if (!payload || !payload.app || payload.uid !== auth.userId) {
+    return json({ status: 'invalid_state', error: 'The Strava authorization expired or was started elsewhere.' }, 400);
+  }
+
+  const granted = hasActivityScope(str('scope'));
+  if (!granted) return json({ status: 'missing_scope', error: 'Strava activity permission was not granted.' }, 400);
+
+  const status = await linkStrava(env, auth.userId, code, granted);
+  if (status !== 'connected') return json({ status, error: 'Could not finish connecting Strava.' }, 502);
+  return json({ status });
 }
 
 // --- Sync ----------------------------------------------------------------------

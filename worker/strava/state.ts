@@ -15,6 +15,12 @@ export interface StatePayload {
   uid: string;
   nonce: string;
   exp: number;
+  /**
+   * Set when the flow was started by the phone app. The app has no cookie on the
+   * Worker domain: it keeps the nonce itself and sends it back to
+   * `/api/strava/exchange` together with its session, which does the same job.
+   */
+  app?: boolean;
 }
 
 const encoder = new TextEncoder();
@@ -54,12 +60,12 @@ export async function signState(payload: StatePayload, secret: string): Promise<
 }
 
 /**
- * Returns the payload when the signature is valid, the state has not expired
- * and its nonce matches the cookie nonce. Returns null otherwise.
+ * Returns the payload when the signature is valid and the state has not
+ * expired, without checking the nonce. Only use it to decide where to send the
+ * browser; anything that links an account must go through `verifyState`.
  */
-export async function verifyState(
+export async function readState(
   state: string,
-  cookieNonce: string | null,
   secret: string,
   nowSeconds = Math.floor(Date.now() / 1000)
 ): Promise<StatePayload | null> {
@@ -91,7 +97,23 @@ export async function verifyState(
 
   if (!payload.uid || !payload.nonce || typeof payload.exp !== 'number') return null;
   if (payload.exp < nowSeconds) return null;
-  if (!cookieNonce || cookieNonce !== payload.nonce) return null;
+  return payload;
+}
+
+/**
+ * Returns the payload when the signature is valid, the state has not expired
+ * and its nonce matches the nonce held by the client that started the flow
+ * (the cookie on the web, the value the app kept on the phone). Returns null otherwise.
+ */
+export async function verifyState(
+  state: string,
+  clientNonce: string | null,
+  secret: string,
+  nowSeconds = Math.floor(Date.now() / 1000)
+): Promise<StatePayload | null> {
+  const payload = await readState(state, secret, nowSeconds);
+  if (!payload) return null;
+  if (!clientNonce || clientNonce !== payload.nonce) return null;
   return payload;
 }
 

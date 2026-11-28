@@ -557,7 +557,8 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
               return (
                 <div
                   key={benchmark.secs}
-                  className="bg-[#26272D] p-1.5 rounded-xl border border-white/5 text-center"
+                  className="pl-1.5 border-l-2 min-w-0"
+                  style={{ borderColor: `${benchmark.color}99` }}
                 >
                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">
                     {benchmark.title}
@@ -575,7 +576,7 @@ export const PowerCurveChart: React.FC<PowerCurveChartProps> = ({ data, ftp, isL
 
           {/* Compact CP & FTP Row */}
           {criticalPower.status === 'ok' && (
-            <div className="grid grid-cols-3 gap-2 p-2 bg-[#26272D] rounded-xl border border-white/5 text-center">
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/10">
               <div>
                 <span className="text-[8px] font-bold text-slate-400 uppercase block">CP Model</span>
                 <span className="text-sm font-black text-[#00E5A3]">

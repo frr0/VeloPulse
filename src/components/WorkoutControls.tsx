@@ -280,10 +280,10 @@ export const WorkoutControls: React.FC<WorkoutControlsProps> = ({
               <button
                 onClick={onExportFit}
                 className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2F3037] hover:bg-[#3E4049] border border-emerald-500/40 text-emerald-300 font-bold text-xs shadow-sm transition-all transform active:scale-95"
-                title="Genera e scarica file .FIT per la sessione corrente"
+                title="Generate and download a .FIT file for the current session"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>SCARICA .FIT</span>
+                <span>DOWNLOAD .FIT</span>
               </button>
             )}
           </>

@@ -264,7 +264,7 @@ export function createFitFileInfo(summary: SessionSummary, customFilename?: stri
 }
 
 /**
- * Generates and triggers download of the .fit file across Web, AppImage, and Android
+ * Generates and triggers download of the .fit file across Web, Android and iOS
  */
 export function downloadFitFile(summary: SessionSummary, customFilename?: string): { filename: string; blobUrl: string } {
   const { filename, blobUrl, base64Data } = createFitFileInfo(summary, customFilename);

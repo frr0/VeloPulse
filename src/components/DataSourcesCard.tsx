@@ -9,7 +9,7 @@ import {
   Upload,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { STRAVA_STATUS_EVENT, useApp } from '../context/AppContext';
 import { supportsServerIntegrations } from '../utils/platform';
 
 export const DataSourcesCard: React.FC = () => {
@@ -59,24 +59,33 @@ export const DataSourcesCard: React.FC = () => {
     }
   };
 
-  // Result of the Strava OAuth redirect (`/?strava=<status>`), shown once.
+  // Result of the Strava OAuth flow, shown once: `/?strava=<status>` on the web,
+  // a window event in the phone app (see STRAVA_STATUS_EVENT in AppContext).
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get('strava');
-    if (!status) return;
     const messages: Record<string, string> = {
       connected: 'Strava connected. Press "Sync Strava" to import your activities.',
       cancelled: 'Strava authorization was cancelled.',
       missing_scope: 'Strava needs permission to read your activities. Please try again and keep that box ticked.',
       invalid_state: 'The Strava authorization link expired or was opened in another browser. Please try again.',
     };
-    setFeedback({
-      text: messages[status] || 'Strava connection failed. Please try again.',
-      isError: status !== 'connected',
-    });
-    params.delete('strava');
-    const query = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    const show = (status: string) =>
+      setFeedback({
+        text: messages[status] || 'Strava connection failed. Please try again.',
+        isError: status !== 'connected',
+      });
+
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('strava');
+    if (status) {
+      show(status);
+      params.delete('strava');
+      const query = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    }
+
+    const onAppStatus = (event: Event) => show(String((event as CustomEvent).detail));
+    window.addEventListener(STRAVA_STATUS_EVENT, onAppStatus);
+    return () => window.removeEventListener(STRAVA_STATUS_EVENT, onAppStatus);
   }, []);
 
   const handleDisconnect = async (provider: 'intervals' | 'strava' | 'garmin') => {

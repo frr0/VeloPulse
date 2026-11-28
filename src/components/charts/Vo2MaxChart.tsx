@@ -294,7 +294,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
 
           {/* Compact Hero Stats Below Chart */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Current
               </span>
@@ -312,7 +312,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               </span>
             </div>
 
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Progression
               </span>
@@ -339,7 +339,7 @@ export const Vo2MaxChart: React.FC<Vo2MaxChartProps> = ({
               <span className="text-[9px] text-slate-400">{range}d Delta</span>
             </div>
 
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5 text-center">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Tier
               </span>

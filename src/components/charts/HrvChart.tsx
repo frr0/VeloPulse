@@ -385,7 +385,7 @@ export const HrvChart: React.FC<HrvChartProps> = ({ data }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Latest HRV
               </span>
@@ -403,7 +403,7 @@ export const HrvChart: React.FC<HrvChartProps> = ({ data }) => {
               </span>
             </div>
 
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 7-Day Avg
               </span>
@@ -416,7 +416,7 @@ export const HrvChart: React.FC<HrvChartProps> = ({ data }) => {
               <span className="text-[10px] text-slate-400 font-medium">Smoothed</span>
             </div>
 
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Target Baseline
               </span>
@@ -433,7 +433,7 @@ export const HrvChart: React.FC<HrvChartProps> = ({ data }) => {
               <span className="text-[10px] text-slate-400">Personal range</span>
             </div>
 
-            <div className="bg-[#26272D] p-2 rounded-xl border border-white/5">
+            <div className="pl-3 border-l-2 border-white/15">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                 Readiness
               </span>

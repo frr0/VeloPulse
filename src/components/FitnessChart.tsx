@@ -341,7 +341,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
 
           {/* Android Compact Value Cards Below Chart */}
           <div className="grid grid-cols-3 gap-2 pt-1">
-            <div className="bg-[#26272D] p-2 rounded-xl border border-[#38BDF8]/20 text-center">
+            <div className="pl-3 border-l-2 border-[#38BDF8]/60">
               <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
                 Fitness (CTL)
               </span>
@@ -351,7 +351,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
               <span className="text-[9px] text-slate-400">42d Rolling</span>
             </div>
 
-            <div className="bg-[#26272D] p-2 rounded-xl border border-[#A855F7]/20 text-center">
+            <div className="pl-3 border-l-2 border-[#A855F7]/60">
               <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
                 Fatigue (ATL)
               </span>
@@ -362,7 +362,7 @@ export const FitnessChart: React.FC<FitnessChartProps> = ({ data }) => {
             </div>
 
             <div
-              className="bg-[#26272D] p-2 rounded-xl border text-center"
+              className="pl-3 border-l-2"
               style={{ borderColor: `${formStatus?.color ?? '#64748B'}30` }}
             >
               <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
