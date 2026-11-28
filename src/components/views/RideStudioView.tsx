@@ -888,10 +888,10 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                 <button
                   onClick={() => bluetoothManager.stopSimulation()}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-600/85 hover:bg-purple-500 text-white text-[11px] font-bold shadow-md transition-all"
-                  title="Ferma il simulatore virtuale"
+                  title="Stop the virtual simulator"
                 >
                   <span className="w-2 h-2 rounded-full bg-purple-200 animate-ping" />
-                  <span>Sim ON • Esci</span>
+                  <span>Sim ON • Exit</span>
                 </button>
               )}
 
@@ -899,10 +899,10 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                 <button
                   onClick={() => bluetoothManager.startSimulation()}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-600/90 hover:bg-purple-500 text-white text-[11px] font-bold shadow-md transition-all"
-                  title="Avvia il simulatore virtuale per provare senza rullo"
+                  title="Start the virtual simulator to try it without a trainer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Simula</span>
+                  <span>Simulate</span>
                 </button>
               )}
             </div>
@@ -934,7 +934,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                       <button
                         key={t.id}
                         onClick={() => setRoadTheme(t.id)}
-                        title={`Tema ${t.label}`}
+                        title={`${t.label} theme`}
                         className={`p-1.5 rounded-lg transition-all ${
                           roadTheme === t.id
                             ? 'bg-white/20 text-[#00E5A3]'
@@ -951,8 +951,8 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                     onClick={() => setRoadQuality((q) => (q === 'eco' ? 'normal' : 'eco'))}
                     title={
                       roadQuality === 'eco'
-                        ? 'Modalità Eco attiva (leggera, ~30fps, DPR 1x). Clicca per 60fps'
-                        : 'Modalità Normale (60fps). Clicca per Eco leggera'
+                        ? 'Eco mode on (light, ~30fps, DPR 1x). Click for 60fps'
+                        : 'Normal mode (60fps). Click for light Eco mode'
                     }
                     className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
                       roadQuality === 'eco'
@@ -968,7 +968,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                   {!isNative && (
                     <button
                       onClick={handleToggleFullscreen}
-                      title={isFullscreen ? 'Esci da schermo intero' : 'Schermo intero'}
+                      title={isFullscreen ? 'Exit full screen' : 'Full screen'}
                       className="p-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-white/10 transition-all"
                     >
                       {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -980,7 +980,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               {/* Hide/Show HUD */}
               <button
                 onClick={() => setHudHidden((h) => !h)}
-                title={hudHidden ? 'Mostra HUD (tasto H)' : 'Nascondi HUD (tasto H)'}
+                title={hudHidden ? 'Show HUD (H key)' : 'Hide HUD (H key)'}
                 className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-all"
               >
                 {hudHidden ? <Eye className="w-3.5 h-3.5 text-[#00E5A3]" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -991,7 +991,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
               {!hudHidden && (
                 <button
                   onClick={() => setViewMode('classic')}
-                  title="Torna alla vista Classic (senza video 3D)"
+                  title="Back to the Classic view (no 3D)"
                   className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-200 hover:text-white hover:bg-white/10 border-l border-white/15 pl-2 transition-all"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -1307,7 +1307,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                   <button
                     onClick={() => setIsWorkoutModalOpen(true)}
                     className="flex items-center gap-1 hover:text-[#00E5A3] transition-colors"
-                    title="Seleziona Workout (.zwo)"
+                    title="Select workout (.zwo)"
                   >
                     <Dumbbell className="w-3.5 h-3.5 text-[#00E5A3]" />
                     <span>Workout</span>
@@ -1315,7 +1315,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
                   <button
                     onClick={() => setIsBluetoothModalOpen(true)}
                     className="flex items-center gap-1 hover:text-[#00E5A3] transition-colors"
-                    title="Sensori Bluetooth"
+                    title="Bluetooth sensors"
                   >
                     <Bluetooth className="w-3.5 h-3.5 text-[#00E5A3]" />
                     <span>Sensors</span>
@@ -1381,7 +1381,7 @@ export const RideStudioView: React.FC<RideStudioViewProps> = ({
             <button
               onClick={() => setViewMode('road')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1F2025] hover:bg-[#2F3037] border border-[#00E5A3]/40 text-[#00E5A3] text-xs font-bold shrink-0 transition-all"
-              title="Attiva la vista strada 3D leggera"
+              title="Switch to the light 3D road view"
             >
               <Mountain className="w-4 h-4" />
               <span>3D Road</span>
