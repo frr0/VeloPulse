@@ -109,6 +109,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 /** Link the Worker opens to return to the phone app after Strava consent. */
 const STRAVA_APP_LINK = 'com.velopulse.app://strava';
+/** Link Supabase Auth returns to after Google sign-in in the phone app (allow it in Supabase). */
+const AUTH_APP_LINK = 'com.velopulse.app://auth-callback';
 const STRAVA_APP_NONCE_KEY = 'velopulse_strava_oauth_nonce';
 /** Window event carrying a Strava OAuth result (the same values as the web `?strava=` flag). */
 export const STRAVA_STATUS_EVENT = 'velopulse:strava-status';
@@ -461,6 +463,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const signInWithGoogle = async () => {
     if (!supabase) throw new Error('Supabase is not configured.');
     setError(null);
+    if (Capacitor.isNativePlatform()) {
+      // Google refuses sign-in inside an app WebView: open the system browser and
+      // come back through com.velopulse.app://auth-callback (handled below).
+      const { data, error: authErr } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: AUTH_APP_LINK, skipBrowserRedirect: true },
+      });
+      if (authErr || !data?.url) {
+        const err = authErr ?? new Error('Google sign-in could not start.');
+        setError(err.message);
+        throw err;
+      }
+      await Browser.open({ url: data.url });
+      return;
+    }
     const { error: authErr } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
@@ -469,6 +486,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setError(authErr.message);
       throw authErr;
     }
+  };
+
+  // Phone app: finish Google sign-in when the system browser returns to the app.
+  const handleAuthAppReturn = async (link: string) => {
+    Browser.close().catch(() => undefined);
+    if (!supabase) return;
+    const url = new URL(link);
+    const code = url.searchParams.get('code');
+    const failure = url.searchParams.get('error_description') || url.searchParams.get('error');
+    if (!code) {
+      setError(failure || 'Google sign-in was cancelled.');
+      return;
+    }
+    // onAuthStateChange picks up the new session and loads the user's data.
+    const { error: authErr } = await supabase.auth.exchangeCodeForSession(code);
+    if (authErr) setError(authErr.message);
   };
 
   // --- Data provider methods (Supabase DB) ---
@@ -549,12 +582,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const stravaReturnRef = useRef(handleStravaAppReturn);
   stravaReturnRef.current = handleStravaAppReturn;
+  const authReturnRef = useRef(handleAuthAppReturn);
+  authReturnRef.current = handleAuthAppReturn;
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    const listener = CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+    const route = (url: string) => {
+      // A return link carries one-time codes: never handle the same one twice
+      // (getLaunchUrl keeps returning it if the WebView reloads).
+      try {
+        if (sessionStorage.getItem('velopulse_last_app_link') === url) return;
+        sessionStorage.setItem('velopulse_last_app_link', url);
+      } catch {
+        // storage unavailable: handle the link anyway
+      }
       if (url.startsWith(STRAVA_APP_LINK)) void stravaReturnRef.current(url);
-    });
+      else if (url.startsWith(AUTH_APP_LINK)) void authReturnRef.current(url);
+    };
+    const listener = CapacitorApp.addListener('appUrlOpen', ({ url }) => route(url));
+    // Android may have closed the app while the browser was open: the return
+    // link then starts the app instead of arriving as an appUrlOpen event.
+    CapacitorApp.getLaunchUrl()
+      .then((launch) => launch?.url && route(launch.url))
+      .catch(() => undefined);
     return () => {
       void listener.then((l) => l.remove());
     };
